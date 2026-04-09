@@ -90,8 +90,20 @@
     <span id="chat-banner-text">3 notes match this chat</span>
   </div>
 
-  <!-- Tag filters -->
-  <div class="filters" id="filters"></div>
+  <!-- Filter bar -->
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-icon-btn" id="filter-icon-btn" title="Filter by tag">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+        <path d="M2 3h12l-5 5v4l-3 2V8L2 3z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="filter-input-wrap" id="filter-input-wrap">
+      <input id="filter-input" type="text" placeholder="Filter by tag…" autocomplete="off" />
+      <button class="filter-clear" id="filter-clear" title="Clear filter">×</button>
+      <div class="filter-dropdown" id="filter-dropdown"></div>
+    </div>
+    <span class="filter-active-tag" id="filter-active-tag"></span>
+  </div>
 
   <!-- Notes list -->
   <div class="notes" id="notes"></div>

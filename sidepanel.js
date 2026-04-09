@@ -56,7 +56,6 @@ let pendingImport = null;
 
 // ── DOM refs ───────────────────────────────────────
 const notesEl       = document.getElementById('notes');
-const filtersEl     = document.getElementById('filters');
 const searchEl      = document.getElementById('search');
 const clearSearchEl = document.getElementById('clear-search');
 const countEl       = document.getElementById('note-count');
@@ -79,6 +78,13 @@ const menuExportEl = document.getElementById('menu-export');
 const menuImportEl = document.getElementById('menu-import');
 const importFileEl = document.getElementById('import-file');
 const menuThemeEl = document.getElementById('menu-theme');
+const filterIconBtn = document.getElementById('filter-icon-btn');
+const filterInputWrap = document.getElementById('filter-input-wrap');
+const filterInputEl = document.getElementById('filter-input');
+const filterClearEl = document.getElementById('filter-clear');
+const filterActiveTagEl = document.getElementById('filter-active-tag');
+const filterBarEl = document.getElementById('filter-bar');
+const filterDropdownEl = document.getElementById('filter-dropdown');
 
 // ── Tag helpers ────────────────────────────────────
 function slugify(str) {
@@ -196,27 +202,121 @@ function removeUserTag(slug) {
   if (isDefaultTag(slug)) return;
   allTags = allTags.filter(t => t !== slug);
   if (selectedTag === slug) selectedTag = 'general';
-  if (activeTag === slug) activeTag = 'all';
+  if (activeTag === slug) clearFilter();
   saveTags();
   renderAll();
 }
 
-// ── Filters (top bar) ──────────────────────────────
-function renderFilters() {
-  filtersEl.innerHTML = ['all', ...allTags].map(t => `
-    <button class="chip${activeTag === t ? ' active' : ''}" data-tag="${t}">
-      ${t === 'all' ? 'All' : escHtml(labelOf(t))}
-    </button>
-  `).join('');
-
-  filtersEl.querySelectorAll('.chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      activeTag = btn.dataset.tag;
-      renderFilters();
-      renderNotes();
-    });
-  });
+// ── Filter bar ─────────────────────────────────────
+function showFilterInput() {
+  filterInputWrap.style.display = 'flex';
+  filterIconBtn.classList.add('active');
+  filterInputEl.focus();
 }
+
+function hideFilterInput() {
+  filterInputWrap.style.display = 'none';
+  filterIconBtn.classList.remove('active');
+  filterDropdownEl.classList.remove('open');
+  filterInputEl.value = '';
+}
+
+function clearFilter() {
+  activeTag = 'all';
+  filterInputEl.value = '';
+  filterClearEl.classList.remove('visible');
+  filterActiveTagEl.classList.remove('visible');
+  filterIconBtn.classList.remove('active');
+  filterDropdownEl.classList.remove('open');
+  hideFilterInput();
+  renderNotes();
+}
+
+function applyTagFilter(tag) {
+  activeTag = tag;
+  filterInputEl.value = '';
+  filterClearEl.classList.add('visible');
+  filterActiveTagEl.innerHTML = `${escHtml(labelOf(tag))} <span class="remove-tag" title="Clear filter">×</span>`;
+  filterActiveTagEl.classList.add('visible');
+  filterIconBtn.classList.remove('active');
+  hideFilterInput();
+  renderNotes();
+}
+
+function renderTagDropdown(query) {
+  if (!query) {
+    filterDropdownEl.classList.remove('open');
+    return;
+  }
+
+  const q = query.toLowerCase();
+  const matches = allTags.filter(tag => labelOf(tag).toLowerCase().includes(q));
+
+  if (matches.length === 0) {
+    filterDropdownEl.innerHTML = '<div class="filter-dropdown-empty">No tags found</div>';
+  } else {
+    filterDropdownEl.innerHTML = matches.map(tag => {
+      const count = notes.filter(n => n.tag === tag).length;
+      return `<div class="filter-dropdown-item" data-tag="${tag}">
+        <span>${escHtml(labelOf(tag))}</span>
+        <span class="filter-dropdown-count">${count}</span>
+      </div>`;
+    }).join('');
+
+    filterDropdownEl.querySelectorAll('.filter-dropdown-item').forEach(item => {
+      item.addEventListener('click', () => {
+        applyTagFilter(item.dataset.tag);
+      });
+    });
+  }
+
+  filterDropdownEl.classList.add('open');
+}
+
+filterIconBtn.addEventListener('click', showFilterInput);
+
+filterInputEl.addEventListener('focus', () => {
+  const query = filterInputEl.value.trim();
+  if (query) renderTagDropdown(query);
+});
+
+filterInputEl.addEventListener('input', () => {
+  const query = filterInputEl.value.trim();
+  if (!query) {
+    filterDropdownEl.classList.remove('open');
+    return;
+  }
+  renderTagDropdown(query);
+});
+
+filterInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const query = filterInputEl.value.trim().toLowerCase();
+    const matchingTag = allTags.find(tag => labelOf(tag).toLowerCase().includes(query));
+    if (matchingTag) {
+      applyTagFilter(matchingTag);
+    }
+  }
+  if (e.key === 'Escape') {
+    hideFilterInput();
+  }
+});
+
+filterClearEl.addEventListener('click', clearFilter);
+
+filterActiveTagEl.addEventListener('click', (e) => {
+  if (e.target.classList.contains('remove-tag')) {
+    clearFilter();
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (!filterInputWrap.contains(e.target) && !e.target.closest('.filter-icon-btn')) {
+    if (filterDropdownEl.classList.contains('open')) {
+      filterDropdownEl.classList.remove('open');
+    }
+  }
+});
 
 // ── Notes ──────────────────────────────────────────
 function highlight(text, query) {
@@ -227,7 +327,9 @@ function highlight(text, query) {
 
 function getFiltered() {
   let result = [...notes];
-  if (activeTag !== 'all') result = result.filter(n => n.tag === activeTag);
+  if (activeTag !== 'all') {
+    result = result.filter(n => n.tag === activeTag);
+  }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     result = result.filter(n =>
@@ -252,7 +354,7 @@ function renderNotes() {
     const msg = searchQuery
       ? `No notes match "<strong>${escHtml(searchQuery)}</strong>"`
       : activeTag !== 'all'
-        ? `No notes in <strong>${escHtml(labelOf(activeTag))}</strong> yet`
+        ? `No notes in <strong>${escHtml(labelOf(activeTag))}</strong>`
         : `<strong>No notes yet</strong>\nSelect text → right-click → Save to DSA Insights\nor type below and hit Save`;
     notesEl.innerHTML = `<div class="empty">${msg}</div>`;
     return;
@@ -293,9 +395,8 @@ function renderNotes() {
 }
 
 function renderAll() {
-  renderFilters();
-  renderTagPicker();
   renderNotes();
+  renderTagPicker();
   updateChatBanner();
 }
 
