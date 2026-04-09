@@ -82,9 +82,9 @@ const filterIconBtn = document.getElementById('filter-icon-btn');
 const filterInputWrap = document.getElementById('filter-input-wrap');
 const filterInputEl = document.getElementById('filter-input');
 const filterClearEl = document.getElementById('filter-clear');
-const filterActiveTagEl = document.getElementById('filter-active-tag');
 const filterBarEl = document.getElementById('filter-bar');
 const filterDropdownEl = document.getElementById('filter-dropdown');
+const filterChipsEl = document.getElementById('filter-chips');
 
 // ── Tag helpers ────────────────────────────────────
 function slugify(str) {
@@ -214,9 +214,7 @@ function removeUserTag(slug) {
 function showFilterInput() {
   filterInputWrap.style.display = 'flex';
   filterIconBtn.classList.add('active');
-  filterActiveTagEl.classList.remove('visible');
   filterInputEl.focus();
-  filterInputEl.select();
 }
 
 function hideFilterInput() {
@@ -226,29 +224,41 @@ function hideFilterInput() {
   filterInputEl.value = '';
 }
 
-function updateActiveTagsDisplay() {
+function renderFilterChips() {
   if (activeTags.size === 0) {
     filterClearEl.classList.remove('visible');
-    filterActiveTagEl.classList.remove('visible');
-    filterIconBtn.classList.remove('active');
-  } else {
-    filterClearEl.classList.add('visible');
-    filterIconBtn.classList.add('active');
-    if (activeTags.size === 1) {
-      const tag = [...activeTags][0];
-      filterActiveTagEl.innerHTML = `${escHtml(labelOf(tag))} <span class="remove-tag" title="Clear">×</span>`;
-    } else {
-      filterActiveTagEl.innerHTML = `${activeTags.size} tags <span class="remove-tag" title="Clear">×</span>`;
-    }
-    filterActiveTagEl.classList.add('visible');
+    filterChipsEl.innerHTML = '';
+    filterInputEl.placeholder = 'Filter by tag…';
+    return;
   }
+
+  filterClearEl.classList.add('visible');
+  filterInputEl.placeholder = '…';
+
+  filterChipsEl.innerHTML = [...activeTags].map(tag => {
+    const c = colorOf(tag);
+    return `<span class="filter-chip" style="background:${c.bg};color:${c.text}">
+      ${escHtml(labelOf(tag))}
+      <span class="chip-remove" data-tag="${tag}">×</span>
+    </span>`;
+  }).join('');
+
+  filterChipsEl.querySelectorAll('.chip-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      activeTags.delete(btn.dataset.tag);
+      renderFilterChips();
+      renderNotes();
+    });
+  });
 }
 
 function clearFilter() {
   activeTags.clear();
   filterInputEl.value = '';
   filterClearEl.classList.remove('visible');
-  filterActiveTagEl.classList.remove('visible');
+  filterChipsEl.innerHTML = '';
+  filterInputEl.placeholder = 'Filter by tag…';
   filterIconBtn.classList.remove('active');
   filterDropdownEl.classList.remove('open');
   hideFilterInput();
@@ -261,27 +271,18 @@ function toggleTagFilter(tag) {
   } else {
     activeTags.add(tag);
   }
-  updateActiveTagsDisplay();
-  hideFilterInput();
+  renderFilterChips();
   renderNotes();
 }
 
 function renderTagDropdown(query) {
+  let matches;
   if (!query) {
-    filterDropdownEl.innerHTML = allTags.map(tag => {
-      const count = notes.filter(n => n.tag === tag).length;
-      const isActive = activeTags.has(tag);
-      return `<div class="filter-dropdown-item${isActive ? ' active' : ''}" data-tag="${tag}">
-        <span>${escHtml(labelOf(tag))}</span>
-        <span class="filter-dropdown-count">${count}</span>
-      </div>`;
-    }).join('');
-    filterDropdownEl.classList.add('open');
-    return;
+    matches = allTags;
+  } else {
+    const q = query.toLowerCase();
+    matches = allTags.filter(tag => labelOf(tag).toLowerCase().includes(q));
   }
-
-  const q = query.toLowerCase();
-  const matches = allTags.filter(tag => labelOf(tag).toLowerCase().includes(q));
 
   if (matches.length === 0) {
     filterDropdownEl.innerHTML = '<div class="filter-dropdown-empty">No tags found</div>';
@@ -302,6 +303,7 @@ function renderTagDropdown(query) {
   filterDropdownEl.querySelectorAll('.filter-dropdown-item').forEach(item => {
     item.addEventListener('click', () => {
       toggleTagFilter(item.dataset.tag);
+      renderTagDropdown(filterInputEl.value.trim());
     });
   });
 }
@@ -337,13 +339,6 @@ filterInputEl.addEventListener('keydown', (e) => {
 filterClearEl.addEventListener('click', (e) => {
   e.stopPropagation();
   clearFilter();
-});
-
-filterActiveTagEl.addEventListener('click', (e) => {
-  if (e.target.classList.contains('remove-tag')) {
-    e.stopPropagation();
-    clearFilter();
-  }
 });
 
 document.addEventListener('click', (e) => {
