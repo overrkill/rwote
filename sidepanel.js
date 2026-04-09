@@ -2,6 +2,7 @@
 
 const STORAGE_KEY  = 'dsa_insights_v1';
 const TAGS_KEY     = 'dsa_insights_tags_v1';
+const THEME_KEY    = 'dsa_insights_theme_v1';
 
 const DEFAULT_TAGS = [
   'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
@@ -49,6 +50,7 @@ const inputNote     = document.getElementById('input-note');
 const tagPickerEl   = document.getElementById('tag-picker');
 const newTagInput   = document.getElementById('new-tag-input');
 const saveBtn       = document.getElementById('save-btn');
+const themeToggleEl = document.getElementById('theme-toggle');
 
 // ── Tag helpers ────────────────────────────────────
 function slugify(str) {
@@ -369,8 +371,31 @@ chrome.storage.session.get('pendingSelection', (res) => {
   }
 });
 
+// ── Theme ─────────────────────────────────────────
+function loadTheme() {
+  chrome.storage.local.get(THEME_KEY, (res) => {
+    if (res[THEME_KEY] === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  });
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    chrome.storage.local.set({ [THEME_KEY]: 'light' });
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    chrome.storage.local.set({ [THEME_KEY]: 'dark' });
+  }
+}
+
 // ── Init ───────────────────────────────────────────
+loadTheme();
 load().then(() => {
   updateChatMatches();
   renderAll();
 });
+
+themeToggleEl.addEventListener('click', toggleTheme);

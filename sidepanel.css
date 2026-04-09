@@ -40,6 +40,29 @@
   --accent-btn: #2d2926;
 }
 
+[data-theme="dark"] {
+  --bg:           #1a1a1e;
+  --surface:      #242428;
+  --surface-alt:  #2e2e34;
+  --border:       #3a3a42;
+  --border-focus: #555560;
+
+  --text-primary:   #e8e4de;
+  --text-secondary: #9a968e;
+  --text-tertiary:  #6a665e;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+
+  --chat-banner-bg: #1e2a38;
+  --chat-banner-border: #2a3a4e;
+  --chat-banner-text: #8ab8d8;
+  --card-match-border: #4a7a9a;
+  --mark-bg: #5a4a20;
+  --toast-bg: #e8e4de;
+  --toast-text: #1a1a1e;
+}
+
 html, body { height: 100%; overflow: hidden; }
 
 body {
@@ -84,6 +107,35 @@ body {
   font-size: 11px;
   color: var(--text-tertiary);
 }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: 2px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.13s;
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle:hover { color: var(--text-primary); }
+
+.theme-toggle svg { width: 14px; height: 14px; }
+
+[data-theme="dark"] .icon-sun { display: none; }
+[data-theme="dark"] .icon-moon { display: block; }
+
+.icon-sun { display: block; }
+.icon-moon { display: none; }
 
 /* Search */
 .search-wrap {
@@ -143,9 +195,9 @@ body {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: #eef5fb;
-  border-bottom: 1px solid #d4e6f4;
-  color: #3a6f8f;
+  background: var(--chat-banner-bg, #eef5fb);
+  border-bottom: 1px solid var(--chat-banner-border, #d4e6f4);
+  color: var(--chat-banner-text, #3a6f8f);
   font-size: 11.5px;
 }
 
@@ -226,7 +278,7 @@ body {
 }
 
 .card.chat-match {
-  border-left: 3px solid #7ab8d8;
+  border-left: 3px solid var(--card-match-border, #7ab8d8);
 }
 
 @keyframes fadeIn {
@@ -254,7 +306,7 @@ body {
 }
 
 .card-text mark {
-  background: #ffeab4;
+  background: var(--mark-bg, #ffeab4);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
@@ -413,6 +465,11 @@ body {
   white-space: nowrap;
   transition: opacity 0.13s, transform 0.1s;
 }
+
+[data-theme="dark"] .save-btn {
+  background: var(--surface-alt);
+  color: var(--text-primary);
+}
 .save-btn:hover { opacity: 0.85; }
 .save-btn:active { transform: scale(0.97); }
 
@@ -422,8 +479,8 @@ body {
   bottom: 100px;
   left: 50%;
   transform: translateX(-50%) translateY(10px);
-  background: var(--text-primary);
-  color: var(--bg);
+  background: var(--toast-bg, var(--text-primary));
+  color: var(--toast-text, var(--bg));
   font-size: 12px;
   padding: 7px 16px;
   border-radius: var(--radius-xl);
