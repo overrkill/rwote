@@ -46,25 +46,16 @@
     <div class="add-panel-inner">
       <textarea id="input-text" placeholder="Insight or rule to remember…" rows="2"></textarea>
       <textarea id="input-note" placeholder="Extra context (optional)…" rows="2"></textarea>
-      <div class="add-row">
-        <select id="input-tag">
-          <option value="general">General</option>
-          <option value="arrays">Arrays</option>
-          <option value="strings">Strings</option>
-          <option value="sliding-window">Sliding window</option>
-          <option value="prefix-sum">Prefix sum</option>
-          <option value="hashing">Hashing</option>
-          <option value="trees">Trees</option>
-          <option value="graphs">Graphs</option>
-          <option value="dp">DP</option>
-          <option value="sorting">Sorting</option>
-          <option value="backtracking">Backtracking</option>
-          <option value="binary-search">Binary search</option>
-          <option value="heaps">Heaps</option>
-          <option value="tries">Tries</option>
-        </select>
-        <button class="save-btn" id="save-btn">Save</button>
+
+      <!-- Tag chips picker -->
+      <div class="tag-picker" id="tag-picker"></div>
+
+      <!-- New tag input -->
+      <div class="new-tag-row">
+        <input id="new-tag-input" type="text" placeholder="+ new tag…" maxlength="24" autocomplete="off" />
       </div>
+
+      <button class="save-btn" id="save-btn">Save</button>
     </div>
   </div>
 

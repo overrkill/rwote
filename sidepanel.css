@@ -339,26 +339,66 @@ body {
 
 #input-text::placeholder, #input-note::placeholder { color: var(--text-tertiary); }
 
-.add-row {
+/* ── Tag picker ───────────────────────────────────── */
+.tag-picker {
   display: flex;
-  gap: 6px;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 2px 0;
 }
 
-#input-tag {
+.tag-pick-chip {
+  font-size: 11px;
+  font-family: inherit;
+  padding: 4px 10px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.13s;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.tag-pick-chip:hover { border-color: var(--border-focus); color: var(--text-primary); }
+.tag-pick-chip.selected {
+  background: var(--text-primary);
+  color: var(--bg);
+  border-color: var(--text-primary);
+}
+.chip-del {
+  font-size: 13px;
+  opacity: 0.45;
+  line-height: 1;
+  margin-left: 2px;
+}
+.chip-del:hover { opacity: 1; }
+.tag-pick-chip.selected .chip-del { opacity: 0.6; }
+.tag-pick-chip.selected .chip-del:hover { opacity: 1; }
+
+/* New tag input */
+.new-tag-row { display: flex; gap: 6px; }
+
+#new-tag-input {
   flex: 1;
   font-family: inherit;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   background: var(--surface-alt);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 7px 10px;
+  border-radius: var(--radius-xl);
+  padding: 6px 12px;
   outline: none;
-  cursor: pointer;
-  transition: border-color 0.13s;
+  transition: border-color 0.13s, box-shadow 0.13s;
 }
-#input-tag:focus { border-color: var(--border-focus); }
+#new-tag-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(196,184,168,0.2);
+  background: var(--surface);
+}
+#new-tag-input::placeholder { color: var(--text-tertiary); }
 
 .save-btn {
   font-family: inherit;

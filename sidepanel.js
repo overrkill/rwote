@@ -1,53 +1,98 @@
 // sidepanel.js
 
-const STORAGE_KEY = 'dsa_insights_v1';
+const STORAGE_KEY  = 'dsa_insights_v1';
+const TAGS_KEY     = 'dsa_insights_tags_v1';
 
-const TAGS = [
-  'all', 'general', 'arrays', 'strings', 'sliding-window',
-  'prefix-sum', 'hashing', 'trees', 'graphs', 'dp',
-  'sorting', 'backtracking', 'binary-search', 'heaps', 'tries'
+const DEFAULT_TAGS = [
+  'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
+  'hashing', 'trees', 'graphs', 'dp', 'sorting',
+  'backtracking', 'binary-search', 'heaps', 'tries'
 ];
 
-const TAG_LABELS = {
-  'all': 'All', 'general': 'General', 'arrays': 'Arrays',
-  'strings': 'Strings', 'sliding-window': 'Sliding window',
-  'prefix-sum': 'Prefix sum', 'hashing': 'Hashing', 'trees': 'Trees',
-  'graphs': 'Graphs', 'dp': 'DP', 'sorting': 'Sorting',
-  'backtracking': 'Backtracking', 'binary-search': 'Binary search',
-  'heaps': 'Heaps', 'tries': 'Tries'
-};
+const COLOR_POOL = [
+  { bg: '#deeef7', text: '#3a6f8f' },
+  { bg: '#e2f0e2', text: '#3a7040' },
+  { bg: '#fce8f3', text: '#8f3a72' },
+  { bg: '#fdeee2', text: '#8f5a2a' },
+  { bg: '#ede8fb', text: '#5c3a8f' },
+  { bg: '#faf0d7', text: '#8a6520' },
+  { bg: '#e8f3ee', text: '#2a6e52' },
+  { bg: '#fde8e8', text: '#8f3a3a' },
+  { bg: '#e8eef8', text: '#3a4e8f' },
+  { bg: '#f3f0e8', text: '#7a6840' },
+  { bg: '#e8f0f8', text: '#3a608f' },
+  { bg: '#f8e8f0', text: '#8f3a60' },
+  { bg: '#e8f8f5', text: '#2a7a6a' },
+  { bg: '#f0ede8', text: '#6b6158' },
+];
 
 // ── State ──────────────────────────────────────────
-let notes = [];
-let activeTag = 'all';
-let searchQuery = '';
-let chatText = '';
+let notes        = [];
+let allTags      = [...DEFAULT_TAGS];
+let tagColors    = {};
+let activeTag    = 'all';
+let selectedTag  = 'general';
+let searchQuery  = '';
+let chatText     = '';
 let chatMatchIds = new Set();
 
 // ── DOM refs ───────────────────────────────────────
-const notesEl      = document.getElementById('notes');
-const filtersEl    = document.getElementById('filters');
-const searchEl     = document.getElementById('search');
-const clearSearchEl= document.getElementById('clear-search');
-const countEl      = document.getElementById('note-count');
-const bannerEl     = document.getElementById('chat-banner');
-const bannerTextEl = document.getElementById('chat-banner-text');
-const inputText    = document.getElementById('input-text');
-const inputNote    = document.getElementById('input-note');
-const inputTag     = document.getElementById('input-tag');
-const saveBtn      = document.getElementById('save-btn');
+const notesEl       = document.getElementById('notes');
+const filtersEl     = document.getElementById('filters');
+const searchEl      = document.getElementById('search');
+const clearSearchEl = document.getElementById('clear-search');
+const countEl       = document.getElementById('note-count');
+const bannerEl      = document.getElementById('chat-banner');
+const bannerTextEl  = document.getElementById('chat-banner-text');
+const inputText     = document.getElementById('input-text');
+const inputNote     = document.getElementById('input-note');
+const tagPickerEl   = document.getElementById('tag-picker');
+const newTagInput   = document.getElementById('new-tag-input');
+const saveBtn       = document.getElementById('save-btn');
+
+// ── Tag helpers ────────────────────────────────────
+function slugify(str) {
+  return str.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+function labelOf(slug) {
+  return slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+function colorOf(slug) {
+  if (tagColors[slug]) return tagColors[slug];
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) hash = (hash * 31 + slug.charCodeAt(i)) & 0xffff;
+  const color = COLOR_POOL[hash % COLOR_POOL.length];
+  tagColors[slug] = color;
+  return color;
+}
+
+function isDefaultTag(slug) { return DEFAULT_TAGS.includes(slug); }
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 // ── Storage ────────────────────────────────────────
 async function load() {
   return new Promise(resolve => {
-    chrome.storage.local.get(STORAGE_KEY, (res) => {
+    chrome.storage.local.get([STORAGE_KEY, TAGS_KEY], (res) => {
       notes = res[STORAGE_KEY] || [];
+      const saved = res[TAGS_KEY] || {};
+      if (saved.tags) allTags = [...new Set([...DEFAULT_TAGS, ...saved.tags])];
+      if (saved.colors) tagColors = { ...saved.colors };
       resolve();
     });
   });
 }
 
-function save() {
+function saveTags() {
+  chrome.storage.local.set({ [TAGS_KEY]: { tags: allTags, colors: tagColors } });
+}
+
+function saveNotes() {
   chrome.storage.local.set({ [STORAGE_KEY]: notes });
 }
 
@@ -55,51 +100,104 @@ function save() {
 function updateChatMatches() {
   chatMatchIds.clear();
   if (!chatText) return;
-
   const chatLower = chatText.toLowerCase();
   notes.forEach(n => {
     const words = n.text.toLowerCase().split(/\s+/).filter(w => w.length > 4);
     const matchCount = words.filter(w => chatLower.includes(w)).length;
-    if (matchCount >= 2 || (words.length === 1 && matchCount === 1)) {
-      chatMatchIds.add(n.id);
-    }
+    if (matchCount >= 2 || (words.length === 1 && matchCount === 1)) chatMatchIds.add(n.id);
   });
 }
 
 function updateChatBanner() {
   const count = chatMatchIds.size;
-  if (count === 0) {
-    bannerEl.style.display = 'none';
-  } else {
-    bannerEl.style.display = 'flex';
-    bannerTextEl.textContent = `${count} note${count !== 1 ? 's' : ''} match this chat`;
-  }
+  if (count === 0) { bannerEl.style.display = 'none'; return; }
+  bannerEl.style.display = 'flex';
+  bannerTextEl.textContent = `${count} note${count !== 1 ? 's' : ''} match this chat`;
 }
 
-// ── Render ─────────────────────────────────────────
+// ── Tag picker (add panel) ─────────────────────────
+function renderTagPicker() {
+  tagPickerEl.innerHTML = allTags.map(tag => {
+    const isSelected = selectedTag === tag;
+    const label = labelOf(tag);
+    return `
+      <button class="tag-pick-chip${isSelected ? ' selected' : ''}" data-tag="${tag}">
+        ${escHtml(label)}
+        ${!isDefaultTag(tag)
+          ? `<span class="chip-del" data-del="${tag}" title="Remove">×</span>`
+          : ''}
+      </button>
+    `;
+  }).join('');
+
+  tagPickerEl.querySelectorAll('.tag-pick-chip').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      if (e.target.closest('.chip-del')) return;
+      selectedTag = btn.dataset.tag;
+      renderTagPicker();
+    });
+  });
+
+  tagPickerEl.querySelectorAll('.chip-del').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeUserTag(btn.dataset.del);
+    });
+  });
+}
+
+function addUserTag(raw) {
+  const slug = slugify(raw);
+  if (!slug) return;
+  if (allTags.includes(slug)) {
+    selectedTag = slug;
+    renderTagPicker();
+    return;
+  }
+  colorOf(slug); // assign color
+  allTags.push(slug);
+  selectedTag = slug;
+  saveTags();
+  renderTagPicker();
+  renderFilters();
+}
+
+function removeUserTag(slug) {
+  if (isDefaultTag(slug)) return;
+  allTags = allTags.filter(t => t !== slug);
+  if (selectedTag === slug) selectedTag = 'general';
+  if (activeTag === slug) activeTag = 'all';
+  saveTags();
+  renderAll();
+}
+
+// ── Filters (top bar) ──────────────────────────────
+function renderFilters() {
+  filtersEl.innerHTML = ['all', ...allTags].map(t => `
+    <button class="chip${activeTag === t ? ' active' : ''}" data-tag="${t}">
+      ${t === 'all' ? 'All' : escHtml(labelOf(t))}
+    </button>
+  `).join('');
+
+  filtersEl.querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTag = btn.dataset.tag;
+      renderFilters();
+      renderNotes();
+    });
+  });
+}
+
+// ── Notes ──────────────────────────────────────────
 function highlight(text, query) {
   if (!query) return escHtml(text);
   const esc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return escHtml(text).replace(
-    new RegExp(`(${esc})`, 'gi'),
-    '<mark>$1</mark>'
-  );
-}
-
-function escHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return escHtml(text).replace(new RegExp(`(${esc})`, 'gi'), '<mark>$1</mark>');
 }
 
 function getFiltered() {
   let result = [...notes];
-
-  if (activeTag !== 'all') {
-    result = result.filter(n => n.tag === activeTag);
-  }
-
+  if (activeTag !== 'all') result = result.filter(n => n.tag === activeTag);
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     result = result.filter(n =>
@@ -108,23 +206,12 @@ function getFiltered() {
       n.tag.toLowerCase().includes(q)
     );
   }
-
   return result;
 }
 
-function renderFilters() {
-  filtersEl.innerHTML = TAGS.map(t => `
-    <button class="chip${activeTag === t ? ' active' : ''}" data-tag="${t}">
-      ${TAG_LABELS[t]}
-    </button>
-  `).join('');
-
-  filtersEl.querySelectorAll('.chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      activeTag = btn.dataset.tag;
-      renderAll();
-    });
-  });
+function tagBadgeStyle(slug) {
+  const c = colorOf(slug);
+  return `style="background:${c.bg};color:${c.text}"`;
 }
 
 function renderNotes() {
@@ -135,8 +222,8 @@ function renderNotes() {
     const msg = searchQuery
       ? `No notes match "<strong>${escHtml(searchQuery)}</strong>"`
       : activeTag !== 'all'
-        ? `No notes in <strong>${TAG_LABELS[activeTag]}</strong> yet`
-        : `<strong>No notes yet</strong>\nSelect text and right-click → Save to DSA Insights\nor type below and hit Save`;
+        ? `No notes in <strong>${escHtml(labelOf(activeTag))}</strong> yet`
+        : `<strong>No notes yet</strong>\nSelect text → right-click → Save to DSA Insights\nor type below and hit Save`;
     notesEl.innerHTML = `<div class="empty">${msg}</div>`;
     return;
   }
@@ -146,12 +233,10 @@ function renderNotes() {
     return `
     <div class="card${isMatch ? ' chat-match' : ''}" data-id="${n.id}">
       <div class="card-body">
-        <span class="card-tag tag-${n.tag}">${TAG_LABELS[n.tag] || n.tag}</span>
+        <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
         <div class="card-text">${highlight(n.text, searchQuery)}</div>
         ${n.note ? `<div class="card-note">${highlight(n.note, searchQuery)}</div>` : ''}
-        <div class="card-meta">
-          <span class="card-date">${n.date}</span>
-        </div>
+        <div class="card-meta"><span class="card-date">${n.date}</span></div>
       </div>
       <div class="card-actions">
         <button class="card-btn copy" data-id="${n.id}" title="Copy">
@@ -166,11 +251,9 @@ function renderNotes() {
           </svg>
         </button>
       </div>
-    </div>
-    `;
+    </div>`;
   }).join('');
 
-  // Event delegation
   notesEl.querySelectorAll('.card-btn.del').forEach(btn => {
     btn.addEventListener('click', () => deleteNote(Number(btn.dataset.id)));
   });
@@ -181,23 +264,16 @@ function renderNotes() {
 
 function renderAll() {
   renderFilters();
+  renderTagPicker();
   renderNotes();
   updateChatBanner();
 }
 
 // ── Actions ────────────────────────────────────────
 function addNote(text, noteText, tag) {
-  const now = new Date();
-  const date = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  const note = {
-    id: Date.now(),
-    text: text.trim(),
-    note: noteText.trim(),
-    tag,
-    date
-  };
-  notes.unshift(note);
-  save();
+  const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  notes.unshift({ id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date });
+  saveNotes();
   updateChatMatches();
   renderAll();
   showToast('Saved');
@@ -206,15 +282,15 @@ function addNote(text, noteText, tag) {
 function deleteNote(id) {
   notes = notes.filter(n => n.id !== id);
   chatMatchIds.delete(id);
-  save();
+  saveNotes();
   renderAll();
 }
 
 function copyNote(id) {
-  const note = notes.find(n => n.id === id);
-  if (!note) return;
-  const text = note.note ? `${note.text}\n\n${note.note}` : note.text;
-  navigator.clipboard.writeText(text).then(() => showToast('Copied'));
+  const n = notes.find(n => n.id === id);
+  if (!n) return;
+  navigator.clipboard.writeText(n.note ? `${n.text}\n\n${n.note}` : n.text)
+    .then(() => showToast('Copied'));
 }
 
 // ── Toast ──────────────────────────────────────────
@@ -236,14 +312,19 @@ function showToast(msg) {
 saveBtn.addEventListener('click', () => {
   const text = inputText.value.trim();
   if (!text) { inputText.focus(); return; }
-  addNote(text, inputNote.value, inputTag.value);
+  addNote(text, inputNote.value, selectedTag);
   inputText.value = '';
   inputNote.value = '';
 });
 
 inputText.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-    saveBtn.click();
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveBtn.click();
+});
+
+newTagInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const val = newTagInput.value.trim();
+    if (val) { addUserTag(val); newTagInput.value = ''; }
   }
 });
 
@@ -261,34 +342,30 @@ clearSearchEl.addEventListener('click', () => {
   searchEl.focus();
 });
 
-// ── Message listener (from background/content) ─────
+// ── Message listener ───────────────────────────────
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'CHAT_TEXT') {
     chatText = message.text || '';
     updateChatMatches();
     updateChatBanner();
-    // Re-render notes to update chat-match highlights
     renderNotes();
   }
-
   if (message.type === 'SAVE_SELECTION') {
     const text = message.text?.trim();
     if (text) {
       inputText.value = text;
       inputText.focus();
-      showToast('Text ready — add context and save');
-      // Scroll to bottom to show input
+      showToast('Text ready — pick a tag and save');
       inputText.scrollIntoView({ behavior: 'smooth' });
     }
   }
 });
 
-// Check for pending selection (set when panel wasn't open yet)
 chrome.storage.session.get('pendingSelection', (res) => {
   if (res.pendingSelection) {
     inputText.value = res.pendingSelection;
     chrome.storage.session.remove('pendingSelection');
-    showToast('Text ready — add context and save');
+    showToast('Text ready — pick a tag and save');
   }
 });
 
