@@ -1,6 +1,6 @@
 # Rwote
 
-<span style="font-family: 'Bebas Neue', sans-serif; font-size: 2em; letter-spacing: 2px;">Rwote</span>
+<span style="font-family: 'BJ Cree', sans-serif; font-size: 2em; font-weight: 600; letter-spacing: 1px;">Rwote</span>
 
 A Chrome Extension (Manifest V3) for capturing and organizing insights from your learning sessions.
 
