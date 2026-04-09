@@ -1,5 +1,7 @@
 # Rwote
 
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 2em; letter-spacing: 2px;">Rwote</span>
+
 A Chrome Extension (Manifest V3) for capturing and organizing insights from your learning sessions.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)

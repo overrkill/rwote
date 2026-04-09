@@ -1,5 +1,7 @@
 # Rwote - User Guide
 
+<span style="font-family: 'Bebas Neue', sans-serif; font-size: 1.8em; letter-spacing: 2px;">Rwote</span>
+
 Complete documentation for using the Rwote Chrome Extension.
 
 ---
