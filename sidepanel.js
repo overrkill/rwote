@@ -46,7 +46,7 @@ const COLOR_POOL = [
 let notes        = [];
 let allTags      = [...DEFAULT_TAGS];
 let tagColors    = {};
-let activeTag    = 'all';
+let activeTags   = new Set();
 let selectedTag  = 'general';
 let searchQuery  = '';
 let chatText     = '';
@@ -202,7 +202,10 @@ function removeUserTag(slug) {
   if (isDefaultTag(slug)) return;
   allTags = allTags.filter(t => t !== slug);
   if (selectedTag === slug) selectedTag = 'general';
-  if (activeTag === slug) clearFilter();
+  if (activeTags.has(slug)) {
+    activeTags.delete(slug);
+    updateActiveTagsDisplay();
+  }
   saveTags();
   renderAll();
 }
@@ -223,8 +226,26 @@ function hideFilterInput() {
   filterInputEl.value = '';
 }
 
+function updateActiveTagsDisplay() {
+  if (activeTags.size === 0) {
+    filterClearEl.classList.remove('visible');
+    filterActiveTagEl.classList.remove('visible');
+    filterIconBtn.classList.remove('active');
+  } else {
+    filterClearEl.classList.add('visible');
+    filterIconBtn.classList.add('active');
+    if (activeTags.size === 1) {
+      const tag = [...activeTags][0];
+      filterActiveTagEl.innerHTML = `${escHtml(labelOf(tag))} <span class="remove-tag" title="Clear">×</span>`;
+    } else {
+      filterActiveTagEl.innerHTML = `${activeTags.size} tags <span class="remove-tag" title="Clear">×</span>`;
+    }
+    filterActiveTagEl.classList.add('visible');
+  }
+}
+
 function clearFilter() {
-  activeTag = 'all';
+  activeTags.clear();
   filterInputEl.value = '';
   filterClearEl.classList.remove('visible');
   filterActiveTagEl.classList.remove('visible');
@@ -234,20 +255,28 @@ function clearFilter() {
   renderNotes();
 }
 
-function applyTagFilter(tag) {
-  activeTag = tag;
-  filterInputEl.value = '';
-  filterClearEl.classList.add('visible');
-  filterActiveTagEl.innerHTML = `${escHtml(labelOf(tag))} <span class="remove-tag" title="Clear filter">×</span>`;
-  filterActiveTagEl.classList.add('visible');
-  filterIconBtn.classList.remove('active');
+function toggleTagFilter(tag) {
+  if (activeTags.has(tag)) {
+    activeTags.delete(tag);
+  } else {
+    activeTags.add(tag);
+  }
+  updateActiveTagsDisplay();
   hideFilterInput();
   renderNotes();
 }
 
 function renderTagDropdown(query) {
   if (!query) {
-    filterDropdownEl.classList.remove('open');
+    filterDropdownEl.innerHTML = allTags.map(tag => {
+      const count = notes.filter(n => n.tag === tag).length;
+      const isActive = activeTags.has(tag);
+      return `<div class="filter-dropdown-item${isActive ? ' active' : ''}" data-tag="${tag}">
+        <span>${escHtml(labelOf(tag))}</span>
+        <span class="filter-dropdown-count">${count}</span>
+      </div>`;
+    }).join('');
+    filterDropdownEl.classList.add('open');
     return;
   }
 
@@ -256,61 +285,50 @@ function renderTagDropdown(query) {
 
   if (matches.length === 0) {
     filterDropdownEl.innerHTML = '<div class="filter-dropdown-empty">No tags found</div>';
+    filterDropdownEl.classList.add('open');
   } else {
     filterDropdownEl.innerHTML = matches.map(tag => {
       const count = notes.filter(n => n.tag === tag).length;
-      return `<div class="filter-dropdown-item" data-tag="${tag}">
+      const isActive = activeTags.has(tag);
+      return `<div class="filter-dropdown-item${isActive ? ' active' : ''}" data-tag="${tag}">
         <span>${escHtml(labelOf(tag))}</span>
         <span class="filter-dropdown-count">${count}</span>
       </div>`;
     }).join('');
 
-    filterDropdownEl.querySelectorAll('.filter-dropdown-item').forEach(item => {
-      item.addEventListener('click', () => {
-        applyTagFilter(item.dataset.tag);
-      });
-    });
+    filterDropdownEl.classList.add('open');
   }
 
-  filterDropdownEl.classList.add('open');
+  filterDropdownEl.querySelectorAll('.filter-dropdown-item').forEach(item => {
+    item.addEventListener('click', () => {
+      toggleTagFilter(item.dataset.tag);
+    });
+  });
 }
 
 filterBarEl.addEventListener('click', (e) => {
   if (filterInputWrap.style.display === 'none') {
     showFilterInput();
+    renderTagDropdown('');
   }
 });
 
 filterIconBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   showFilterInput();
+  renderTagDropdown('');
 });
 
 filterInputEl.addEventListener('click', (e) => {
   e.stopPropagation();
-  const query = filterInputEl.value.trim();
-  if (query) {
-    renderTagDropdown(query);
-  }
+  renderTagDropdown(filterInputEl.value.trim());
 });
 
 filterInputEl.addEventListener('input', () => {
-  const query = filterInputEl.value.trim();
-  if (!query) {
-    filterDropdownEl.classList.remove('open');
-    return;
-  }
-  renderTagDropdown(query);
+  renderTagDropdown(filterInputEl.value.trim());
 });
 
 filterInputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const query = filterInputEl.value.trim().toLowerCase();
-    const matchingTag = allTags.find(tag => labelOf(tag).toLowerCase().includes(query));
-    if (matchingTag) {
-      applyTagFilter(matchingTag);
-    }
-  }
   if (e.key === 'Escape') {
     hideFilterInput();
   }
@@ -345,8 +363,8 @@ function highlight(text, query) {
 
 function getFiltered() {
   let result = [...notes];
-  if (activeTag !== 'all') {
-    result = result.filter(n => n.tag === activeTag);
+  if (activeTags.size > 0) {
+    result = result.filter(n => activeTags.has(n.tag));
   }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -371,8 +389,8 @@ function renderNotes() {
   if (filtered.length === 0) {
     const msg = searchQuery
       ? `No notes match "<strong>${escHtml(searchQuery)}</strong>"`
-      : activeTag !== 'all'
-        ? `No notes in <strong>${escHtml(labelOf(activeTag))}</strong>`
+      : activeTags.size > 0
+        ? `No notes match selected tags`
         : `<strong>No notes yet</strong>\nSelect text → right-click → Save to DSA Insights\nor type below and hit Save`;
     notesEl.innerHTML = `<div class="empty">${msg}</div>`;
     return;

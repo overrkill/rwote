@@ -580,6 +580,16 @@ body {
   background: var(--surface-alt);
 }
 
+.filter-dropdown-item.active {
+  background: var(--surface-alt);
+  font-weight: 500;
+}
+
+.filter-dropdown-item.active::before {
+  content: '✓ ';
+  font-weight: 600;
+}
+
 .filter-dropdown-item:first-child {
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
