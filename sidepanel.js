@@ -211,7 +211,9 @@ function removeUserTag(slug) {
 function showFilterInput() {
   filterInputWrap.style.display = 'flex';
   filterIconBtn.classList.add('active');
+  filterActiveTagEl.classList.remove('visible');
   filterInputEl.focus();
+  filterInputEl.select();
 }
 
 function hideFilterInput() {
@@ -273,11 +275,23 @@ function renderTagDropdown(query) {
   filterDropdownEl.classList.add('open');
 }
 
-filterIconBtn.addEventListener('click', showFilterInput);
+filterBarEl.addEventListener('click', (e) => {
+  if (filterInputWrap.style.display === 'none') {
+    showFilterInput();
+  }
+});
 
-filterInputEl.addEventListener('focus', () => {
+filterIconBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  showFilterInput();
+});
+
+filterInputEl.addEventListener('click', (e) => {
+  e.stopPropagation();
   const query = filterInputEl.value.trim();
-  if (query) renderTagDropdown(query);
+  if (query) {
+    renderTagDropdown(query);
+  }
 });
 
 filterInputEl.addEventListener('input', () => {
@@ -302,16 +316,20 @@ filterInputEl.addEventListener('keydown', (e) => {
   }
 });
 
-filterClearEl.addEventListener('click', clearFilter);
+filterClearEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  clearFilter();
+});
 
 filterActiveTagEl.addEventListener('click', (e) => {
   if (e.target.classList.contains('remove-tag')) {
+    e.stopPropagation();
     clearFilter();
   }
 });
 
 document.addEventListener('click', (e) => {
-  if (!filterInputWrap.contains(e.target) && !e.target.closest('.filter-icon-btn')) {
+  if (!filterBarEl.contains(e.target)) {
     if (filterDropdownEl.classList.contains('open')) {
       filterDropdownEl.classList.remove('open');
     }

@@ -448,6 +448,12 @@ body {
   padding: 8px 14px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  position: relative;
+  cursor: pointer;
+}
+
+.filter-bar:hover {
+  background: var(--surface-alt);
 }
 
 .filter-icon-btn {
@@ -480,7 +486,6 @@ body {
   background: var(--surface-alt);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  overflow: hidden;
   transition: border-color 0.13s, box-shadow 0.13s;
 }
 
@@ -544,17 +549,17 @@ body {
 .filter-dropdown {
   position: absolute;
   top: 100%;
-  left: 0;
-  right: 0;
+  left: 14px;
+  right: 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   margin-top: 4px;
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
   display: none;
-  z-index: 50;
+  z-index: 100;
 }
 
 .filter-dropdown.open {
