@@ -50,6 +50,8 @@ let selectedTag  = 'general';
 let searchQuery  = '';
 let chatText     = '';
 let chatMatchIds = new Set();
+let menuOpen     = false;
+let pendingImport = null;
 
 // ── DOM refs ───────────────────────────────────────
 const notesEl       = document.getElementById('notes');
@@ -69,6 +71,13 @@ const onboardingEl  = document.getElementById('onboarding');
 const roleGridEl    = document.getElementById('role-grid');
 const onboardSkipEl = document.getElementById('onboard-skip');
 const onboardConfirmEl = document.getElementById('onboard-confirm');
+const hamburgerBtnEl = document.getElementById('hamburger-btn');
+const hamburgerMenuEl = document.getElementById('hamburger-menu');
+const menuStatsEl = document.getElementById('menu-stats');
+const menuExportEl = document.getElementById('menu-export');
+const menuImportEl = document.getElementById('menu-import');
+const importFileEl = document.getElementById('import-file');
+const menuThemeEl = document.getElementById('menu-theme');
 
 // ── Tag helpers ────────────────────────────────────
 function slugify(str) {
@@ -458,6 +467,174 @@ function checkOnboarding() {
 onboardSkipEl.addEventListener('click', () => finishOnboarding(true));
 onboardConfirmEl.addEventListener('click', () => finishOnboarding(false));
 
+// ── Hamburger Menu ─────────────────────────────────
+function toggleMenu() {
+  menuOpen = !menuOpen;
+  hamburgerMenuEl.classList.toggle('open', menuOpen);
+}
+
+function closeMenu() {
+  menuOpen = false;
+  hamburgerMenuEl.classList.remove('open');
+}
+
+hamburgerBtnEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleMenu();
+});
+
+document.addEventListener('click', (e) => {
+  if (menuOpen && !hamburgerMenuEl.contains(e.target)) {
+    closeMenu();
+  }
+});
+
+menuStatsEl.addEventListener('click', () => { closeMenu(); showStatsModal(); });
+menuExportEl.addEventListener('click', () => { closeMenu(); exportNotes(); });
+menuImportEl.addEventListener('click', () => { closeMenu(); importFileEl.click(); });
+menuThemeEl.addEventListener('click', () => { closeMenu(); toggleTheme(); });
+
+importFileEl.addEventListener('change', handleFileSelect);
+
+// ── Theme ─────────────────────────────────────────
+function updateThemeLabel() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const label = menuThemeEl.querySelector('.theme-label');
+  if (label) label.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+}
+
+function loadTheme() {
+  chrome.storage.local.get(THEME_KEY, (res) => {
+    if (res[THEME_KEY] === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    updateThemeLabel();
+  });
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    chrome.storage.local.set({ [THEME_KEY]: 'light' });
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    chrome.storage.local.set({ [THEME_KEY]: 'dark' });
+  }
+  updateThemeLabel();
+}
+
+// ── Export/Import ──────────────────────────────────
+function exportNotes() {
+  const data = {
+    version: 1,
+    exported: new Date().toISOString().split('T')[0],
+    notes: notes,
+    tags: allTags,
+    colors: tagColors
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dsa-insights-backup-${data.exported}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported');
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.notes && Array.isArray(data.notes)) {
+        pendingImport = data;
+        showImportConfirm(data.notes.length);
+      } else {
+        showToast('Invalid file');
+      }
+    } catch {
+      showToast('Failed to parse');
+    }
+  };
+  reader.readAsText(file);
+  importFileEl.value = '';
+}
+
+function showImportConfirm(count) {
+  if (confirm(`This will replace ${count} notes. Continue?`)) {
+    applyImport();
+  }
+}
+
+function applyImport() {
+  if (!pendingImport) return;
+  notes = pendingImport.notes;
+  if (pendingImport.tags) allTags = pendingImport.tags;
+  if (pendingImport.colors) tagColors = pendingImport.colors;
+  saveNotes();
+  saveTags();
+  pendingImport = null;
+  updateChatMatches();
+  renderAll();
+  showToast('Imported');
+}
+
+// ── Tag Stats ──────────────────────────────────────
+function computeTagStats() {
+  const byTag = {};
+  let total = notes.length;
+  notes.forEach(n => {
+    byTag[n.tag] = (byTag[n.tag] || 0) + 1;
+  });
+  const sorted = Object.entries(byTag).sort((a, b) => b[1] - a[1]);
+  const mostUsed = sorted[0]?.[0] || null;
+  const leastUsed = sorted[sorted.length - 1]?.[0] || null;
+  return { total, byTag, mostUsed, leastUsed };
+}
+
+function showStatsModal() {
+  const stats = computeTagStats();
+  const maxCount = Math.max(...Object.values(stats.byTag), 1);
+  const statsHtml = Object.entries(stats.byTag)
+    .sort((a, b) => b[1] - a[1])
+    .map(([tag, count]) => {
+      const pct = (count / maxCount) * 100;
+      return `<div class="stat-row">
+        <span class="stat-tag">${escHtml(labelOf(tag))}</span>
+        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${pct}%"></div></div>
+        <span class="stat-count">${count}</span>
+      </div>`;
+    }).join('');
+
+  const html = `<div class="modal-overlay" id="stats-modal">
+    <div class="modal-content stats-modal">
+      <div class="modal-header">
+        <h3>Tag Statistics</h3>
+        <button class="modal-close" id="stats-close">×</button>
+      </div>
+      <div class="stats-body">
+        <div class="stats-total">${stats.total} total notes</div>
+        ${statsHtml || '<div class="stats-empty">No notes yet</div>'}
+        ${stats.mostUsed ? `<div class="stats-summary">
+          <span>Most used: <strong>${escHtml(labelOf(stats.mostUsed))}</strong></span>
+          ${stats.leastUsed ? `<span>Least used: <strong>${escHtml(labelOf(stats.leastUsed))}</strong></span>` : ''}
+        </div>` : ''}
+      </div>
+    </div>
+  </div>`;
+
+  const overlay = document.createElement('div');
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+
+  document.getElementById('stats-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
 // ── Init ───────────────────────────────────────────
 loadTheme();
 checkOnboarding();
@@ -465,5 +642,3 @@ load().then(() => {
   updateChatMatches();
   renderAll();
 });
-
-themeToggleEl.addEventListener('click', toggleTheme);

@@ -16,15 +16,51 @@
       <span class="logo">DSA Insights</span>
       <div class="header-right">
         <span class="note-count" id="note-count">0 notes</span>
-        <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
-          <svg class="icon-sun" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.3"/>
-            <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M11.89 4.11l1.06-1.06M3.05 12.95l1.06-1.06" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
-          <svg class="icon-moon" viewBox="0 0 16 16" fill="none">
-            <path d="M13.5 9.5A5.5 5.5 0 016.5 2.5a5.5 5.5 0 000 11 5.5 5.5 0 007-4z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <button class="hamburger-btn" id="hamburger-btn" title="Menu">
+          <svg class="icon-hamburger" viewBox="0 0 16 16" fill="none">
+            <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
+        <div class="hamburger-menu" id="hamburger-menu">
+          <div class="hamburger-header">
+            <svg viewBox="0 0 16 16" fill="none" width="16" height="16">
+              <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>Menu</span>
+          </div>
+          <button class="hamburger-item" id="menu-stats">
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+              <rect x="1" y="8" width="3" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/>
+              <rect x="6" y="5" width="3" height="10" rx="1" stroke="currentColor" stroke-width="1.3"/>
+              <rect x="11" y="2" width="3" height="13" rx="1" stroke="currentColor" stroke-width="1.3"/>
+            </svg>
+            <span>Tag Statistics</span>
+          </button>
+          <button class="hamburger-item" id="menu-export">
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+              <path d="M8 2v8M4 6l4-4 4 4M2 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Export</span>
+          </button>
+          <button class="hamburger-item" id="menu-import">
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+              <path d="M8 10V2M4 6l4 4 4-4M2 14h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Import</span>
+          </button>
+          <input type="file" id="import-file" accept=".json" hidden />
+          <div class="hamburger-divider"></div>
+          <button class="hamburger-item theme-item" id="menu-theme">
+            <svg class="icon-sun" viewBox="0 0 16 16" fill="none" width="14" height="14">
+              <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M11.89 4.11l1.06-1.06M3.05 12.95l1.06-1.06" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 16 16" fill="none" width="14" height="14">
+              <path d="M13.5 9.5A5.5 5.5 0 016.5 2.5a5.5 5.5 0 000 11 5.5 5.5 0 007-4z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="theme-label">Dark Mode</span>
+          </button>
+        </div>
       </div>
     </div>
     <div class="search-wrap">
