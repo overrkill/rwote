@@ -12,7 +12,7 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(consol
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'save-insight',
-    title: 'Save to DSA Insights',
+    title: 'Save to Rwote',
     contexts: ['selection']
   });
 });

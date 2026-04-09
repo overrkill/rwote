@@ -1,6 +1,6 @@
-# DSA Insights
+# Rwote
 
-A Chrome Extension (Manifest V3) for saving, tagging, and searching key insights from your DSA (Data Structures & Algorithms) study sessions.
+A Chrome Extension (Manifest V3) for capturing and organizing insights from your learning sessions.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Manifest](https://img.shields.io/badge/manifest-3-green)
@@ -31,12 +31,12 @@ A Chrome Extension (Manifest V3) for saving, tagging, and searching key insights
 1. Navigate to [claude.ai](https://claude.ai) (or any supported site)
 2. Click the extension icon in Chrome's toolbar
 3. Complete the onboarding flow by selecting your role
-4. Start saving insights!
+4. Start capturing insights!
 
 ## Project Structure
 
 ```
-dsa-insights/
+rwote/
 ├── manifest.json      # Extension configuration
 ├── background.js      # Service worker (context menus, message relay)
 ├── content.js         # Content script (text extraction, keyboard shortcuts)
@@ -81,10 +81,11 @@ All data persists via `chrome.storage.local`:
 
 | Key | Structure |
 |-----|-----------|
-| `dsa_insights_v1` | `Array<{id, text, note, tag, date}>` |
-| `dsa_insights_tags_v1` | `{tags: string[], colors: {[tag]: {bg, text}}}` |
-| `dsa_insights_theme_v1` | `'light' \| 'dark'` |
-| `dsa_insights_onboarded_v1` | `boolean` |
+| `rwote_v1` | `Array<{id, text, note, tag, date, pinned}>` |
+| `rwote_tags_v1` | `{tags: string[], colors: {[tag]: {bg, text}}}` |
+| `rwote_theme_v1` | `'light' \| 'dark'` |
+| `rwote_onboarded_v1` | `boolean` |
+| `rwote_size_v1` | `'small' \| 'medium' \| 'large'` |
 
 Session storage (`chrome.storage.session`) handles ephemeral state:
 - `pendingSelection`: Text selected while panel was closed
@@ -156,4 +157,9 @@ After editing any source file:
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License
+
+## Changelog
+
+### v1.0.0
+- Initial release with tagging, search, dark mode, and export/import

@@ -1,6 +1,6 @@
-# DSA Insights - User Guide
+# Rwote - User Guide
 
-Complete documentation for using the DSA Insights Chrome Extension.
+Complete documentation for using the Rwote Chrome Extension.
 
 ---
 
@@ -18,7 +18,7 @@ Your preferences are saved automatically.
 
 ### Opening the Extension
 
-Click the **DSA Insights** icon in Chrome's toolbar, or use the side panel shortcut.
+Click the **Rwote** icon in Chrome's toolbar, or use the side panel shortcut.
 
 ---
 
@@ -27,7 +27,7 @@ Click the **DSA Insights** icon in Chrome's toolbar, or use the side panel short
 ### Method 1: Text Selection (Recommended)
 
 1. Select text on any webpage
-2. Right-click → **"Save to DSA Insights"**
+2. Right-click → **"Save to Rwote"**
 3. The side panel opens with your text ready
 4. Choose a tag and click **Save**
 
@@ -48,9 +48,9 @@ Click the **DSA Insights** icon in Chrome's toolbar, or use the side panel short
 
 ## Managing Tags
 
-### Default Tags (DSA)
+### Default Tags
 
-The extension comes with these DSA-focused tags:
+The extension comes with these default tags:
 
 | Tag | Use Case |
 |-----|----------|
@@ -144,7 +144,7 @@ Each saved note displays as a card with:
 
 ## Chat Matching (Claude.ai)
 
-When viewing Claude.ai conversations, DSA Insights:
+When viewing Claude.ai conversations, Rwote:
 
 1. **Monitors** the chat content automatically
 2. **Matches** your saved notes against the conversation
@@ -177,7 +177,7 @@ View a visual breakdown of your notes by tag:
 Download all your notes as a JSON backup file:
 
 1. Click **Export** in the menu
-2. File saves as `dsa-insights-backup-YYYY-MM-DD.json`
+2. File saves as `rwote-backup-YYYY-MM-DD.json`
 3. Includes all notes, tags, and custom colors
 
 ### Import
@@ -238,7 +238,7 @@ All data is stored locally in Chrome:
 ### Extension Not Loading
 
 1. Ensure **Developer mode** is enabled in `chrome://extensions/`
-2. Click the refresh icon on the DSA Insights card
+2. Click the refresh icon on the Rwote card
 3. Check for error messages in the extension card
 
 ### Side Panel Won't Open
@@ -285,13 +285,13 @@ When selecting a role during onboarding, you get profession-specific tags:
 A: Yes! While optimized for Claude.ai, the extension works on any website. Just select text and use Alt+S or right-click.
 
 **Q: How do I add the extension to my toolbar?**
-A: Click the puzzle piece icon in Chrome's toolbar → find "DSA Insights" → click the pin icon.
+A: Click the puzzle piece icon in Chrome's toolbar → find "Rwote" → click the pin icon.
 
 **Q: Can I sync notes across devices?**
 A: Not natively. Use Export/Import to manually sync via Google Drive, Dropbox, or similar.
 
 **Q: How do I reset the extension?**
-A: Clear extension data via `chrome://extensions/` → DSA Insights → "Clear data"
+A: Clear extension data via `chrome://extensions/` → Rwote → "Clear data"
 
 **Q: What happens if I uninstall?**
 A: All data is lost. Always Export a backup before uninstalling.

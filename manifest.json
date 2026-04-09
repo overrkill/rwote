@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "DSA Insights",
+  "name": "Rwote",
   "version": "1.0.0",
-  "description": "Save, tag, and search key insights from your DSA study sessions.",
+  "description": "Capture and organize insights from your learning sessions.",
   "permissions": [
     "storage",
     "contextMenus",
@@ -30,7 +30,7 @@
     }
   ],
   "action": {
-    "default_title": "Open DSA Insights",
+    "default_title": "Open Rwote",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a **Chrome Extension (Manifest V3)** for saving, tagging, and searching DSA (Data Structures & Algorithms) study insights. It consists of:
+This is a **Chrome Extension (Manifest V3)** for capturing and organizing insights from learning sessions. It consists of:
 
 - `background.js` - Service worker handling context menus and message relay
 - `content.js` - Content script for extracting text from Claude.ai pages
@@ -16,7 +16,7 @@ This is a **Chrome Extension (Manifest V3)** for saving, tagging, and searching 
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable **Developer mode** (toggle in top-right)
 3. Click **Load unpacked**
-4. Select the `dsa-insights` directory
+4. Select the `rwote` directory
 
 ### Linting
 This project uses **ESLint** with a simple config targeting ES2020:
@@ -32,6 +32,9 @@ No automated tests are configured. Manual testing via:
 3. Test: right-click selected text → "Save to DSA Insights"
 4. Test: Alt+S keyboard shortcut to save selection
 5. Test: side panel CRUD operations
+6. Test: keyboard navigation (j/k arrows, Enter, d, p, /)
+7. Test: undo delete
+8. Test: pin note functionality
 
 ### Loading in Chrome
 ```bash
@@ -51,7 +54,7 @@ No automated tests are configured. Manual testing via:
 #### Naming Conventions
 ```javascript
 // Constants: SCREAMING_SNAKE_CASE for magic values
-const STORAGE_KEY  = 'dsa_insights_v1';
+const STORAGE_KEY  = 'rwote_v1';
 const DEFAULT_TAGS = ['general', 'arrays', ...];
 
 // Variables/functions: camelCase
@@ -182,7 +185,7 @@ No imports (vanilla JS) — all code is self-contained in each file.
 
 ### File Organization
 ```
-dsa-insights/
+rwote/
 ├── manifest.json      # Extension config (permissions, resources)
 ├── background.js     # Service worker (context menus, messages)
 ├── content.js        # Content script (text extraction)

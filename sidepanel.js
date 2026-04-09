@@ -1,10 +1,10 @@
 // sidepanel.js
 
-const STORAGE_KEY  = 'dsa_insights_v1';
-const TAGS_KEY     = 'dsa_insights_tags_v1';
-const THEME_KEY    = 'dsa_insights_theme_v1';
-const ONBOARD_KEY  = 'dsa_insights_onboarded_v1';
-const SIZE_KEY     = 'dsa_insights_size_v1';
+const STORAGE_KEY  = 'rwote_v1';
+const TAGS_KEY     = 'rwote_tags_v1';
+const THEME_KEY    = 'rwote_theme_v1';
+const ONBOARD_KEY  = 'rwote_onboarded_v1';
+const SIZE_KEY     = 'rwote_size_v1';
 
 const ROLE_TAGS = {
   'software-engineer': { name: 'Software Engineer', tags: ['arrays', 'strings', 'trees', 'graphs', 'dp'] },
@@ -752,7 +752,7 @@ function exportNotes() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `dsa-insights-backup-${data.exported}.json`;
+  a.download = `rwote-backup-${data.exported}.json`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('Exported');
