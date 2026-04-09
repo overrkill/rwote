@@ -495,6 +495,119 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ── Onboarding ──────────────────────────────────── */
+.onboarding {
+  position: fixed;
+  inset: 0;
+  background: var(--surface);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.onboarding-content {
+  width: 100%;
+  max-width: 400px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.onboarding-content h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.onboarding-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.role-card {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-alt);
+  cursor: pointer;
+  transition: all 0.13s;
+}
+
+.role-card:hover {
+  border-color: var(--border-focus);
+}
+
+.role-card.selected {
+  border-color: var(--text-primary);
+  background: var(--surface);
+}
+
+.role-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.role-card-tags {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.onboarding-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.onboard-skip {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 20px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.13s;
+}
+
+.onboard-skip:hover {
+  border-color: var(--border-focus);
+  color: var(--text-primary);
+}
+
+.onboard-confirm {
+  background: var(--accent-btn);
+  border: none;
+  color: var(--bg);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 24px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity 0.13s;
+}
+
+.onboard-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.onboard-confirm:not(:disabled):hover {
+  opacity: 0.85;
+}
+
 /* ── Tag color classes ────────────────────────────── */
 .tag-general        { background: var(--tag-general);        color: var(--tag-general-text); }
 .tag-arrays         { background: var(--tag-arrays);         color: var(--tag-arrays-text); }

@@ -3,6 +3,20 @@
 const STORAGE_KEY  = 'dsa_insights_v1';
 const TAGS_KEY     = 'dsa_insights_tags_v1';
 const THEME_KEY    = 'dsa_insights_theme_v1';
+const ONBOARD_KEY  = 'dsa_insights_onboarded_v1';
+
+const ROLE_TAGS = {
+  'software-engineer': { name: 'Software Engineer', tags: ['arrays', 'strings', 'trees', 'graphs', 'dp'] },
+  'data-scientist': { name: 'Data Scientist', tags: ['statistics', 'visualization', 'pandas', 'ml', 'cleaning'] },
+  'frontend-dev': { name: 'Frontend Developer', tags: ['css', 'react', 'performance', 'accessibility', 'responsive'] },
+  'backend-dev': { name: 'Backend Developer', tags: ['apis', 'databases', 'auth', 'caching', 'testing'] },
+  'devops': { name: 'DevOps Engineer', tags: ['docker', 'ci-cd', 'linux', 'monitoring', 'shell'] },
+  'mobile-dev': { name: 'Mobile Developer', tags: ['react-native', 'navigation', 'state', 'performance', 'gestures'] },
+  'ml-engineer': { name: 'ML Engineer', tags: ['neural-networks', 'training', 'datasets', 'optimization', 'evaluation'] },
+  'security': { name: 'Security Engineer', tags: ['encryption', 'authentication', 'vulnerabilities', 'compliance', 'forensics'] },
+  'technical-writer': { name: 'Technical Writer', tags: ['documentation', 'formatting', 'examples', 'readability', 'structure'] },
+  'system-designer': { name: 'System Designer', tags: ['scalability', 'load-balancing', 'databases', 'caching', 'microservices'] },
+};
 
 const DEFAULT_TAGS = [
   'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
@@ -51,6 +65,10 @@ const tagPickerEl   = document.getElementById('tag-picker');
 const newTagInput   = document.getElementById('new-tag-input');
 const saveBtn       = document.getElementById('save-btn');
 const themeToggleEl = document.getElementById('theme-toggle');
+const onboardingEl  = document.getElementById('onboarding');
+const roleGridEl    = document.getElementById('role-grid');
+const onboardSkipEl = document.getElementById('onboard-skip');
+const onboardConfirmEl = document.getElementById('onboard-confirm');
 
 // ── Tag helpers ────────────────────────────────────
 function slugify(str) {
@@ -391,8 +409,58 @@ function toggleTheme() {
   }
 }
 
+// ── Onboarding ─────────────────────────────────────
+let selectedRole = null;
+
+function renderRoleGrid() {
+  roleGridEl.innerHTML = Object.entries(ROLE_TAGS).map(([slug, data]) => `
+    <div class="role-card${selectedRole === slug ? ' selected' : ''}" data-role="${slug}">
+      <div class="role-card-name">${data.name}</div>
+      <div class="role-card-tags">${data.tags.join(', ')}</div>
+    </div>
+  `).join('');
+
+  roleGridEl.querySelectorAll('.role-card').forEach(card => {
+    card.addEventListener('click', () => {
+      selectedRole = card.dataset.role;
+      renderRoleGrid();
+      onboardConfirmEl.disabled = false;
+    });
+  });
+}
+
+function applyRoleTags() {
+  if (selectedRole && ROLE_TAGS[selectedRole]) {
+    allTags = ROLE_TAGS[selectedRole].tags;
+    allTags.forEach(tag => colorOf(tag));
+    saveTags();
+  }
+}
+
+function finishOnboarding(skipped) {
+  onboardingEl.style.display = 'none';
+  if (!skipped) applyRoleTags();
+  chrome.storage.local.set({ [ONBOARD_KEY]: true });
+  renderAll();
+}
+
+function checkOnboarding() {
+  chrome.storage.local.get(ONBOARD_KEY, (res) => {
+    if (res[ONBOARD_KEY]) {
+      onboardingEl.style.display = 'none';
+    } else {
+      renderRoleGrid();
+      onboardingEl.style.display = 'flex';
+    }
+  });
+}
+
+onboardSkipEl.addEventListener('click', () => finishOnboarding(true));
+onboardConfirmEl.addEventListener('click', () => finishOnboarding(false));
+
 // ── Init ───────────────────────────────────────────
 loadTheme();
+checkOnboarding();
 load().then(() => {
   updateChatMatches();
   renderAll();
