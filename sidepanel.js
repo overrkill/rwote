@@ -4,6 +4,7 @@ const STORAGE_KEY  = 'dsa_insights_v1';
 const TAGS_KEY     = 'dsa_insights_tags_v1';
 const THEME_KEY    = 'dsa_insights_theme_v1';
 const ONBOARD_KEY  = 'dsa_insights_onboarded_v1';
+const SIZE_KEY     = 'dsa_insights_size_v1';
 
 const ROLE_TAGS = {
   'software-engineer': { name: 'Software Engineer', tags: ['arrays', 'strings', 'trees', 'graphs', 'dp'] },
@@ -496,6 +497,32 @@ menuThemeEl.addEventListener('click', () => { closeMenu(); toggleTheme(); });
 
 importFileEl.addEventListener('change', handleFileSelect);
 
+// ── Font Size ─────────────────────────────────────
+function loadFontSize() {
+  chrome.storage.local.get(SIZE_KEY, (res) => {
+    const size = res[SIZE_KEY] || 'medium';
+    document.documentElement.setAttribute('data-size', size);
+    updateSizeButtons(size);
+  });
+}
+
+function setFontSize(size) {
+  document.documentElement.setAttribute('data-size', size);
+  chrome.storage.local.set({ [SIZE_KEY]: size });
+  updateSizeButtons(size);
+}
+
+function updateSizeButtons(active) {
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.size === active);
+  });
+}
+
+// Font size button listeners
+document.querySelectorAll('.size-btn').forEach(btn => {
+  btn.addEventListener('click', () => setFontSize(btn.dataset.size));
+});
+
 // ── Theme ─────────────────────────────────────────
 function updateThemeLabel() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -637,6 +664,7 @@ function showStatsModal() {
 
 // ── Init ───────────────────────────────────────────
 loadTheme();
+loadFontSize();
 checkOnboarding();
 load().then(() => {
   updateChatMatches();
