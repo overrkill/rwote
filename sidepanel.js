@@ -53,6 +53,9 @@ let chatText     = '';
 let chatMatchIds = new Set();
 let menuOpen     = false;
 let pendingImport = null;
+let selectedNoteIndex = -1;
+let deletedNote = null;
+let deleteTimer = null;
 
 // ── DOM refs ───────────────────────────────────────
 const notesEl       = document.getElementById('notes');
@@ -380,6 +383,10 @@ function tagBadgeStyle(slug) {
 function renderNotes() {
   const filtered = getFiltered();
   countEl.textContent = `${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+  
+  if (selectedNoteIndex >= filtered.length) {
+    selectedNoteIndex = filtered.length - 1;
+  }
 
   if (filtered.length === 0) {
     const msg = searchQuery
@@ -391,10 +398,17 @@ function renderNotes() {
     return;
   }
 
-  notesEl.innerHTML = filtered.map(n => {
+  const sorted = [...filtered].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return b.id - a.id;
+  });
+
+  notesEl.innerHTML = sorted.map((n, idx) => {
     const isMatch = chatMatchIds.has(n.id);
+    const realIndex = filtered.indexOf(n);
     return `
-    <div class="card${isMatch ? ' chat-match' : ''}" data-id="${n.id}">
+    <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
       <div class="card-body">
         <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
         <div class="card-text">${highlight(n.text, searchQuery)}</div>
@@ -402,6 +416,11 @@ function renderNotes() {
         <div class="card-meta"><span class="card-date">${n.date}</span></div>
       </div>
       <div class="card-actions">
+        <button class="card-btn pin${n.pinned ? ' active' : ''}" data-id="${n.id}" title="${n.pinned ? 'Unpin' : 'Pin'}">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <path d="M9 2l2 2-6 6 2 2 6-6 2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
         <button class="card-btn copy" data-id="${n.id}" title="Copy">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
             <rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3"/>
@@ -423,6 +442,9 @@ function renderNotes() {
   notesEl.querySelectorAll('.card-btn.copy').forEach(btn => {
     btn.addEventListener('click', () => copyNote(Number(btn.dataset.id)));
   });
+  notesEl.querySelectorAll('.card-btn.pin').forEach(btn => {
+    btn.addEventListener('click', () => togglePin(Number(btn.dataset.id)));
+  });
 }
 
 function renderAll() {
@@ -434,7 +456,7 @@ function renderAll() {
 // ── Actions ────────────────────────────────────────
 function addNote(text, noteText, tag) {
   const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  notes.unshift({ id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date });
+  notes.unshift({ id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date, pinned: false });
   saveNotes();
   updateChatMatches();
   renderAll();
@@ -442,8 +464,42 @@ function addNote(text, noteText, tag) {
 }
 
 function deleteNote(id) {
+  const noteToDelete = notes.find(n => n.id === id);
+  if (!noteToDelete) return;
+  
+  deletedNote = noteToDelete;
   notes = notes.filter(n => n.id !== id);
   chatMatchIds.delete(id);
+  saveNotes();
+  renderAll();
+  
+  clearTimeout(deleteTimer);
+  showToast('Note deleted — <span id="undo-delete">Undo</span>');
+  
+  document.getElementById('undo-delete')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    undoDelete();
+  });
+  
+  deleteTimer = setTimeout(() => {
+    deletedNote = null;
+  }, 5000);
+}
+
+function undoDelete() {
+  if (!deletedNote) return;
+  notes.unshift(deletedNote);
+  deletedNote = null;
+  clearTimeout(deleteTimer);
+  saveNotes();
+  renderAll();
+  showToast('Note restored');
+}
+
+function togglePin(id) {
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+  note.pinned = !note.pinned;
   saveNotes();
   renderAll();
 }
@@ -464,10 +520,10 @@ function showToast(msg) {
     toast.className = 'toast';
     document.body.appendChild(toast);
   }
-  toast.textContent = msg;
+  toast.innerHTML = msg;
   toast.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 5000);
 }
 
 // ── Event listeners ────────────────────────────────
@@ -793,6 +849,93 @@ function showStatsModal() {
   document.getElementById('stats-close').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
+
+// ── Keyboard Navigation ─────────────────────────────
+function updateSelectedCard() {
+  const cards = notesEl.querySelectorAll('.card');
+  cards.forEach((card, idx) => {
+    const realIndex = parseInt(card.dataset.index);
+    card.classList.toggle('selected', realIndex === selectedNoteIndex);
+  });
+  
+  if (selectedNoteIndex >= 0) {
+    const selectedCard = notesEl.querySelector(`.card[data-index="${selectedNoteIndex}"]`);
+    if (selectedCard) {
+      selectedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+}
+
+function handleKeyboard(e) {
+  const activeEl = document.activeElement;
+  const isInputFocused = activeEl === inputText || activeEl === inputNote || 
+                         activeEl === searchEl || activeEl === filterInputEl ||
+                         activeEl === newTagInput || activeEl.tagName === 'INPUT' ||
+                         activeEl.tagName === 'TEXTAREA';
+  
+  if (e.key === 'Escape') {
+    selectedNoteIndex = -1;
+    updateSelectedCard();
+    return;
+  }
+  
+  if (isInputFocused) return;
+  
+  const filtered = getFiltered();
+  if (filtered.length === 0) return;
+  
+  if (e.key === '/' || (e.ctrlKey && e.key === 'k')) {
+    e.preventDefault();
+    searchEl.focus();
+    searchEl.select();
+    return;
+  }
+  
+  if (e.key === 'j' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (selectedNoteIndex === -1) {
+      selectedNoteIndex = 0;
+    } else {
+      selectedNoteIndex = Math.min(selectedNoteIndex + 1, filtered.length - 1);
+    }
+    updateSelectedCard();
+    return;
+  }
+  
+  if (e.key === 'k' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (selectedNoteIndex === -1) {
+      selectedNoteIndex = filtered.length - 1;
+    } else {
+      selectedNoteIndex = Math.max(selectedNoteIndex - 1, 0);
+    }
+    updateSelectedCard();
+    return;
+  }
+  
+  if (e.key === 'Enter' && selectedNoteIndex >= 0) {
+    e.preventDefault();
+    const note = filtered[selectedNoteIndex];
+    if (note) copyNote(note.id);
+    return;
+  }
+  
+  if (e.key === 'd' && selectedNoteIndex >= 0) {
+    e.preventDefault();
+    const note = filtered[selectedNoteIndex];
+    if (note) deleteNote(note.id);
+    return;
+  }
+  
+  if (e.key === 'p' && selectedNoteIndex >= 0) {
+    e.preventDefault();
+    const note = filtered[selectedNoteIndex];
+    if (note) togglePin(note.id);
+    return;
+  }
+}
+
+document.addEventListener('keydown', handleKeyboard);
 
 // ── Init ───────────────────────────────────────────
 loadTheme();
