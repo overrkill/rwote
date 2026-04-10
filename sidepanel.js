@@ -458,7 +458,7 @@ function deleteNote(id) {
 
 function editNote(id, newText, newNote) {
   const note = notes.find(n => n.id === id);
-  if (!note) return;
+  if (!note) return false;
   
   const oldTags = extractTags(note.text);
   note.text = newText.trim();
@@ -477,6 +477,7 @@ function editNote(id, newText, newNote) {
   renderAll();
   renderFilters();
   showToast('Updated');
+  return true;
 }
 
 function showEditModal(id) {
@@ -514,26 +515,30 @@ function showEditModal(id) {
   const editCloseEl = document.getElementById('edit-modal-close');
   
   function closeModal() {
-    modalOverlay.remove();
+    if (modalOverlay && modalOverlay.parentNode) {
+      modalOverlay.remove();
+    }
   }
   
-  editSaveEl.addEventListener('click', () => {
-    editNote(id, editTextEl.value, editNoteEl.value);
-    closeModal();
+  editSaveEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const success = editNote(id, editTextEl.value, editNoteEl.value);
+    if (success !== false) closeModal();
   });
   
-  editCancelEl.addEventListener('click', () => closeModal());
-  editCloseEl.addEventListener('click', () => closeModal());
+  editCancelEl.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
+  editCloseEl.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
   modalOverlay.addEventListener('click', (e) => {
     if (e.target === modalOverlay) closeModal();
   });
   
   editTextEl.addEventListener('keydown', (e) => {
+    e.stopPropagation();
     if (e.key === 'Escape') closeModal();
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      editNote(id, editTextEl.value, editNoteEl.value);
-      closeModal();
+      const success = editNote(id, editTextEl.value, editNoteEl.value);
+      if (success !== false) closeModal();
     }
   });
   
