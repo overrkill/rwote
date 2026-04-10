@@ -120,7 +120,9 @@ async function load() {
     chrome.storage.local.get([STORAGE_KEY, TAGS_KEY], (res) => {
       notes = res[STORAGE_KEY] || [];
       const saved = res[TAGS_KEY] || {};
-      if (saved.tags) allTags = [...new Set([...DEFAULT_TAGS, ...saved.tags])];
+      if (saved.tags && saved.tags.length > 0) {
+        allTags = saved.tags;
+      }
       if (saved.colors) tagColors = { ...saved.colors };
       resolve();
     });
