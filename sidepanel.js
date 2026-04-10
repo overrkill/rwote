@@ -420,15 +420,10 @@ function renderNotes() {
           ${n.pinned ? '📌' : '📍'}
         </button>
         <button class="card-btn copy" data-id="${n.id}" title="Copy">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-            <rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3"/>
-            <path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
+          📋
         </button>
         <button class="card-btn del" data-id="${n.id}" title="Delete">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
+          ✕
         </button>
       </div>
     </div>`;
@@ -713,7 +708,9 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 function updateThemeLabel() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const label = menuThemeEl.querySelector('.theme-label');
+  const icon = menuThemeEl.querySelector('.theme-icon');
   if (label) label.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  if (icon) icon.textContent = isDark ? '🌙' : '☀️';
 }
 
 function loadTheme() {
