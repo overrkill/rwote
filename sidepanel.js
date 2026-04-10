@@ -514,31 +514,35 @@ function showEditModal(id) {
   const editCancelEl = document.getElementById('edit-cancel');
   const editCloseEl = document.getElementById('edit-modal-close');
   
-  function closeModal() {
-    if (modalOverlay && modalOverlay.parentNode) {
-      modalOverlay.remove();
-    }
-  }
+  const closeEditModal = () => {
+    document.body.removeChild(overlay);
+  };
   
-  editSaveEl.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const success = editNote(id, editTextEl.value, editNoteEl.value);
-    if (success !== false) closeModal();
+  editSaveEl.addEventListener('click', () => {
+    try {
+      editNote(id, editTextEl.value, editNoteEl.value);
+    } catch (e) {
+      console.error('Edit failed:', e);
+    }
+    closeEditModal();
   });
   
-  editCancelEl.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
-  editCloseEl.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
+  editCancelEl.addEventListener('click', closeEditModal);
+  editCloseEl.addEventListener('click', closeEditModal);
   modalOverlay.addEventListener('click', (e) => {
-    if (e.target === modalOverlay) closeModal();
+    if (e.target === modalOverlay) closeEditModal();
   });
   
   editTextEl.addEventListener('keydown', (e) => {
-    e.stopPropagation();
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') closeEditModal();
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      const success = editNote(id, editTextEl.value, editNoteEl.value);
-      if (success !== false) closeModal();
+      try {
+        editNote(id, editTextEl.value, editNoteEl.value);
+      } catch (err) {
+        console.error('Edit failed:', err);
+      }
+      closeEditModal();
     }
   });
   
