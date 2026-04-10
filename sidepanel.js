@@ -20,7 +20,7 @@ const ROLE_TAGS = {
 };
 
 const DEFAULT_TAGS = [
-  'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
+  'uncategorized', 'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
   'hashing', 'trees', 'graphs', 'dp', 'sorting',
   'backtracking', 'binary-search', 'heaps', 'tries'
 ];
@@ -47,7 +47,6 @@ let notes        = [];
 let allTags      = [...DEFAULT_TAGS];
 let tagColors    = {};
 let activeTags   = new Set();
-let selectedTag  = 'general';
 let searchQuery  = '';
 let chatText     = '';
 let chatMatchIds = new Set();
@@ -56,6 +55,9 @@ let pendingImport = null;
 let selectedNoteIndex = -1;
 let deletedNote = null;
 let deleteTimer = null;
+let autocompleteOpen = false;
+let autocompleteTags = [];
+let selectedAutocompleteIndex = -1;
 
 // ── DOM refs ───────────────────────────────────────
 const notesEl       = document.getElementById('notes');
@@ -66,8 +68,6 @@ const bannerEl      = document.getElementById('chat-banner');
 const bannerTextEl  = document.getElementById('chat-banner-text');
 const inputText     = document.getElementById('input-text');
 const inputNote     = document.getElementById('input-note');
-const tagPickerEl   = document.getElementById('tag-picker');
-const newTagInput   = document.getElementById('new-tag-input');
 const saveBtn       = document.getElementById('save-btn');
 const themeToggleEl = document.getElementById('theme-toggle');
 const onboardingEl  = document.getElementById('onboarding');
@@ -88,6 +88,7 @@ const filterClearEl = document.getElementById('filter-clear');
 const filterBarEl = document.getElementById('filter-bar');
 const filterDropdownEl = document.getElementById('filter-dropdown');
 const filterChipsEl = document.getElementById('filter-chips');
+const tagAutocompleteEl = document.getElementById('tag-autocomplete');
 
 // ── Tag helpers ────────────────────────────────────
 function slugify(str) {
@@ -108,6 +109,25 @@ function colorOf(slug) {
 }
 
 function isDefaultTag(slug) { return DEFAULT_TAGS.includes(slug); }
+
+function extractTags(text) {
+  const matches = text.match(/#(\w+)/g) || [];
+  return [...new Set(matches.map(m => slugify(m.slice(1))))];
+}
+
+function ensureTagsExist(tags) {
+  let changed = false;
+  tags.forEach(tag => {
+    if (!allTags.includes(tag)) {
+      colorOf(tag);
+      allTags.push(tag);
+      changed = true;
+    }
+  });
+  if (changed) {
+    saveTags();
+  }
+}
 
 function escHtml(str) {
   return String(str)
@@ -156,66 +176,7 @@ function updateChatBanner() {
   bannerTextEl.textContent = `${count} note${count !== 1 ? 's' : ''} match this chat`;
 }
 
-// ── Tag picker (add panel) ─────────────────────────
-function renderTagPicker() {
-  tagPickerEl.innerHTML = allTags.map(tag => {
-    const isSelected = selectedTag === tag;
-    const label = labelOf(tag);
-    return `
-      <button class="tag-pick-chip${isSelected ? ' selected' : ''}" data-tag="${tag}">
-        ${escHtml(label)}
-        ${!isDefaultTag(tag)
-          ? `<span class="chip-del" data-del="${tag}" title="Remove">×</span>`
-          : ''}
-      </button>
-    `;
-  }).join('');
-
-  tagPickerEl.querySelectorAll('.tag-pick-chip').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      if (e.target.closest('.chip-del')) return;
-      selectedTag = btn.dataset.tag;
-      renderTagPicker();
-    });
-  });
-
-  tagPickerEl.querySelectorAll('.chip-del').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      removeUserTag(btn.dataset.del);
-    });
-  });
-}
-
-function addUserTag(raw) {
-  const slug = slugify(raw);
-  if (!slug) return;
-  if (allTags.includes(slug)) {
-    selectedTag = slug;
-    renderTagPicker();
-    return;
-  }
-  colorOf(slug); // assign color
-  allTags.push(slug);
-  selectedTag = slug;
-  saveTags();
-  renderTagPicker();
-  renderFilters();
-}
-
-function removeUserTag(slug) {
-  if (isDefaultTag(slug)) return;
-  allTags = allTags.filter(t => t !== slug);
-  if (selectedTag === slug) selectedTag = 'general';
-  if (activeTags.has(slug)) {
-    activeTags.delete(slug);
-    updateActiveTagsDisplay();
-  }
-  saveTags();
-  renderAll();
-}
-
-// ── Filter bar ─────────────────────────────────────
+// ── Tag autocomplete ───────────────────────────────
 function showFilterInput() {
   filterInputWrap.style.display = 'flex';
   filterIconBtn.classList.add('active');
@@ -444,17 +405,21 @@ function renderNotes() {
 
 function renderAll() {
   renderNotes();
-  renderTagPicker();
   updateChatBanner();
 }
 
 // ── Actions ────────────────────────────────────────
-function addNote(text, noteText, tag) {
+function addNote(text, noteText) {
+  const tags = extractTags(text);
+  const tag = tags[0] || 'uncategorized';
+  ensureTagsExist(tags);
+  
   const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   notes.unshift({ id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date, pinned: false });
   saveNotes();
   updateChatMatches();
   renderAll();
+  renderFilters();
   showToast('Saved');
 }
 
@@ -525,21 +490,108 @@ function showToast(msg) {
 saveBtn.addEventListener('click', () => {
   const text = inputText.value.trim();
   if (!text) { inputText.focus(); return; }
-  addNote(text, inputNote.value, selectedTag);
+  hideAutocomplete();
+  addNote(text, inputNote.value);
   inputText.value = '';
   inputNote.value = '';
 });
 
 inputText.addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveBtn.click();
-});
-
-newTagInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const val = newTagInput.value.trim();
-    if (val) { addUserTag(val); newTagInput.value = ''; }
+  
+  if (autocompleteOpen) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, autocompleteTags.length - 1);
+      updateAutocompleteSelection();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, 0);
+      updateAutocompleteSelection();
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      if (autocompleteTags.length > 0) {
+        e.preventDefault();
+        const tag = autocompleteTags[selectedAutocompleteIndex >= 0 ? selectedAutocompleteIndex : 0];
+        insertTag(tag);
+      }
+    } else if (e.key === 'Escape') {
+      hideAutocomplete();
+    }
   }
 });
+
+inputText.addEventListener('input', () => {
+  const cursorPos = inputText.selectionStart;
+  const textBeforeCursor = inputText.value.substring(0, cursorPos);
+  const hashMatch = textBeforeCursor.match(/#(\w*)$/);
+  
+  if (hashMatch) {
+    const query = hashMatch[1];
+    showAutocomplete(query);
+  } else {
+    hideAutocomplete();
+  }
+});
+
+inputText.addEventListener('blur', () => {
+  setTimeout(() => hideAutocomplete(), 150);
+});
+
+// ── Tag autocomplete ────────────────────────────────
+function showAutocomplete(query) {
+  const q = query.toLowerCase();
+  autocompleteTags = allTags.filter(tag => labelOf(tag).toLowerCase().includes(q));
+  
+  if (autocompleteTags.length === 0) {
+    hideAutocomplete();
+    return;
+  }
+  
+  selectedAutocompleteIndex = 0;
+  autocompleteOpen = true;
+  
+  tagAutocompleteEl.innerHTML = autocompleteTags.map((tag, idx) => {
+    const c = colorOf(tag);
+    return `<div class="tag-autocomplete-item${idx === 0 ? ' selected' : ''}" data-tag="${tag}">
+      <span style="background:${c.bg};color:${c.text}">${escHtml(labelOf(tag))}</span>
+    </div>`;
+  }).join('') + `<div class="tag-autocomplete-hint">Press Enter to insert</div>`;
+  
+  tagAutocompleteEl.classList.add('open');
+  
+  tagAutocompleteEl.querySelectorAll('.tag-autocomplete-item').forEach(item => {
+    item.addEventListener('click', () => {
+      insertTag(item.dataset.tag);
+    });
+  });
+}
+
+function updateAutocompleteSelection() {
+  tagAutocompleteEl.querySelectorAll('.tag-autocomplete-item').forEach((item, idx) => {
+    item.classList.toggle('selected', idx === selectedAutocompleteIndex);
+  });
+}
+
+function insertTag(tag) {
+  const cursorPos = inputText.selectionStart;
+  const textBeforeCursor = inputText.value.substring(0, cursorPos);
+  const textAfterCursor = inputText.value.substring(cursorPos);
+  const hashStart = textBeforeCursor.lastIndexOf('#');
+  
+  const newTextBefore = textBeforeCursor.substring(0, hashStart) + '#' + tag + ' ';
+  inputText.value = newTextBefore + textAfterCursor;
+  
+  const newCursorPos = newTextBefore.length;
+  inputText.setSelectionRange(newCursorPos, newCursorPos);
+  hideAutocomplete();
+}
+
+function hideAutocomplete() {
+  autocompleteOpen = false;
+  autocompleteTags = [];
+  selectedAutocompleteIndex = -1;
+  tagAutocompleteEl.classList.remove('open');
+}
 
 searchEl.addEventListener('input', () => {
   searchQuery = searchEl.value.trim();
@@ -865,10 +917,14 @@ function handleKeyboard(e) {
   const activeEl = document.activeElement;
   const isInputFocused = activeEl === inputText || activeEl === inputNote || 
                          activeEl === searchEl || activeEl === filterInputEl ||
-                         activeEl === newTagInput || activeEl.tagName === 'INPUT' ||
+                         activeEl.tagName === 'INPUT' ||
                          activeEl.tagName === 'TEXTAREA';
   
   if (e.key === 'Escape') {
+    if (autocompleteOpen) {
+      hideAutocomplete();
+      return;
+    }
     selectedNoteIndex = -1;
     updateSelectedCard();
     return;

@@ -100,16 +100,11 @@
   <!-- Add note panel -->
   <div class="add-panel">
     <div class="add-panel-inner">
-      <textarea id="input-text" placeholder="Insight or rule to remember…" rows="2"></textarea>
-      <textarea id="input-note" placeholder="Extra context (optional)…" rows="2"></textarea>
-
-      <!-- Tag chips picker -->
-      <div class="tag-picker" id="tag-picker"></div>
-
-      <!-- New tag input -->
-      <div class="new-tag-row">
-        <input id="new-tag-input" type="text" placeholder="+ new tag…" maxlength="24" autocomplete="off" />
+      <div class="input-wrap">
+        <textarea id="input-text" placeholder="Write your note… use #tag for tags" rows="2"></textarea>
+        <div class="tag-autocomplete" id="tag-autocomplete"></div>
       </div>
+      <textarea id="input-note" placeholder="Extra context (optional)…" rows="2"></textarea>
 
       <button class="save-btn" id="save-btn">Save</button>
     </div>
