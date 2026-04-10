@@ -417,9 +417,7 @@ function renderNotes() {
       </div>
       <div class="card-actions">
         <button class="card-btn pin${n.pinned ? ' active' : ''}" data-id="${n.id}" title="${n.pinned ? 'Unpin' : 'Pin'}">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-            <path d="M9 2l2 2-6 6 2 2 6-6 2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          ${n.pinned ? '📌' : '📍'}
         </button>
         <button class="card-btn copy" data-id="${n.id}" title="Copy">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
