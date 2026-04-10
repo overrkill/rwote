@@ -522,8 +522,8 @@ function showEditModal(id) {
     closeModal();
   });
   
-  editCancelEl.addEventListener('click', closeModal);
-  editCloseEl.addEventListener('click', closeModal);
+  editCancelEl.addEventListener('click', () => closeModal());
+  editCloseEl.addEventListener('click', () => closeModal());
   modalOverlay.addEventListener('click', (e) => {
     if (e.target === modalOverlay) closeModal();
   });
@@ -531,6 +531,7 @@ function showEditModal(id) {
   editTextEl.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
       editNote(id, editTextEl.value, editNoteEl.value);
       closeModal();
     }
@@ -592,7 +593,10 @@ saveBtn.addEventListener('click', () => {
 });
 
 inputText.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveBtn.click();
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    saveBtn.click();
+  }
   
   if (autocompleteOpen) {
     if (e.key === 'ArrowDown') {
