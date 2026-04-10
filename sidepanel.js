@@ -115,6 +115,10 @@ function extractTags(text) {
   return [...new Set(matches.map(m => slugify(m.slice(1))))];
 }
 
+function stripTags(text) {
+  return text.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function ensureTagsExist(tags) {
   let changed = false;
   tags.forEach(tag => {
@@ -374,7 +378,7 @@ function renderNotes() {
     <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
       <div class="card-body">
         <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
-        <div class="card-text">${highlight(n.text, searchQuery)}</div>
+        <div class="card-text">${highlight(stripTags(n.text), searchQuery)}</div>
         ${n.note ? `<div class="card-note">${highlight(n.note, searchQuery)}</div>` : ''}
         <div class="card-meta"><span class="card-date">${n.date}</span></div>
       </div>
@@ -467,7 +471,8 @@ function togglePin(id) {
 function copyNote(id) {
   const n = notes.find(n => n.id === id);
   if (!n) return;
-  navigator.clipboard.writeText(n.note ? `${n.text}\n\n${n.note}` : n.text)
+  const cleanText = stripTags(n.text);
+  navigator.clipboard.writeText(n.note ? `${cleanText}\n\n${n.note}` : cleanText)
     .then(() => showToast('Copied'));
 }
 
