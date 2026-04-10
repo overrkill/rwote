@@ -222,13 +222,9 @@ body {
   margin: 4px 0;
 }
 
-.theme-icon { font-size: 16px; }
-
-[data-theme="dark"] .theme-icon { display: none; }
+.theme-icon { font-size: 18px; }
 
 .theme-item .theme-icon { display: inline; }
-
-[data-theme="dark"] .theme-item .theme-icon { display: none; }
 
 /* Size submenu */
 .size-item {

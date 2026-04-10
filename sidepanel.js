@@ -707,10 +707,8 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 // ── Theme ─────────────────────────────────────────
 function updateThemeLabel() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const label = menuThemeEl.querySelector('.theme-label');
   const icon = menuThemeEl.querySelector('.theme-icon');
-  if (label) label.textContent = isDark ? 'Light Mode' : 'Dark Mode';
-  if (icon) icon.textContent = isDark ? '🌙' : '☀️';
+  if (icon) icon.textContent = isDark ? '☀️' : '🌙';
 }
 
 function loadTheme() {
