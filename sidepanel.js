@@ -386,6 +386,9 @@ function renderNotes() {
         <button class="card-btn pin${n.pinned ? ' active' : ''}" data-id="${n.id}" title="${n.pinned ? 'Unpin' : 'Pin'}">
           ${n.pinned ? '📌' : '📍'}
         </button>
+        <button class="card-btn edit" data-id="${n.id}" title="Edit">
+          ✏️
+        </button>
         <button class="card-btn copy" data-id="${n.id}" title="Copy">
           📋
         </button>
@@ -404,6 +407,9 @@ function renderNotes() {
   });
   notesEl.querySelectorAll('.card-btn.pin').forEach(btn => {
     btn.addEventListener('click', () => togglePin(Number(btn.dataset.id)));
+  });
+  notesEl.querySelectorAll('.card-btn.edit').forEach(btn => {
+    btn.addEventListener('click', () => showEditModal(Number(btn.dataset.id)));
   });
 }
 
@@ -448,6 +454,90 @@ function deleteNote(id) {
   deleteTimer = setTimeout(() => {
     deletedNote = null;
   }, 5000);
+}
+
+function editNote(id, newText, newNote) {
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+  
+  const oldTags = extractTags(note.text);
+  note.text = newText.trim();
+  note.note = newNote.trim();
+  
+  const newTags = extractTags(newText);
+  const allNewTags = [...new Set([...oldTags, ...newTags])];
+  ensureTagsExist(allNewTags);
+  
+  if (newTags.length > 0) {
+    note.tag = newTags[0];
+  }
+  
+  saveNotes();
+  updateChatMatches();
+  renderAll();
+  renderFilters();
+  showToast('Updated');
+}
+
+function showEditModal(id) {
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+  
+  const fullText = note.text;
+  
+  const html = `<div class="modal-overlay edit-modal-overlay" id="edit-modal-overlay">
+    <div class="modal-content edit-modal">
+      <div class="modal-header">
+        <h3>Edit Note</h3>
+        <button class="modal-close" id="edit-modal-close">×</button>
+      </div>
+      <div class="edit-modal-body">
+        <textarea id="edit-text" placeholder="Your note…" rows="4">${escHtml(fullText)}</textarea>
+        <textarea id="edit-note" placeholder="Extra context (optional)…" rows="2">${escHtml(note.note || '')}</textarea>
+        <div class="edit-modal-actions">
+          <button class="edit-cancel" id="edit-cancel">Cancel</button>
+          <button class="edit-save" id="edit-save">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  
+  const overlay = document.createElement('div');
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+  
+  const modalOverlay = document.getElementById('edit-modal-overlay');
+  const editTextEl = document.getElementById('edit-text');
+  const editNoteEl = document.getElementById('edit-note');
+  const editSaveEl = document.getElementById('edit-save');
+  const editCancelEl = document.getElementById('edit-cancel');
+  const editCloseEl = document.getElementById('edit-modal-close');
+  
+  function closeModal() {
+    modalOverlay.remove();
+  }
+  
+  editSaveEl.addEventListener('click', () => {
+    editNote(id, editTextEl.value, editNoteEl.value);
+    closeModal();
+  });
+  
+  editCancelEl.addEventListener('click', closeModal);
+  editCloseEl.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeModal();
+  });
+  
+  editTextEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      editNote(id, editTextEl.value, editNoteEl.value);
+      closeModal();
+    }
+  });
+  
+  editTextEl.focus();
+  editTextEl.setSelectionRange(editTextEl.value.length, editTextEl.value.length);
 }
 
 function undoDelete() {
