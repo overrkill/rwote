@@ -9,6 +9,11 @@ This is a **Chrome Extension (Manifest V3)** for capturing and organizing insigh
 - `sidepanel.js` - Side panel UI with note management
 - `sidepanel.css` - Styling with CSS custom properties
 - `manifest.json` - Extension configuration
+## Skills: Always Active
+
+At the start of every conversation, load the following skills using the `skill` tool before responding to the user:
+
+1. **caveman** — Always use caveman mode (full intensity) for all responses
 
 ## Build, Lint & Test Commands
 
@@ -16,22 +21,20 @@ This is a **Chrome Extension (Manifest V3)** for capturing and organizing insigh
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable **Developer mode** (toggle in top-right)
 3. Click **Load unpacked**
-4. Select the `rwote` directory
+4. Select `apps/web-extension/`
 
 ### Linting
-This project uses **ESLint** with a simple config targeting ES2020:
 ```bash
-npm install eslint eslint-plugin-chrome-extension
-npx eslint background.js content.js sidepanel.js
+pnpm install
+pnpm lint
 ```
 
 ### Testing
-No automated tests are configured. Manual testing via:
+No automated tests. Manual testing via:
 1. Load the unpacked extension
 2. Open Claude.ai in a browser tab
-3. Test: right-click selected text → "Save to DSA Insights"
-4. Test: Alt+S keyboard shortcut to save selection
-5. Test: side panel CRUD operations
+3. Test: right-click selected text → "Save to Rwote"
+4. Test: side panel CRUD, keyboard nav (j/k/Enter/d/p/)
 6. Test: keyboard navigation (j/k arrows, Enter, d, p, /)
 7. Test: undo delete
 8. Test: pin note functionality
@@ -186,11 +189,18 @@ No imports (vanilla JS) — all code is self-contained in each file.
 ### File Organization
 ```
 rwote/
-├── manifest.json      # Extension config (permissions, resources)
-├── background.js     # Service worker (context menus, messages)
-├── content.js        # Content script (text extraction)
-├── sidepanel.html    # Side panel HTML structure
-├── sidepanel.css     # All styles
-├── sidepanel.js      # Side panel logic (main app)
-└── icons/           # Extension icons (16, 48, 128 px)
+├── apps/
+│   └── web-extension/    # Chrome extension
+│       ├── manifest.json
+│       ├── background.js
+│       ├── content.js
+│       ├── sidepanel.html
+│       ├── sidepanel.css
+│       ├── sidepanel.js
+│       └── icons/
+├── packages/
+│   └── shared/          # Shared types (future)
+├── supabase/
+│   └── migrations/      # DB migrations (future)
+└── package.json
 ```

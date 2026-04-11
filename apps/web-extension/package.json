@@ -1,0 +1,13 @@
+{
+  "name": "@rwote/web-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension (Manifest V3)",
+  "scripts": {
+    "lint": "eslint background.js content.js sidepanel.js",
+    "dev": "echo 'No build step - reload extension at chrome://extensions'"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "rwote",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Chrome extension for capturing and organizing insights",
+  "scripts": {
+    "lint": "pnpm -r lint",
+    "dev": "pnpm -r --parallel dev"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  }
+}

@@ -1,167 +1,57 @@
 # Rwote
 
-<span style="font-family: 'BJ Cree', sans-serif; font-size: 2em; font-weight: 600; letter-spacing: 1px;">Rwote</span>
+Chrome extension for capturing and organizing insights with hashtag-based tagging.
 
-A Chrome Extension (Manifest V3) for capturing and organizing insights from your learning sessions.
-
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Manifest](https://img.shields.io/badge/manifest-3-green)
-
-## Features
-
-- **Quick Capture**: Save text selections from any webpage via right-click or keyboard shortcut
-- **Tagging System**: Organize notes with customizable tags
-- **Smart Search**: Full-text search across all notes
-- **Dark Mode**: Toggle between light and dark themes
-- **Chat Matching**: Highlights notes relevant to your current Claude.ai conversation
-- **Export/Import**: Backup and restore your notes
-- **Tag Statistics**: Visual breakdown of notes by tag
-- **Role-based Setup**: Choose your role on first launch for personalized default tags
-
-## Installation
-
-### From Source
-
-1. Clone or download this repository
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable **Developer mode** (toggle in the top-right corner)
-4. Click **Load unpacked**
-5. Select the `dsa-insights` directory
-
-### Post-Installation
-
-1. Navigate to [claude.ai](https://claude.ai) (or any supported site)
-2. Click the extension icon in Chrome's toolbar
-3. Complete the onboarding flow by selecting your role
-4. Start capturing insights!
-
-## Project Structure
+## Structure
 
 ```
 rwote/
-├── manifest.json      # Extension configuration
-├── background.js      # Service worker (context menus, message relay)
-├── content.js         # Content script (text extraction, keyboard shortcuts)
-├── sidepanel.html     # Side panel HTML structure
-├── sidepanel.css      # Styles with CSS custom properties
-├── sidepanel.js       # Side panel logic (main application)
-├── icons/
-│   ├── icon16.png     # Toolbar icon (16x16)
-│   ├── icon48.png     # Extension page icon (48x48)
-│   └── icon128.png    # Store icon (128x128)
-├── README.md          # This file
-├── Docs.md            # User documentation
-└── AGENTS.md          # Developer guidelines
+├── apps/
+│   └── web-extension/    # Chrome extension (Manifest V3)
+├── packages/
+│   └── shared/          # Shared types (future)
+├── supabase/           # Database migrations (future)
+└── package.json
 ```
 
-## Architecture
-
-### Manifest V3 Components
-
-| File | Type | Purpose |
-|------|------|---------|
-| `manifest.json` | Config | Extension metadata, permissions, resources |
-| `background.js` | Service Worker | Context menu creation, message routing |
-| `content.js` | Content Script | Runs on webpages, handles Alt+S shortcut |
-| `sidepanel.*` | Side Panel | Main UI application |
-
-### Data Flow
-
-```
-User Selection → Content Script (Alt+S)
-                          ↓
-                  Background Worker (message relay)
-                          ↓
-                  Side Panel (display & save)
-                          ↓
-                  Chrome Storage (persistence)
-```
-
-### Storage Schema
-
-All data persists via `chrome.storage.local`:
-
-| Key | Structure |
-|-----|-----------|
-| `rwote_v1` | `Array<{id, text, note, tag, date, pinned}>` |
-| `rwote_tags_v1` | `{tags: string[], colors: {[tag]: {bg, text}}}` |
-| `rwote_theme_v1` | `'light' \| 'dark'` |
-| `rwote_onboarded_v1` | `boolean` |
-| `rwote_size_v1` | `'small' \| 'medium' \| 'large'` |
-
-Session storage (`chrome.storage.session`) handles ephemeral state:
-- `pendingSelection`: Text selected while panel was closed
-
-## Development
-
-### Prerequisites
-
-- Chrome browser (version 88+)
-- Basic knowledge of JavaScript and Chrome Extensions
-
-### Setup
-
-```bash
-# No build step required - extension loads directly from source
-# Just edit the files and reload the extension at chrome://extensions
-```
-
-### Linting
+## Quick Start
 
 ```bash
 # Install dependencies
-npm install eslint eslint-plugin-chrome-extension --save-dev
+pnpm install
 
-# Run ESLint
-npx eslint background.js content.js sidepanel.js
+# Load extension in Chrome
+1. Open chrome://extensions/
+2. Enable Developer mode
+3. Click "Load unpacked"
+4. Select apps/web-extension/
+5. Reload after code changes
 ```
 
-### File Watch (Optional)
+## Scripts
 
-For development convenience, use any file watcher to detect changes:
+| Command | Description |
+|---------|-------------|
+| `pnpm install` | Install all workspaces |
+| `pnpm lint` | Lint all packages |
+| `pnpm dev` | Dev mode (extension: no build step) |
 
-```bash
-# Using entr (Linux/macOS)
-find . -name "*.js" -o -name "*.css" -o -name "*.html" | entr -r sh -c 'echo "Reload extension at chrome://extensions"'
-```
+## Development
 
-### Reload After Changes
+- Extension loads directly from source — no build step
+- Reload at `chrome://extensions` after changes
+- Test content script: open Claude.ai, select text, right-click → "Save to Rwote"
+- Test side panel: click extension icon, use keyboard nav (j/k/Enter/d/p/)
 
-After editing any source file:
-1. Go to `chrome://extensions/`
-2. Find "DSA Insights"
-3. Click the refresh icon
+## Future
 
-## Permissions
+- Cloud sync (paid tier)
+- Web dashboard
+- Mobile companion app
 
-| Permission | Purpose |
-|------------|---------|
-| `storage` | Save/load notes and settings |
-| `contextMenus` | Right-click "Save to DSA Insights" option |
-| `sidePanel` | Open extension in Chrome's side panel |
-| `activeTab` | Access current tab for side panel opening |
-| `scripting` | Inject content scripts |
-| `tabs` | Query tab information |
+## Tech Stack
 
-## Browser Support
-
-- **Chrome 88+** (required for Manifest V3 and sidePanel)
-- Edge 88+ (Chromium-based, compatible)
-- Other Chromium browsers (untested)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test locally by reloading the extension
-5. Submit a pull request
-
-## License
-
-MIT License
-
-## Changelog
-
-### v1.0.0
-- Initial release with tagging, search, dark mode, and export/import
+- **Extension:** Vanilla JS, Manifest V3
+- **Backend:** Cloudflare Workers (planned)
+- **Database:** Supabase (planned)
+- **Payments:** Stripe (planned)

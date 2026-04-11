@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rwote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=BJ+Cree:wght@400;500;600;700&family=Grand+Hotel&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-top">
+      <span class="logo">Rwote</span>
+      <div class="header-right">
+        <span class="note-count" id="note-count">0 notes</span>
+        <button class="hamburger-btn" id="hamburger-btn" title="Menu">
+          ☰
+        </button>
+        <div class="hamburger-menu" id="hamburger-menu">
+          <div class="hamburger-header">
+            ☰
+            <span>Menu</span>
+          </div>
+          <button class="hamburger-item" id="menu-stats" title="View tag statistics">
+            📊
+            <span>Tag Statistics</span>
+          </button>
+          <button class="hamburger-item" id="menu-export" title="Export notes as JSON">
+            📥
+            <span>Export</span>
+          </button>
+          <button class="hamburger-item" id="menu-import" title="Import notes from JSON">
+            📤
+            <span>Import</span>
+          </button>
+          <input type="file" id="import-file" accept=".json" hidden />
+          <div class="hamburger-divider"></div>
+          <div class="hamburger-item size-item">
+            <span>Font Size</span>
+            <div class="size-options">
+              <button class="size-btn" data-size="small" title="Small font">S</button>
+              <button class="size-btn" data-size="medium" title="Medium font">M</button>
+              <button class="size-btn" data-size="large" title="Large font">L</button>
+            </div>
+          </div>
+          <button class="hamburger-item theme-item" id="menu-theme" title="Toggle dark mode">
+            <span class="theme-icon">🌙</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input id="search" type="text" placeholder="Search notes…" autocomplete="off" />
+      <button class="clear-search" id="clear-search" title="Clear search">×</button>
+    </div>
+  </header>
+
+  <!-- Chat match banner -->
+  <div class="chat-banner" id="chat-banner" style="display:none">
+    💬
+    <span id="chat-banner-text">3 notes match this chat</span>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-icon-btn" id="filter-icon-btn" title="Filter by tag">
+      🏷️
+    </button>
+    <div class="filter-input-wrap" id="filter-input-wrap">
+      <div class="filter-chips" id="filter-chips"></div>
+      <input id="filter-input" type="text" placeholder="Filter by tag…" autocomplete="off" />
+      <button class="filter-clear" id="filter-clear" title="Clear filter">×</button>
+    </div>
+    <div class="filter-dropdown" id="filter-dropdown"></div>
+  </div>
+
+  <!-- Notes list -->
+  <div class="notes" id="notes"></div>
+
+  <!-- Onboarding modal -->
+  <div class="onboarding" id="onboarding">
+    <div class="onboarding-content">
+      <h2>Welcome to Rwote</h2>
+      <p class="onboarding-sub">Choose how you want to use Rwote</p>
+      
+      <!-- Mode selection -->
+      <div class="mode-grid" id="mode-grid">
+        <div class="mode-card" data-mode="local">
+          <div class="mode-icon">💾</div>
+          <div class="mode-name">Local</div>
+          <div class="mode-desc">Free</div>
+          <div class="mode-features">Store notes on device</div>
+        </div>
+        <div class="mode-card" data-mode="cloud">
+          <div class="mode-icon">☁️</div>
+          <div class="mode-name">Cloud Sync</div>
+          <div class="mode-desc">Paid</div>
+          <div class="mode-features">Sync across devices + backup</div>
+        </div>
+      </div>
+      
+      <!-- Role selection (shown after local mode) -->
+      <div class="role-section" id="role-section" style="display:none">
+        <p class="onboarding-sub">Select your role for personalized tags (optional)</p>
+        <div class="role-grid" id="role-grid"></div>
+      </div>
+      
+      <div class="onboarding-actions">
+        <button class="onboard-skip" id="onboard-skip">Skip</button>
+        <button class="onboard-confirm" id="onboard-confirm">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add note panel -->
+  <div class="add-panel">
+    <div class="add-panel-inner">
+      <div class="input-wrap">
+        <textarea id="input-text" placeholder="Write your note… use #tag for tags" rows="2"></textarea>
+        <div class="tag-autocomplete" id="tag-autocomplete"></div>
+      </div>
+      <textarea id="input-note" placeholder="Extra context (optional)…" rows="2"></textarea>
+
+      <button class="save-btn" id="save-btn">Save</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="sidepanel.js"></script>
+</body>
+</html>
