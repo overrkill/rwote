@@ -83,3 +83,16 @@ async function refreshToken(refreshToken) {
 async function callEdgeFunction(functionName, body, token) {
   return request('POST', `/functions/v1/${functionName}`, body, token);
 }
+
+// Cloud note functions
+async function cloudSaveNote(note, token) {
+  return callEdgeFunction('save-note', { note }, token);
+}
+
+async function cloudLoadNotes(token) {
+  return callEdgeFunction('load-notes', {}, token);
+}
+
+async function cloudDeleteNote(localId, token) {
+  return callEdgeFunction('delete-note', { local_id: localId }, token);
+}

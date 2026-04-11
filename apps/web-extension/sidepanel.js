@@ -1,5 +1,5 @@
 // sidepanel.js
-/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE */
+/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote */
 
 const STORAGE_KEY  = 'rwote_v1';
 const TAGS_KEY     = 'rwote_tags_v1';
@@ -162,16 +162,44 @@ function escHtml(str) {
 // ── Storage ────────────────────────────────────────
 async function load() {
   return new Promise(resolve => {
-    chrome.storage.local.get([STORAGE_KEY, TAGS_KEY], (res) => {
+    chrome.storage.local.get([STORAGE_KEY, TAGS_KEY], async (res) => {
       notes = res[STORAGE_KEY] || [];
       const saved = res[TAGS_KEY] || {};
       if (saved.tags && saved.tags.length > 0) {
         allTags = saved.tags;
       }
       if (saved.colors) tagColors = { ...saved.colors };
+      
+      if (authToken && selectedMode === 'cloud') {
+        await loadFromCloud();
+      }
       resolve();
     });
   });
+}
+
+async function loadFromCloud() {
+  try {
+    const { notes: cloudNotes, error } = await cloudLoadNotes(authToken);
+    if (error) {
+      console.error('Cloud load error:', error);
+      return;
+    }
+    if (cloudNotes && cloudNotes.length > 0) {
+      notes = cloudNotes.map(n => ({
+        id: n.local_id || n.id,
+        text: n.text,
+        note: n.note,
+        tag: n.tag,
+        date: n.date,
+        pinned: n.pinned,
+        cloudId: n.id
+      }));
+      saveNotes();
+    }
+  } catch (e) {
+    console.error('Failed to load from cloud:', e);
+  }
 }
 
 function saveTags() {
@@ -180,6 +208,24 @@ function saveTags() {
 
 function saveNotes() {
   chrome.storage.local.set({ [STORAGE_KEY]: notes });
+}
+
+async function syncNoteToCloud(note) {
+  if (!authToken || selectedMode !== 'cloud') return;
+  try {
+    await cloudSaveNote(authToken, note);
+  } catch (e) {
+    console.error('Cloud save error:', e);
+  }
+}
+
+async function cloudDeleteNoteById(localId) {
+  if (!authToken || selectedMode !== 'cloud') return;
+  try {
+    await cloudDeleteNote(localId, authToken);
+  } catch (e) {
+    console.error('Cloud delete error:', e);
+  }
 }
 
 // ── Chat match ─────────────────────────────────────
@@ -440,14 +486,20 @@ function renderAll() {
 }
 
 // ── Actions ────────────────────────────────────────
-function addNote(text, noteText) {
+async function addNote(text, noteText) {
   const tags = extractTags(text);
   const tag = tags[0] || 'uncategorized';
   ensureTagsExist(tags);
   
   const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  notes.unshift({ id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date, pinned: false });
+  const newNote = { id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date, pinned: false };
+  notes.unshift(newNote);
   saveNotes();
+  
+  if (authToken && selectedMode === 'cloud') {
+    cloudSaveNote(newNote);
+  }
+  
   updateChatMatches();
   renderAll();
   showToast('Saved');
@@ -461,6 +513,11 @@ function deleteNote(id) {
   notes = notes.filter(n => n.id !== id);
   chatMatchIds.delete(id);
   saveNotes();
+  
+  if (authToken && selectedMode === 'cloud') {
+    cloudDeleteNoteById(id);
+  }
+  
   renderAll();
   
   clearTimeout(deleteTimer);
@@ -493,6 +550,11 @@ function editNote(id, newText, newNote) {
   }
   
   saveNotes();
+  
+  if (authToken && selectedMode === 'cloud') {
+    syncNoteToCloud(note);
+  }
+  
   updateChatMatches();
   renderAll();
   showToast('Updated');
@@ -584,6 +646,11 @@ function togglePin(id) {
   if (!note) return;
   note.pinned = !note.pinned;
   saveNotes();
+  
+  if (authToken && selectedMode === 'cloud') {
+    syncNoteToCloud(note);
+  }
+  
   renderAll();
 }
 
