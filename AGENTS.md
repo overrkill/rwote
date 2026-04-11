@@ -49,6 +49,11 @@ No automated tests. Manual testing via:
 
 ### JavaScript Conventions
 
+#### No External Dependencies
+- All code is self-contained (no npm packages in extension)
+- Use plain `fetch()` for HTTP requests
+- Supabase auth uses REST API directly (no JS client)
+
 #### File Structure
 - Each file starts with a comment indicating its purpose
 - Use clear section dividers: `// ── Section Name ──────────────`
@@ -70,6 +75,19 @@ function labelOf(slug) { ... }
 const notesEl       = document.getElementById('notes');
 const filtersEl     = document.getElementById('filters');
 const inputText     = document.getElementById('input-text');
+```
+
+#### Supabase REST API
+```javascript
+// Use fetch() for all Supabase requests
+// Auth endpoints:
+POST /auth/v1/signup         → Create account
+POST /auth/v1/token?grant_type=password  → Sign in
+POST /auth/v1/logout         → Sign out
+GET  /auth/v1/user           → Get current user
+
+// Edge functions:
+POST /functions/v1/<function-name>
 ```
 
 #### Chrome Extension APIs
@@ -159,6 +177,7 @@ transition: all 0.13s;  /* only when all properties change */
 
 ### Import Order
 No imports (vanilla JS) — all code is self-contained in each file.
+Scripts are loaded via `<script src="filename.js">` in HTML.
 
 ### Comments
 - File header comment with purpose
@@ -176,8 +195,9 @@ No imports (vanilla JS) — all code is self-contained in each file.
 
 #### Security
 - Always escape HTML before inserting user content
-- Use CSP-friendly patterns (no inline scripts)
+- Use CSP-friendly patterns (no inline scripts, no external CDN scripts)
 - Validate all `chrome.runtime.onMessage` inputs
+- The anon key is visible in extension code — RLS policies protect data, not the key
 
 ### Adding New Features
 
@@ -197,6 +217,7 @@ rwote/
 │       ├── sidepanel.html
 │       ├── sidepanel.css
 │       ├── sidepanel.js
+│       ├── supabase.js   # Supabase REST API client
 │       └── icons/
 ├── packages/
 │   └── shared/          # Shared types (future)

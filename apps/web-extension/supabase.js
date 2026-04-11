@@ -1,60 +1,85 @@
-// supabase.js — Supabase client configuration
+// supabase.js — Supabase REST API client (no external deps)
 
 const SUPABASE_URL = 'https://joqxsbboxmkpcizasdbc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvcXhzYmJveG1rcGNpemFzZGJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjI2ODgsImV4cCI6MjA5MTQzODY4OH0.AlJh4bvWk_aMxHnWFg4xqZhY3UzbUclcKtLvkBARAQo';
 
-const API_BASE = `${SUPABASE_URL}/functions/v1`;
-
-let supabase = null;
-
-function getSupabaseClient() {
-  if (!supabase) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function request(method, endpoint, body = null, token = null) {
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json'
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
-  return supabase;
+  
+  const config = { method, headers };
+  
+  if (body && method !== 'GET') {
+    config.body = JSON.stringify(body);
+  }
+  
+  const response = await fetch(`${SUPABASE_URL}${endpoint}`, config);
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.msg || data.error_description || 'Request failed');
+  }
+  
+  return data;
 }
 
-async function signUp(email, password, name) {
-  const client = getSupabaseClient();
-  
-  const { data, error } = await client.auth.signUp({
+async function signUp(email, password, name = '') {
+  return request('POST', '/auth/v1/signup', {
     email,
     password,
-    options: {
-      data: {
-        name: name || ''
-      }
-    }
+    data: { name }
   });
-  
-  return { data, error };
 }
 
 async function signIn(email, password) {
-  const client = getSupabaseClient();
-  
-  const { data, error } = await client.auth.signInWithPassword({
+  const data = await request('POST', '/auth/v1/token?grant_type=password', {
     email,
     password
   });
   
-  return { data, error };
+  return {
+    data: {
+      user: data.user,
+      session: {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token
+      }
+    }
+  };
 }
 
-async function signOut() {
-  const client = getSupabaseClient();
-  const { error } = await client.auth.signOut();
-  return { error };
+async function signOut(token) {
+  return request('POST', '/auth/v1/logout', null, token);
 }
 
-async function getCurrentUser() {
-  const client = getSupabaseClient();
-  const { data: { user }, error } = await client.auth.getUser();
-  return { user, error };
+async function getUser(token) {
+  const user = await request('GET', '/auth/v1/user', null, token);
+  return { user };
 }
 
-async function getSession() {
-  const client = getSupabaseClient();
-  const { data: { session }, error } = await client.auth.getSession();
-  return { session, error };
+async function refreshToken(refreshToken) {
+  const data = await request('POST', '/auth/v1/token?grant_type=refresh_token', {
+    refresh_token: refreshToken
+  });
+  
+  return {
+    data: {
+      user: data.user,
+      session: {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token
+      }
+    }
+  };
+}
+
+// Edge function helpers
+async function callEdgeFunction(functionName, body, token) {
+  return request('POST', `/functions/v1/${functionName}`, body, token);
 }
