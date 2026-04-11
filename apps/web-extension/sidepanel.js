@@ -1,4 +1,5 @@
 // sidepanel.js
+/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE */
 
 const STORAGE_KEY  = 'rwote_v1';
 const TAGS_KEY     = 'rwote_tags_v1';
@@ -61,6 +62,10 @@ let autocompleteTags = [];
 let selectedAutocompleteIndex = -1;
 let selectedMode = null;
 
+// Auth state
+let currentUser = null;
+let authToken = null;
+
 // ── DOM refs ───────────────────────────────────────
 const notesEl       = document.getElementById('notes');
 const searchEl      = document.getElementById('search');
@@ -74,10 +79,16 @@ const saveBtn       = document.getElementById('save-btn');
 const themeToggleEl = document.getElementById('theme-toggle');
 const onboardingEl  = document.getElementById('onboarding');
 const modeGridEl    = document.getElementById('mode-grid');
+const authSectionEl = document.getElementById('auth-section');
 const roleSectionEl = document.getElementById('role-section');
 const roleGridEl    = document.getElementById('role-grid');
 const onboardSkipEl = document.getElementById('onboard-skip');
 const onboardConfirmEl = document.getElementById('onboard-confirm');
+const authErrorEl = document.getElementById('auth-error');
+const tabLogin = document.getElementById('tab-login');
+const tabRegister = document.getElementById('tab-register');
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
 const hamburgerBtnEl = document.getElementById('hamburger-btn');
 const hamburgerMenuEl = document.getElementById('hamburger-menu');
 const menuStatsEl = document.getElementById('menu-stats');
@@ -750,6 +761,7 @@ chrome.storage.session.get('pendingSelection', (res) => {
 
 // ── Onboarding ─────────────────────────────────────
 let selectedRole = null;
+let onboardingStep = 'mode';
 
 function renderModeGrid() {
   modeGridEl.querySelectorAll('.mode-card').forEach(card => {
@@ -757,10 +769,14 @@ function renderModeGrid() {
   });
   
   if (selectedMode === 'local') {
+    authSectionEl.style.display = 'none';
     roleSectionEl.style.display = 'block';
-    renderRoleGrid();
-  } else {
+    onboardConfirmEl.textContent = 'Continue';
+    onboardConfirmEl.style.display = 'block';
+  } else if (selectedMode === 'cloud') {
     roleSectionEl.style.display = 'none';
+    authSectionEl.style.display = 'block';
+    onboardConfirmEl.style.display = 'none';
   }
 }
 
@@ -800,10 +816,96 @@ function finishOnboarding() {
   renderAll();
 }
 
-function handleCloudMode() {
-  showToast('Cloud sync coming soon! Sign up for early access.');
-  selectedMode = 'local';
-  finishOnboarding();
+async function handleRegister(e) {
+  e.preventDefault();
+  authErrorEl.textContent = '';
+  const email = document.getElementById('register-email').value;
+  const password = document.getElementById('register-password').value;
+  const name = document.getElementById('register-name').value;
+  
+  const submitBtn = registerForm.querySelector('.auth-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating account...';
+  
+  const { data, error } = await signUp(email, password, name);
+  
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Create Account';
+  
+  if (error) {
+    authErrorEl.textContent = error.message;
+    return;
+  }
+  
+  if (data?.user) {
+    currentUser = data.user;
+    authToken = data.session?.access_token;
+    await saveAuth();
+    showToast('Account created! Welcome!');
+    onboardingStep = 'role';
+    authSectionEl.style.display = 'none';
+    roleSectionEl.style.display = 'block';
+    onboardConfirmEl.textContent = 'Get Started';
+    onboardConfirmEl.style.display = 'block';
+    renderRoleGrid();
+  }
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  authErrorEl.textContent = '';
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  
+  const submitBtn = loginForm.querySelector('.auth-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Signing in...';
+  
+  const { data, error } = await signIn(email, password);
+  
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Sign In';
+  
+  if (error) {
+    authErrorEl.textContent = error.message;
+    return;
+  }
+  
+  if (data?.user) {
+    currentUser = data.user;
+    authToken = data.session?.access_token;
+    await saveAuth();
+    showToast('Welcome back!');
+    finishOnboarding();
+  }
+}
+
+async function saveAuth() {
+  return new Promise(resolve => {
+    chrome.storage.local.set({
+      auth_user: {
+        id: currentUser?.id,
+        email: currentUser?.email,
+        name: currentUser?.user_metadata?.name
+      },
+      auth_token: authToken
+    }, resolve);
+  });
+}
+
+async function loadAuth() {
+  return new Promise(resolve => {
+    chrome.storage.local.get(['auth_user', 'auth_token'], async (res) => {
+      if (res.auth_user && res.auth_token) {
+        const { user } = await getCurrentUser();
+        if (user) {
+          currentUser = user;
+          authToken = res.auth_token;
+        }
+      }
+      resolve();
+    });
+  });
 }
 
 function checkOnboarding() {
@@ -820,6 +922,7 @@ function checkOnboarding() {
 modeGridEl.querySelectorAll('.mode-card').forEach(card => {
   card.addEventListener('click', () => {
     selectedMode = card.dataset.mode;
+    onboardingStep = 'mode';
     renderModeGrid();
   });
 });
@@ -830,12 +933,33 @@ onboardSkipEl.addEventListener('click', () => {
 });
 
 onboardConfirmEl.addEventListener('click', () => {
-  if (selectedMode === 'cloud') {
-    handleCloudMode();
-  } else {
+  if (selectedMode === 'cloud' && onboardingStep === 'role') {
+    finishOnboarding();
+  } else if (selectedMode === 'local') {
     finishOnboarding();
   }
 });
+
+// Auth tab switching
+tabLogin?.addEventListener('click', () => {
+  tabLogin.classList.add('active');
+  tabRegister.classList.remove('active');
+  loginForm.style.display = 'flex';
+  registerForm.style.display = 'none';
+  authErrorEl.textContent = '';
+});
+
+tabRegister?.addEventListener('click', () => {
+  tabRegister.classList.add('active');
+  tabLogin.classList.remove('active');
+  registerForm.style.display = 'flex';
+  loginForm.style.display = 'none';
+  authErrorEl.textContent = '';
+});
+
+// Auth form submissions
+loginForm?.addEventListener('submit', handleLogin);
+registerForm?.addEventListener('submit', handleRegister);
 
 // ── Hamburger Menu ─────────────────────────────────
 function toggleMenu() {
@@ -1125,8 +1249,10 @@ document.addEventListener('keydown', handleKeyboard);
 // ── Init ───────────────────────────────────────────
 loadTheme();
 loadFontSize();
-checkOnboarding();
-load().then(() => {
-  updateChatMatches();
-  renderAll();
+loadAuth().then(() => {
+  checkOnboarding();
+  load().then(() => {
+    updateChatMatches();
+    renderAll();
+  });
 });
