@@ -65,6 +65,7 @@ let selectedMode = null;
 // Auth state
 let currentUser = null;
 let authToken = null;
+let refreshToken = null;
 
 // ── DOM refs ───────────────────────────────────────
 const notesEl       = document.getElementById('notes');
@@ -183,6 +184,7 @@ async function load() {
 
 async function loadFromCloud() {
   try {
+    await ensureValidToken();
     const { notes: cloudNotes, error } = await cloudLoadNotes(authToken);
     if (error) {
       console.error('Cloud load error:', error);
@@ -215,16 +217,18 @@ function saveNotes() {
 
 async function syncNoteToCloud(note) {
   if (!authToken) return;
-  chrome.storage.local.get(MODE_KEY, (res) => {
+  chrome.storage.local.get(MODE_KEY, async (res) => {
     if (res[MODE_KEY] !== 'cloud') return;
+    await ensureValidToken();
     cloudSaveNote(note, authToken).catch(e => console.error('Cloud save error:', e));
   });
 }
 
 async function cloudDeleteNoteById(localId) {
   if (!authToken) return;
-  chrome.storage.local.get(MODE_KEY, (res) => {
+  chrome.storage.local.get(MODE_KEY, async (res) => {
     if (res[MODE_KEY] !== 'cloud') return;
+    await ensureValidToken();
     cloudDeleteNote(localId, authToken).catch(e => console.error('Cloud delete error:', e));
   });
 }
@@ -906,6 +910,7 @@ async function handleRegister(e) {
   if (data?.user) {
     currentUser = data.user;
     authToken = data.session?.access_token;
+    refreshToken = data.session?.refresh_token;
     await saveAuth();
     updateUserProfileUI();
     showToast('Account created! Welcome!');
@@ -941,6 +946,7 @@ async function handleLogin(e) {
   if (data?.user) {
     currentUser = data.user;
     authToken = data.session?.access_token;
+    refreshToken = data.session?.refresh_token;
     await saveAuth();
     updateUserProfileUI();
     showToast('Welcome back!');
@@ -962,21 +968,59 @@ async function saveAuth() {
         email: currentUser?.email,
         name: currentUser?.user_metadata?.name
       },
-      auth_token: authToken
+      auth_token: authToken,
+      auth_refresh_token: refreshToken
     }, resolve);
   });
 }
 
 async function loadAuth() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['auth_user', 'auth_token'], async (res) => {
+    chrome.storage.local.get(['auth_user', 'auth_token', 'auth_refresh_token'], async (res) => {
       if (res.auth_user && res.auth_token) {
         currentUser = res.auth_user;
         authToken = res.auth_token;
+        refreshToken = res.auth_refresh_token || null;
+        
+        if (authToken && refreshToken) {
+          await ensureValidToken();
+        }
       }
       resolve();
     });
   });
+}
+
+async function ensureValidToken() {
+  try {
+    const payload = JSON.parse(atob(authToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const exp = payload.exp * 1000;
+    const now = Date.now();
+    
+    if (exp - now < 5 * 60 * 1000) {
+      await refreshAuthToken();
+    }
+  } catch (e) {
+    console.error('Token check failed:', e);
+  }
+}
+
+async function refreshAuthToken() {
+  if (!refreshToken) return false;
+  
+  try {
+    const result = await refreshToken(refreshToken);
+    if (result.error) return false;
+    
+    authToken = result.data.session.access_token;
+    refreshToken = result.data.session.refresh_token;
+    currentUser = result.data.user;
+    await saveAuth();
+    return true;
+  } catch (e) {
+    console.error('Token refresh failed:', e);
+    return false;
+  }
 }
 
 function checkOnboarding() {
@@ -1096,7 +1140,8 @@ async function handleLogout() {
   }
   currentUser = null;
   authToken = null;
-  chrome.storage.local.remove(['auth_user', 'auth_token']);
+  refreshToken = null;
+  chrome.storage.local.remove(['auth_user', 'auth_token', 'auth_refresh_token']);
   updateUserProfileUI();
   showToast('Signed out');
 }
