@@ -73,7 +73,7 @@ serve(async (req) => {
       tag: note.tag || 'uncategorized',
       date: note.date,
       pinned: note.pinned || false,
-      updated_at: new Date().toISOString()
+      updated_at: note.updated_at ? new Date(note.updated_at).toISOString() : new Date().toISOString()
     }
 
     if (note.id) {
