@@ -1,11 +1,105 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnpm/
+node_modules/.modules.yaml
+node_modules/.pnpm-workspace-state-v1.json
+node_modules/.pnpm/lock.yaml
+
 # Session files
 session-*.md
 
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
 
 # Editor
 *.swp
 *.swo
+*~
 .vscode/
 .idea/
+*.sublime-*
+*.sublime-workspace
+*.sublime-project
+.vs/
+.browserslistrc
+.editorconfig
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+.envrc
+
+# Build output
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.turbo/
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+*.spec.js
+*.test.js
+__tests__/
+
+# Misc
+*.local
+*.bak
+*.backup
+*.tmp
+*.temp
+*.swp
+*.swo
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Debug
+.nyc_output/
+.node_repl_history
+
+# TypeScript
+*.tsbuildinfo
+
+# Svelte
+.svelte-kit/
+package/
+
+# Bun
+.bun/
+bun.lockb
+
+# pnpm files
+pnpm-debug.log
+pnpm-lock.yaml
