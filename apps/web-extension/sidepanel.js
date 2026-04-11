@@ -214,17 +214,19 @@ function saveNotes() {
 }
 
 async function syncNoteToCloud(note) {
-  console.log('syncNoteToCloud - authToken:', authToken ? 'exists' : 'null', 'selectedMode:', selectedMode);
-  if (!authToken || selectedMode !== 'cloud') return;
-  try {
-    await cloudSaveNote(note, authToken);
-  } catch (e) {
-    console.error('Cloud save error:', e);
-  }
+  if (!authToken) return;
+  chrome.storage.local.get(MODE_KEY, (res) => {
+    if (res[MODE_KEY] !== 'cloud') return;
+    cloudSaveNote(note, authToken).catch(e => console.error('Cloud save error:', e));
+  });
 }
 
 async function cloudDeleteNoteById(localId) {
-  if (!authToken || selectedMode !== 'cloud') return;
+  if (!authToken) return;
+  chrome.storage.local.get(MODE_KEY, (res) => {
+    if (res[MODE_KEY] !== 'cloud') return;
+    cloudDeleteNote(localId, authToken).catch(e => console.error('Cloud delete error:', e));
+  });
   try {
     await cloudDeleteNote(localId, authToken);
   } catch (e) {
