@@ -94,8 +94,14 @@ const hamburgerMenuEl = document.getElementById('hamburger-menu');
 const menuStatsEl = document.getElementById('menu-stats');
 const menuExportEl = document.getElementById('menu-export');
 const menuImportEl = document.getElementById('menu-import');
+const menuLogoutEl = document.getElementById('menu-logout');
 const importFileEl = document.getElementById('import-file');
 const menuThemeEl = document.getElementById('menu-theme');
+const userProfileEl = document.getElementById('user-profile');
+const userAvatarEl = document.getElementById('user-avatar');
+const userNameEl = document.getElementById('user-name');
+const userEmailEl = document.getElementById('user-email');
+const userDividerEl = document.getElementById('user-divider');
 const filterIconBtn = document.getElementById('filter-icon-btn');
 const filterInputWrap = document.getElementById('filter-input-wrap');
 const filterInputEl = document.getElementById('filter-input');
@@ -841,6 +847,7 @@ async function handleRegister(e) {
     currentUser = data.user;
     authToken = data.session?.access_token;
     await saveAuth();
+    updateUserProfileUI();
     showToast('Account created! Welcome!');
     onboardingStep = 'role';
     authSectionEl.style.display = 'none';
@@ -875,6 +882,7 @@ async function handleLogin(e) {
     currentUser = data.user;
     authToken = data.session?.access_token;
     await saveAuth();
+    updateUserProfileUI();
     showToast('Welcome back!');
     finishOnboarding();
   }
@@ -989,6 +997,43 @@ menuImportEl.addEventListener('click', () => { closeMenu(); importFileEl.click()
 menuThemeEl.addEventListener('click', () => { closeMenu(); toggleTheme(); });
 
 importFileEl.addEventListener('change', handleFileSelect);
+
+// ── User Profile ───────────────────────────────────
+function updateUserProfileUI() {
+  if (currentUser) {
+    userProfileEl.style.display = 'flex';
+    userDividerEl.style.display = 'block';
+    menuLogoutEl.style.display = 'flex';
+    
+    const name = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'User';
+    const initial = name.charAt(0).toUpperCase();
+    userAvatarEl.textContent = initial;
+    userNameEl.textContent = name;
+    userEmailEl.textContent = currentUser.email || '';
+  } else {
+    userProfileEl.style.display = 'none';
+    userDividerEl.style.display = 'none';
+    menuLogoutEl.style.display = 'none';
+  }
+}
+
+async function handleLogout() {
+  closeMenu();
+  try {
+    if (authToken) {
+      await signOut(authToken);
+    }
+  } catch (e) {
+    console.error('Logout error:', e);
+  }
+  currentUser = null;
+  authToken = null;
+  chrome.storage.local.remove(['auth_user', 'auth_token']);
+  updateUserProfileUI();
+  showToast('Signed out');
+}
+
+menuLogoutEl.addEventListener('click', handleLogout);
 
 // ── Font Size ─────────────────────────────────────
 function loadFontSize() {
@@ -1250,6 +1295,7 @@ document.addEventListener('keydown', handleKeyboard);
 loadTheme();
 loadFontSize();
 loadAuth().then(() => {
+  updateUserProfileUI();
   checkOnboarding();
   load().then(() => {
     updateChatMatches();
