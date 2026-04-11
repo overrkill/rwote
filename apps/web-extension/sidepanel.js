@@ -163,7 +163,7 @@ function escHtml(str) {
 // ── Storage ────────────────────────────────────────
 async function load() {
   return new Promise(resolve => {
-    chrome.storage.local.get([STORAGE_KEY, TAGS_KEY], async (res) => {
+    chrome.storage.local.get([STORAGE_KEY, TAGS_KEY, MODE_KEY], async (res) => {
       notes = res[STORAGE_KEY] || [];
       const saved = res[TAGS_KEY] || {};
       if (saved.tags && saved.tags.length > 0) {
@@ -171,7 +171,9 @@ async function load() {
       }
       if (saved.colors) tagColors = { ...saved.colors };
       
-      if (authToken && selectedMode === 'cloud') {
+      const mode = res[MODE_KEY] || 'local';
+      
+      if (authToken && mode === 'cloud') {
         await loadFromCloud();
       }
       resolve();
