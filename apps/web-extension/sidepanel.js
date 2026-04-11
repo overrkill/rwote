@@ -1148,7 +1148,9 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 function updateThemeLabel() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const icon = menuThemeEl.querySelector('.theme-icon');
+  const text = menuThemeEl.querySelector('.theme-text');
   if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+  if (text) text.textContent = isDark ? 'Light Mode' : 'Dark Mode';
 }
 
 function loadTheme() {
