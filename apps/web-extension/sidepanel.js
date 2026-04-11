@@ -498,7 +498,7 @@ async function addNote(text, noteText) {
   saveNotes();
   
   if (authToken && selectedMode === 'cloud') {
-    cloudSaveNote(newNote);
+    syncNoteToCloud(newNote);
   }
   
   updateChatMatches();
