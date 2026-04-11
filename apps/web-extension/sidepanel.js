@@ -190,18 +190,50 @@ async function loadFromCloud() {
       console.error('Cloud load error:', error);
       return;
     }
-    if (cloudNotes && cloudNotes.length > 0) {
-      notes = cloudNotes.map(n => ({
-        id: String(n.local_id || n.id),
+    
+    if (!cloudNotes || cloudNotes.length === 0) return;
+    
+    const cloudMap = new Map();
+    cloudNotes.forEach(n => {
+      const id = String(n.local_id || n.id);
+      cloudMap.set(id, {
+        id,
         text: n.text,
         note: n.note,
         tag: n.tag,
         date: n.date,
         pinned: n.pinned,
+        updated_at: new Date(n.updated_at).getTime(),
         cloudId: n.id
-      }));
-      saveNotes();
-    }
+      });
+    });
+    
+    const localMap = new Map();
+    notes.forEach(n => {
+      localMap.set(n.id, n);
+    });
+    
+    const merged = new Map();
+    
+    notes.forEach(n => {
+      merged.set(n.id, n);
+    });
+    
+    cloudMap.forEach((cloudNote, cloudId) => {
+      const localNote = localMap.get(cloudId);
+      if (!localNote) {
+        merged.set(cloudId, cloudNote);
+      } else {
+        const localTime = localNote.updated_at || 0;
+        const cloudTime = cloudNote.updated_at || 0;
+        if (cloudTime > localTime) {
+          merged.set(cloudId, cloudNote);
+        }
+      }
+    });
+    
+    notes = Array.from(merged.values()).sort((a, b) => b.id - a.id);
+    saveNotes();
   } catch (e) {
     console.error('Failed to load from cloud:', e);
   }
@@ -497,7 +529,7 @@ async function addNote(text, noteText) {
   ensureTagsExist(tags);
   
   const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  const newNote = { id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date, pinned: false };
+  const newNote = { id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date, pinned: false, updated_at: Date.now() };
   notes.unshift(newNote);
   saveNotes();
   
@@ -550,11 +582,9 @@ function editNote(id, newText, newNote) {
     note.tag = newTags[0];
   }
   
+  note.updated_at = Date.now();
   saveNotes();
-  
-  if (authToken && selectedMode === 'cloud') {
-    syncNoteToCloud(note);
-  }
+  syncNoteToCloud(note);
   
   updateChatMatches();
   renderAll();
@@ -646,6 +676,7 @@ function togglePin(id) {
   const note = notes.find(n => n.id === id);
   if (!note) return;
   note.pinned = !note.pinned;
+  note.updated_at = Date.now();
   saveNotes();
   syncNoteToCloud(note);
   renderAll();
