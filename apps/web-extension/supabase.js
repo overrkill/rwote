@@ -23,7 +23,7 @@ async function request(method, endpoint, body = null, token = null) {
   const data = await response.json();
   
   if (!response.ok) {
-    throw new Error(data.msg || data.error_description || 'Request failed');
+    throw new Error(data.msg || data.error_description || data.error || 'Request failed');
   }
   
   return data;
@@ -38,20 +38,24 @@ async function signUp(email, password, name = '') {
 }
 
 async function signIn(email, password) {
-  const data = await request('POST', '/auth/v1/token?grant_type=password', {
-    email,
-    password
-  });
-  
-  return {
-    data: {
-      user: data.user,
-      session: {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token
+  try {
+    const data = await request('POST', '/auth/v1/token?grant_type=password', {
+      email,
+      password
+    });
+    
+    return {
+      data: {
+        user: data.user,
+        session: {
+          access_token: data.access_token,
+          refresh_token: data.refresh_token
+        }
       }
-    }
-  };
+    };
+  } catch (error) {
+    return { error: { message: error.message } };
+  }
 }
 
 async function signOut(token) {

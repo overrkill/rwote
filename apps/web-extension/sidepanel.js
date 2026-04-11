@@ -212,6 +212,7 @@ function saveNotes() {
 }
 
 async function syncNoteToCloud(note) {
+  console.log('syncNoteToCloud - authToken:', authToken ? 'exists' : 'null', 'selectedMode:', selectedMode);
   if (!authToken || selectedMode !== 'cloud') return;
   try {
     await cloudSaveNote(note, authToken);
@@ -947,8 +948,10 @@ async function handleLogin(e) {
   }
   
   if (data?.user) {
+    console.log('handleLogin - session:', data.session);
     currentUser = data.user;
     authToken = data.session?.access_token;
+    console.log('handleLogin - authToken set:', authToken ? 'yes' : 'no');
     await saveAuth();
     updateUserProfileUI();
     showToast('Welcome back!');
@@ -975,6 +978,7 @@ async function loadAuth() {
       if (res.auth_user && res.auth_token) {
         currentUser = res.auth_user;
         authToken = res.auth_token;
+        console.log('loadAuth - token loaded:', authToken ? 'yes' : 'no');
       }
       resolve();
     });
