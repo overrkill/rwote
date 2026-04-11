@@ -95,6 +95,7 @@ const menuStatsEl = document.getElementById('menu-stats');
 const menuExportEl = document.getElementById('menu-export');
 const menuImportEl = document.getElementById('menu-import');
 const menuLogoutEl = document.getElementById('menu-logout');
+const menuLoginEl = document.getElementById('menu-login');
 const importFileEl = document.getElementById('import-file');
 const menuThemeEl = document.getElementById('menu-theme');
 const userProfileEl = document.getElementById('user-profile');
@@ -213,7 +214,7 @@ function saveNotes() {
 async function syncNoteToCloud(note) {
   if (!authToken || selectedMode !== 'cloud') return;
   try {
-    await cloudSaveNote(authToken, note);
+    await cloudSaveNote(note, authToken);
   } catch (e) {
     console.error('Cloud save error:', e);
   }
@@ -972,11 +973,8 @@ async function loadAuth() {
   return new Promise(resolve => {
     chrome.storage.local.get(['auth_user', 'auth_token'], async (res) => {
       if (res.auth_user && res.auth_token) {
-        const { user } = await getCurrentUser();
-        if (user) {
-          currentUser = user;
-          authToken = res.auth_token;
-        }
+        currentUser = res.auth_user;
+        authToken = res.auth_token;
       }
       resolve();
     });
@@ -1071,6 +1069,7 @@ function updateUserProfileUI() {
     userProfileEl.style.display = 'flex';
     userDividerEl.style.display = 'block';
     menuLogoutEl.style.display = 'flex';
+    menuLoginEl.style.display = 'none';
     
     const name = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'User';
     const initial = name.charAt(0).toUpperCase();
@@ -1081,6 +1080,7 @@ function updateUserProfileUI() {
     userProfileEl.style.display = 'none';
     userDividerEl.style.display = 'none';
     menuLogoutEl.style.display = 'none';
+    menuLoginEl.style.display = 'flex';
   }
 }
 
@@ -1100,7 +1100,16 @@ async function handleLogout() {
   showToast('Signed out');
 }
 
+function openLoginModal() {
+  closeMenu();
+  selectedMode = 'cloud';
+  onboardingStep = 'mode';
+  renderModeGrid();
+  onboardingEl.style.display = 'flex';
+}
+
 menuLogoutEl.addEventListener('click', handleLogout);
+menuLoginEl.addEventListener('click', openLoginModal);
 
 // ── Font Size ─────────────────────────────────────
 function loadFontSize() {
