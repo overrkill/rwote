@@ -950,14 +950,18 @@ async function handleLogin(e) {
   }
   
   if (data?.user) {
-    console.log('handleLogin - session:', data.session);
     currentUser = data.user;
     authToken = data.session?.access_token;
-    console.log('handleLogin - authToken set:', authToken ? 'yes' : 'no');
     await saveAuth();
     updateUserProfileUI();
     showToast('Welcome back!');
     finishOnboarding();
+    
+    if (selectedMode === 'cloud') {
+      await loadFromCloud();
+      updateChatMatches();
+      renderAll();
+    }
   }
 }
 
