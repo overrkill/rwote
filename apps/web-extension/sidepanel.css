@@ -149,6 +149,165 @@ body {
 .icon-sun { display: block; }
 .icon-moon { display: none; }
 
+/* ── Subscription Modal ─────────────────────────── */
+.subscription-modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  max-width: 380px;
+  width: 90%;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.subscription-modal .modal-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.subscription-modal .modal-header h3 {
+  flex: 1;
+  text-align: center;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.subscription-modal .modal-back {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0 8px;
+}
+
+.subscription-modal .modal-back:hover {
+  color: var(--text-primary);
+}
+
+.subscription-content {
+  padding: 24px 20px;
+  overflow-y: auto;
+}
+
+.subscription-status {
+  text-align: center;
+  padding: 20px;
+  background: var(--surface-alt);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+}
+
+.status-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.status-text {
+  font-size: 0.95em;
+  color: var(--text-secondary);
+}
+
+.status-text.trial {
+  color: #2563a0;
+}
+
+.status-text.paid {
+  color: #2e7d32;
+}
+
+.status-text.expired {
+  color: #d32f2f;
+}
+
+.subscription-plans {
+  display: none;
+}
+
+.subscription-plans.visible {
+  display: block;
+}
+
+.plan-header {
+  font-size: 1em;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.plan-features {
+  margin-bottom: 20px;
+}
+
+.plan-feature {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  padding: 6px 0;
+}
+
+.plan-btn {
+  width: 100%;
+  padding: 14px;
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: 600;
+  background: var(--accent-btn);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: opacity 0.13s;
+}
+
+.plan-btn:hover {
+  opacity: 0.85;
+}
+
+.plan-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.plan-lifetime {
+  background: var(--surface-alt);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.plan-price {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.subscription-success {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  background: #2e7d32;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  margin: 0 auto 16px;
+}
+
+.success-text {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #2e7d32;
+}
+
 /* ── Hamburger Menu ──────────────────────────────── */
 .hamburger-btn {
   background: none;
@@ -266,6 +425,24 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.user-status {
+  font-size: 0.75em;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+.user-status.trial {
+  color: #2563a0;
+}
+
+.user-status.paid {
+  color: #2e7d32;
+}
+
+.user-status.expired {
+  color: #d32f2f;
 }
 
 #user-divider {

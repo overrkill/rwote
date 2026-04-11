@@ -1,5 +1,5 @@
 // sidepanel.js
-/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote */
+/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote, getSubscriptionStatus, subscribeToPlan */
 
 const STORAGE_KEY  = 'rwote_v1';
 const TAGS_KEY     = 'rwote_tags_v1';
@@ -66,6 +66,7 @@ let selectedMode = null;
 let currentUser = null;
 let authToken = null;
 let refreshToken = null;
+let subscriptionStatus = null;
 
 // ── DOM refs ───────────────────────────────────────
 const notesEl       = document.getElementById('notes');
@@ -104,6 +105,17 @@ const userAvatarEl = document.getElementById('user-avatar');
 const userNameEl = document.getElementById('user-name');
 const userEmailEl = document.getElementById('user-email');
 const userDividerEl = document.getElementById('user-divider');
+const userStatusEl = document.getElementById('user-status');
+const menuSubscriptionEl = document.getElementById('menu-subscription');
+const subscriptionModalEl = document.getElementById('subscription-modal');
+const subscriptionBackEl = document.getElementById('subscription-back');
+const subscriptionCloseEl = document.getElementById('subscription-close');
+const statusIconEl = document.getElementById('status-icon');
+const statusTextEl = document.getElementById('status-text');
+const subscriptionPlansEl = document.getElementById('subscription-plans');
+const subscriptionSuccessEl = document.getElementById('subscription-success');
+const planMonthlyEl = document.getElementById('plan-monthly');
+const planLifetimeEl = document.getElementById('plan-lifetime');
 const filterIconBtn = document.getElementById('filter-icon-btn');
 const filterInputWrap = document.getElementById('filter-input-wrap');
 const filterInputEl = document.getElementById('filter-input');
@@ -249,6 +261,7 @@ function saveNotes() {
 
 async function syncNoteToCloud(note) {
   if (!authToken) return;
+  if (!subscriptionStatus || subscriptionStatus.subscription_status === 'expired') return;
   chrome.storage.local.get(MODE_KEY, async (res) => {
     if (res[MODE_KEY] !== 'cloud') return;
     await ensureValidToken();
@@ -258,6 +271,7 @@ async function syncNoteToCloud(note) {
 
 async function cloudDeleteNoteById(localId) {
   if (!authToken) return;
+  if (!subscriptionStatus || subscriptionStatus.subscription_status === 'expired') return;
   chrome.storage.local.get(MODE_KEY, async (res) => {
     if (res[MODE_KEY] !== 'cloud') return;
     await ensureValidToken();
@@ -951,6 +965,7 @@ async function handleRegister(e) {
     onboardConfirmEl.textContent = 'Get Started';
     onboardConfirmEl.style.display = 'block';
     renderRoleGrid();
+    await loadSubscriptionStatus();
   }
 }
 
@@ -982,6 +997,8 @@ async function handleLogin(e) {
     updateUserProfileUI();
     showToast('Welcome back!');
     finishOnboarding();
+    
+    await loadSubscriptionStatus();
     
     if (selectedMode === 'cloud') {
       await loadFromCloud();
@@ -1016,6 +1033,7 @@ async function loadAuth() {
         if (authToken && refreshToken) {
           await ensureValidToken();
         }
+        await loadSubscriptionStatus();
       }
       resolve();
     });
@@ -1160,6 +1178,133 @@ function updateUserProfileUI() {
   }
 }
 
+async function loadSubscriptionStatus() {
+  if (!authToken) {
+    subscriptionStatus = null;
+    return;
+  }
+  
+  try {
+    await ensureValidToken();
+    const result = await getSubscriptionStatus(authToken);
+    if (result.error) {
+      console.error('Failed to load subscription status:', result.error);
+      return;
+    }
+    subscriptionStatus = result;
+    updateSubscriptionUI();
+  } catch (e) {
+    console.error('Failed to load subscription status:', e);
+  }
+}
+
+function updateSubscriptionUI() {
+  if (!currentUser) {
+    userStatusEl.textContent = '';
+    userStatusEl.className = 'user-status';
+    menuSubscriptionEl.style.display = 'none';
+    return;
+  }
+  
+  if (!subscriptionStatus) {
+    userStatusEl.textContent = 'Loading...';
+    menuSubscriptionEl.style.display = 'flex';
+    return;
+  }
+  
+  const status = subscriptionStatus.subscription_status;
+  const daysLeft = subscriptionStatus.days_left;
+  
+  if (status === 'paid') {
+    userStatusEl.textContent = '☁️ Pro';
+    userStatusEl.className = 'user-status paid';
+    menuSubscriptionEl.style.display = 'flex';
+  } else if (status === 'trial' || status === 'expired') {
+    if (daysLeft > 0) {
+      userStatusEl.textContent = `Trial · ${daysLeft} days left`;
+      userStatusEl.className = 'user-status trial';
+    } else {
+      userStatusEl.textContent = '⚠️ Trial expired';
+      userStatusEl.className = 'user-status expired';
+    }
+    menuSubscriptionEl.style.display = 'flex';
+  } else {
+    userStatusEl.textContent = '';
+    menuSubscriptionEl.style.display = 'none';
+  }
+}
+
+function showSubscriptionModal() {
+  closeMenu();
+  subscriptionModalEl.style.display = 'flex';
+  updateSubscriptionModal();
+}
+
+function updateSubscriptionModal() {
+  if (!subscriptionStatus) {
+    statusIconEl.textContent = '☁️';
+    statusTextEl.textContent = 'Loading...';
+    subscriptionPlansEl.classList.remove('visible');
+    subscriptionSuccessEl.style.display = 'none';
+    return;
+  }
+  
+  const status = subscriptionStatus.subscription_status;
+  const daysLeft = subscriptionStatus.days_left;
+  
+  if (status === 'paid') {
+    statusIconEl.textContent = '✓';
+    statusTextEl.textContent = "You're subscribed to Pro!";
+    statusTextEl.className = 'status-text paid';
+    subscriptionPlansEl.classList.remove('visible');
+    subscriptionSuccessEl.style.display = 'block';
+  } else if (status === 'trial') {
+    statusIconEl.textContent = '☁️';
+    statusTextEl.innerHTML = `Trial Period<br><span style="font-size:0.85em">${daysLeft} days remaining</span>`;
+    statusTextEl.className = 'status-text trial';
+    subscriptionPlansEl.classList.add('visible');
+    subscriptionSuccessEl.style.display = 'none';
+    planMonthlyEl.style.display = 'block';
+    planLifetimeEl.style.display = 'block';
+  } else if (status === 'expired') {
+    statusIconEl.textContent = '⚠️';
+    statusTextEl.textContent = 'Trial expired';
+    statusTextEl.className = 'status-text expired';
+    subscriptionPlansEl.classList.add('visible');
+    subscriptionSuccessEl.style.display = 'none';
+    planMonthlyEl.style.display = 'block';
+    planLifetimeEl.style.display = 'block';
+  }
+}
+
+async function handleUpgrade(plan) {
+  planMonthlyEl.disabled = true;
+  planLifetimeEl.disabled = true;
+  planMonthlyEl.textContent = 'Processing...';
+  planLifetimeEl.textContent = 'Processing...';
+  
+  try {
+    await ensureValidToken();
+    const result = await subscribeToPlan(plan, authToken);
+    
+    if (result.error) {
+      showToast('Failed to upgrade: ' + result.error.message);
+    } else {
+      subscriptionStatus = { ...subscriptionStatus, subscription_status: 'paid' };
+      updateSubscriptionUI();
+      updateSubscriptionModal();
+      showToast('Upgraded to Pro!');
+    }
+  } catch (e) {
+    showToast('Upgrade failed');
+  }
+  
+  planMonthlyEl.disabled = false;
+  planLifetimeEl.disabled = false;
+  planMonthlyEl.innerHTML = 'Monthly — <span class="plan-price">$5/mo</span>';
+  planLifetimeEl.innerHTML = 'Lifetime — <span class="plan-price">$30</span>';
+}
+
 async function handleLogout() {
   closeMenu();
   try {
@@ -1172,6 +1317,7 @@ async function handleLogout() {
   currentUser = null;
   authToken = null;
   refreshToken = null;
+  subscriptionStatus = null;
   chrome.storage.local.remove(['auth_user', 'auth_token', 'auth_refresh_token']);
   updateUserProfileUI();
   showToast('Signed out');
@@ -1187,6 +1333,20 @@ function openLoginModal() {
 
 menuLogoutEl.addEventListener('click', handleLogout);
 menuLoginEl.addEventListener('click', openLoginModal);
+menuSubscriptionEl.addEventListener('click', showSubscriptionModal);
+subscriptionBackEl.addEventListener('click', () => {
+  subscriptionModalEl.style.display = 'none';
+});
+subscriptionCloseEl.addEventListener('click', () => {
+  subscriptionModalEl.style.display = 'none';
+});
+subscriptionModalEl.addEventListener('click', (e) => {
+  if (e.target === subscriptionModalEl) {
+    subscriptionModalEl.style.display = 'none';
+  }
+});
+planMonthlyEl.addEventListener('click', () => handleUpgrade('monthly'));
+planLifetimeEl.addEventListener('click', () => handleUpgrade('lifetime'));
 
 // ── Font Size ─────────────────────────────────────
 function loadFontSize() {

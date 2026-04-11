@@ -28,11 +28,16 @@
             <div class="user-info">
               <div class="user-name" id="user-name"></div>
               <div class="user-email" id="user-email"></div>
+              <div class="user-status" id="user-status"></div>
             </div>
           </div>
           <button class="hamburger-item" id="menu-login" title="Sign in to sync">
             🔑
             <span>Sign In</span>
+          </button>
+          <button class="hamburger-item" id="menu-subscription" style="display:none" title="Manage subscription">
+            🔄
+            <span>Subscription</span>
           </button>
           <div class="hamburger-divider" id="user-divider" style="display:none"></div>
           <button class="hamburger-item" id="menu-logout" style="display:none" title="Sign out">
@@ -167,6 +172,43 @@
       <textarea id="input-note" placeholder="Extra context (optional)…" rows="2"></textarea>
 
       <button class="save-btn" id="save-btn">Save</button>
+    </div>
+  </div>
+
+  <!-- Subscription Modal -->
+  <div class="modal-overlay subscription-modal-overlay" id="subscription-modal" style="display:none">
+    <div class="subscription-modal">
+      <div class="modal-header">
+        <button class="modal-back" id="subscription-back">←</button>
+        <h3>Subscription</h3>
+        <button class="modal-close" id="subscription-close">×</button>
+      </div>
+      <div class="subscription-content">
+        <div class="subscription-status" id="subscription-status">
+          <div class="status-icon" id="status-icon">☁️</div>
+          <div class="status-text" id="status-text">Loading...</div>
+        </div>
+        
+        <div class="subscription-plans" id="subscription-plans">
+          <div class="plan-header">Upgrade to Pro</div>
+          <div class="plan-features">
+            <div class="plan-feature">✓ Sync across devices</div>
+            <div class="plan-feature">✓ Cloud backup</div>
+            <div class="plan-feature">✓ Unlimited notes</div>
+          </div>
+          <button class="plan-btn" id="plan-monthly">
+            Monthly — <span class="plan-price">$5/mo</span>
+          </button>
+          <button class="plan-btn plan-lifetime" id="plan-lifetime">
+            Lifetime — <span class="plan-price">$30</span>
+          </button>
+        </div>
+        
+        <div class="subscription-success" id="subscription-success" style="display:none">
+          <div class="success-icon">✓</div>
+          <div class="success-text">You're subscribed to Pro!</div>
+        </div>
+      </div>
     </div>
   </div>
 

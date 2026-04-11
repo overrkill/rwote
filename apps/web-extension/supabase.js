@@ -100,3 +100,11 @@ async function cloudLoadNotes(token) {
 async function cloudDeleteNote(localId, token) {
   return callEdgeFunction('delete-note', { local_id: localId }, token);
 }
+
+async function getSubscriptionStatus(token) {
+  return callEdgeFunction('subscription-status', {}, token);
+}
+
+async function subscribeToPlan(plan, token) {
+  return callEdgeFunction('subscribe', { plan }, token);
+}
