@@ -67,7 +67,7 @@ async function getUser(token) {
   return { user };
 }
 
-async function refreshToken(refreshToken) {
+async function refreshAccessToken(refreshToken) {
   const data = await request('POST', '/auth/v1/token?grant_type=refresh_token', {
     refresh_token: refreshToken
   });

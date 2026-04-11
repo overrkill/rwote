@@ -1,5 +1,5 @@
 // sidepanel.js
-/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote, getSubscriptionStatus, subscribeToPlan */
+/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote, getSubscriptionStatus, subscribeToPlan, refreshAccessToken */
 
 const STORAGE_KEY  = 'rwote_v1';
 const TAGS_KEY     = 'rwote_tags_v1';
@@ -1058,7 +1058,7 @@ async function refreshAuthToken() {
   if (!refreshToken) return false;
   
   try {
-    const result = await refreshToken(refreshToken);
+    const result = await refreshAccessToken(refreshToken);
     if (result.error) return false;
     
     authToken = result.data.session.access_token;
