@@ -214,23 +214,17 @@ function saveNotes() {
 }
 
 async function syncNoteToCloud(note) {
-  console.log('syncNoteToCloud called, authToken:', authToken ? 'exists' : 'null');
   if (!authToken) return;
   chrome.storage.local.get(MODE_KEY, (res) => {
-    console.log('MODE_KEY:', res[MODE_KEY]);
     if (res[MODE_KEY] !== 'cloud') return;
-    console.log('Syncing to cloud:', note.id);
     cloudSaveNote(note, authToken).catch(e => console.error('Cloud save error:', e));
   });
 }
 
 async function cloudDeleteNoteById(localId) {
-  console.log('cloudDeleteNoteById called, authToken:', authToken ? 'exists' : 'null');
   if (!authToken) return;
   chrome.storage.local.get(MODE_KEY, (res) => {
-    console.log('MODE_KEY:', res[MODE_KEY]);
     if (res[MODE_KEY] !== 'cloud') return;
-    console.log('Deleting from cloud:', localId);
     cloudDeleteNote(localId, authToken).catch(e => console.error('Cloud delete error:', e));
   });
 }
@@ -513,12 +507,8 @@ async function addNote(text, noteText) {
 }
 
 function deleteNote(id) {
-  console.log('deleteNote called with id:', id);
   const noteToDelete = notes.find(n => n.id === id);
-  if (!noteToDelete) {
-    console.log('Note to delete not found');
-    return;
-  }
+  if (!noteToDelete) return;
   
   deletedNote = noteToDelete;
   notes = notes.filter(n => n.id !== id);
@@ -649,12 +639,8 @@ function undoDelete() {
 }
 
 function togglePin(id) {
-  console.log('togglePin called with id:', id);
   const note = notes.find(n => n.id === id);
-  if (!note) {
-    console.log('Note not found');
-    return;
-  }
+  if (!note) return;
   note.pinned = !note.pinned;
   saveNotes();
   syncNoteToCloud(note);
@@ -987,7 +973,6 @@ async function loadAuth() {
       if (res.auth_user && res.auth_token) {
         currentUser = res.auth_user;
         authToken = res.auth_token;
-        console.log('loadAuth - token loaded:', authToken ? 'yes' : 'no');
       }
       resolve();
     });
