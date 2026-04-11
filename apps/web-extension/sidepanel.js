@@ -985,6 +985,9 @@ function checkOnboarding() {
   chrome.storage.local.get([ONBOARD_KEY, MODE_KEY], (res) => {
     if (res[ONBOARD_KEY]) {
       onboardingEl.style.display = 'none';
+      if (res[MODE_KEY]) {
+        selectedMode = res[MODE_KEY];
+      }
     } else {
       renderModeGrid();
       onboardingEl.style.display = 'flex';
