@@ -190,7 +190,7 @@ async function loadFromCloud() {
     }
     if (cloudNotes && cloudNotes.length > 0) {
       notes = cloudNotes.map(n => ({
-        id: n.local_id || n.id,
+        id: String(n.local_id || n.id),
         text: n.text,
         note: n.note,
         tag: n.tag,
@@ -474,22 +474,16 @@ function renderNotes() {
   }).join('');
 
   notesEl.querySelectorAll('.card-btn.del').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      console.log('Delete clicked', btn.dataset.id);
-      deleteNote(Number(btn.dataset.id));
-    });
+    btn.addEventListener('click', () => deleteNote(String(btn.dataset.id)));
   });
   notesEl.querySelectorAll('.card-btn.copy').forEach(btn => {
-    btn.addEventListener('click', () => copyNote(Number(btn.dataset.id)));
+    btn.addEventListener('click', () => copyNote(String(btn.dataset.id)));
   });
   notesEl.querySelectorAll('.card-btn.pin').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      console.log('Pin clicked', btn.dataset.id);
-      togglePin(Number(btn.dataset.id));
-    });
+    btn.addEventListener('click', () => togglePin(String(btn.dataset.id)));
   });
   notesEl.querySelectorAll('.card-btn.edit').forEach(btn => {
-    btn.addEventListener('click', () => showEditModal(Number(btn.dataset.id)));
+    btn.addEventListener('click', () => showEditModal(String(btn.dataset.id)));
   });
 }
 
