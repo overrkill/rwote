@@ -214,24 +214,25 @@ function saveNotes() {
 }
 
 async function syncNoteToCloud(note) {
+  console.log('syncNoteToCloud called, authToken:', authToken ? 'exists' : 'null');
   if (!authToken) return;
   chrome.storage.local.get(MODE_KEY, (res) => {
+    console.log('MODE_KEY:', res[MODE_KEY]);
     if (res[MODE_KEY] !== 'cloud') return;
+    console.log('Syncing to cloud:', note.id);
     cloudSaveNote(note, authToken).catch(e => console.error('Cloud save error:', e));
   });
 }
 
 async function cloudDeleteNoteById(localId) {
+  console.log('cloudDeleteNoteById called, authToken:', authToken ? 'exists' : 'null');
   if (!authToken) return;
   chrome.storage.local.get(MODE_KEY, (res) => {
+    console.log('MODE_KEY:', res[MODE_KEY]);
     if (res[MODE_KEY] !== 'cloud') return;
+    console.log('Deleting from cloud:', localId);
     cloudDeleteNote(localId, authToken).catch(e => console.error('Cloud delete error:', e));
   });
-  try {
-    await cloudDeleteNote(localId, authToken);
-  } catch (e) {
-    console.error('Cloud delete error:', e);
-  }
 }
 
 // ── Chat match ─────────────────────────────────────
@@ -473,13 +474,19 @@ function renderNotes() {
   }).join('');
 
   notesEl.querySelectorAll('.card-btn.del').forEach(btn => {
-    btn.addEventListener('click', () => deleteNote(Number(btn.dataset.id)));
+    btn.addEventListener('click', (e) => {
+      console.log('Delete clicked', btn.dataset.id);
+      deleteNote(Number(btn.dataset.id));
+    });
   });
   notesEl.querySelectorAll('.card-btn.copy').forEach(btn => {
     btn.addEventListener('click', () => copyNote(Number(btn.dataset.id)));
   });
   notesEl.querySelectorAll('.card-btn.pin').forEach(btn => {
-    btn.addEventListener('click', () => togglePin(Number(btn.dataset.id)));
+    btn.addEventListener('click', (e) => {
+      console.log('Pin clicked', btn.dataset.id);
+      togglePin(Number(btn.dataset.id));
+    });
   });
   notesEl.querySelectorAll('.card-btn.edit').forEach(btn => {
     btn.addEventListener('click', () => showEditModal(Number(btn.dataset.id)));
@@ -512,18 +519,18 @@ async function addNote(text, noteText) {
 }
 
 function deleteNote(id) {
+  console.log('deleteNote called with id:', id);
   const noteToDelete = notes.find(n => n.id === id);
-  if (!noteToDelete) return;
+  if (!noteToDelete) {
+    console.log('Note to delete not found');
+    return;
+  }
   
   deletedNote = noteToDelete;
   notes = notes.filter(n => n.id !== id);
   chatMatchIds.delete(id);
   saveNotes();
-  
-  if (authToken && selectedMode === 'cloud') {
-    cloudDeleteNoteById(id);
-  }
-  
+  cloudDeleteNoteById(id);
   renderAll();
   
   clearTimeout(deleteTimer);
@@ -648,15 +655,15 @@ function undoDelete() {
 }
 
 function togglePin(id) {
+  console.log('togglePin called with id:', id);
   const note = notes.find(n => n.id === id);
-  if (!note) return;
+  if (!note) {
+    console.log('Note not found');
+    return;
+  }
   note.pinned = !note.pinned;
   saveNotes();
-  
-  if (authToken && selectedMode === 'cloud') {
-    syncNoteToCloud(note);
-  }
-  
+  syncNoteToCloud(note);
   renderAll();
 }
 
