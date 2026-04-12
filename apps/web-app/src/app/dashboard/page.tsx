@@ -17,6 +17,7 @@ import { NoteList, NoteForm } from '@/components/notes'
 import SearchBar from '@/components/notes/search-bar'
 import TagFilter from '@/components/notes/tag-filter'
 import SubscriptionModal from '@/components/ui/subscription-modal'
+import { useTheme } from '@/components/providers/theme-provider'
 
 const DEFAULT_TAGS = [
   'uncategorized', 'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
@@ -26,6 +27,7 @@ const DEFAULT_TAGS = [
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
   const [notes, setNotes] = useState<Note[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTags, setActiveTags] = useState<string[]>([])
@@ -187,35 +189,42 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-secondary">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-bg-dark">
+        <div className="text-secondary-light dark:text-secondary-dark">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="bg-surface border-b border-border px-4 py-3 sticky top-0 z-30">
+    <div className="min-h-screen bg-white dark:bg-bg-dark">
+      <header className="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark px-4 py-3 sticky top-0 z-30">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl" style={{ fontFamily: "'Grand Hotel', cursive" }}>Rwote</h1>
+          <h1 className="text-2xl text-primary-light dark:text-primary-dark" style={{ fontFamily: "'Grand Hotel', cursive" }}>Rwote</h1>
           <div className="flex items-center gap-2 relative">
             {syncing && (
-              <span className="text-xs text-tertiary animate-pulse">Syncing...</span>
+              <span className="text-xs text-tertiary-light dark:text-tertiary-dark animate-pulse">Syncing...</span>
             )}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 setMenuOpen(!menuOpen)
               }}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               title="Menu"
             >
               ☰
             </button>
-            <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-border ${menuOpen ? 'block' : 'hidden'}`}>
-              <div className="p-3 border-b border-border">
-                <div className="text-sm font-medium">{subscription?.email || 'User'}</div>
-                <div className="text-xs text-gray-500 capitalize">
+            <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#2a2a28] rounded-lg shadow-lg border border-border-light dark:border-border-dark ${menuOpen ? 'block' : 'hidden'}`}>
+              <div className="p-3 border-b border-border-light dark:border-border-dark">
+                <div className="text-sm font-medium text-primary-light dark:text-primary-dark">{subscription?.email || 'User'}</div>
+                <div className="text-xs text-secondary-light dark:text-secondary-dark capitalize">
                   {subscription?.subscription_status === 'paid' && 'Pro Member'}
                   {subscription?.subscription_status === 'trial' && `Trial (${subscription.days_left} days left)`}
                   {subscription?.subscription_status === 'expired' && 'Expired'}
@@ -226,14 +235,13 @@ export default function DashboardPage() {
                   setShowSubscriptionModal(true)
                   setMenuOpen(false)
                 }}
-                className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
               >
                 🔄 <span>Subscription</span>
               </button>
               <button
                 onClick={() => {
                   setMenuOpen(false)
-                  // Export functionality
                   const data = JSON.stringify(notes, null, 2)
                   const blob = new Blob([data], { type: 'application/json' })
                   const url = URL.createObjectURL(blob)
@@ -243,17 +251,17 @@ export default function DashboardPage() {
                   a.click()
                   URL.revokeObjectURL(url)
                 }}
-                className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
               >
                 📥 <span>Export Notes</span>
               </button>
-              <div className="border-t border-border">
+              <div className="border-t border-border-light dark:border-border-dark">
                 <button
                   onClick={() => {
                     handleSignOut()
                     setMenuOpen(false)
                   }}
-                  className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                  className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
                 >
                   🚪 <span>Sign Out</span>
                 </button>
@@ -307,17 +315,17 @@ export default function DashboardPage() {
         {!showForm && !editingNote && (
           <button
             onClick={() => setShowForm(true)}
-            className="w-full mb-6 py-3 text-center border-2 border-dashed border-border rounded-lg text-secondary hover:border-border-focus hover:text-primary transition-colors"
+            className="w-full mb-6 py-3 text-center border-2 border-dashed border-border-light dark:border-border-dark rounded-lg text-secondary-light dark:text-secondary-dark hover:border-border-focus-light dark:hover:border-border-focus-dark transition-colors"
           >
             + Add Note
           </button>
         )}
 
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-secondary">
+          <p className="text-sm text-secondary-light dark:text-secondary-dark">
             {notes.length} {notes.length === 1 ? 'note' : 'notes'}
             {subscription?.can_sync && (
-              <span className="ml-2 text-tertiary">• Synced</span>
+              <span className="ml-2 text-tertiary-light dark:text-tertiary-dark">• Synced</span>
             )}
           </p>
         </div>

@@ -11,13 +11,6 @@
 
   :root {
     --font-size-base: 14px;
-    --chat-banner-bg: #eef5fb;
-    --chat-banner-border: #d4e6f4;
-    --chat-banner-text: #3a6f8f;
-    --card-match-border: #4090b0;
-    --mark-bg: #ffeab4;
-    --toast-bg: #1a1a1a;
-    --toast-text: #ffffff;
   }
 
   html {
@@ -27,8 +20,7 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
     font-size: var(--font-size-base);
-    background: var(--tw-bg, #ffffff);
-    color: var(--tw-primary, #1a1a1a);
+    @apply bg-white dark:bg-[#0f0e0d] text-[#1a1a1a] dark:text-[#f5f2ec];
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -37,38 +29,25 @@
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-2.5 bg-accent-btn text-white border-none rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85;
+    @apply px-6 py-2.5 bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-none rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85;
   }
 
   .btn-secondary {
-    @apply px-6 py-2.5 bg-surface-alt text-primary border border-border rounded-md font-normal cursor-pointer transition-all hover:border-border-focus;
+    @apply px-6 py-2.5 bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md font-normal cursor-pointer transition-all hover:border-[#a0a0a0] dark:hover:border-[#5a5a58];
   }
 
   .input-field {
-    @apply w-full px-3.5 py-3 text-base text-primary bg-surface-alt border border-border rounded-md outline-none transition-all focus:border-border-focus focus:ring-2 focus:ring-border/20;
+    @apply w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all;
+  }
+
+  .input-field:focus {
+    @apply border-[#a0a0a0] dark:border-[#5a5a58];
   }
 
   .card {
-    @apply bg-surface border border-border rounded-lg p-3.5 flex gap-3 items-start shadow-sm transition-all hover:shadow-md hover:border-border-focus;
+    @apply bg-white dark:bg-[#1a1a19] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-lg p-3.5 flex gap-3 items-start shadow-sm transition-all hover:shadow-md hover:border-[#a0a0a0] dark:hover:border-[#5a5a58];
   }
 }
-
-/* Tag colors */
-.tag-general { @apply bg-tag-general text-tag-general-text; }
-.tag-arrays { @apply bg-tag-arrays text-tag-arrays-text; }
-.tag-strings { @apply bg-tag-strings text-tag-strings-text; }
-.tag-sliding-window { @apply bg-tag-sliding-window text-tag-sliding-window-text; }
-.tag-prefix-sum { @apply bg-tag-prefix-sum text-tag-prefix-sum-text; }
-.tag-hashing { @apply bg-tag-hashing text-tag-hashing-text; }
-.tag-trees { @apply bg-tag-trees text-tag-trees-text; }
-.tag-graphs { @apply bg-tag-graphs text-tag-graphs-text; }
-.tag-dp { @apply bg-tag-dp text-tag-dp-text; }
-.tag-sorting { @apply bg-tag-sorting text-tag-sorting-text; }
-.tag-backtracking { @apply bg-tag-backtracking text-tag-backtracking-text; }
-.tag-binary-search { @apply bg-tag-binary-search text-tag-binary-search-text; }
-.tag-heaps { @apply bg-tag-heaps text-tag-heaps-text; }
-.tag-tries { @apply bg-tag-tries text-tag-tries-text; }
-.tag-uncategorized { @apply bg-tag-general text-tag-general-text; }
 
 /* Animations */
 @keyframes fadeUp {
