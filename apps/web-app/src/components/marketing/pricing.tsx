@@ -65,7 +65,7 @@ export default function Pricing() {
             </ul>
             {/* TODO: Replace with actual Stripe checkout */}
             <div className="bg-gray-100 rounded-lg p-4 text-center text-sm text-secondary">
-              Payment integration coming soon
+             Coming soon
             </div>
           </div>
         </div>

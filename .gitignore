@@ -91,6 +91,7 @@ __tests__/
 
 # TypeScript
 *.tsbuildinfo
+next-env.d.ts
 
 # Svelte
 .svelte-kit/
