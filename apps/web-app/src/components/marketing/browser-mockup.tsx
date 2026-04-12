@@ -20,7 +20,7 @@ export default function BrowserMockup() {
         <div className="p-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <span className="font-serif text-lg font-bold">Rwote</span>
+            <span className="text-lg" style={{ fontFamily: "'Grand Hotel', cursive" }}>Rwote</span>
             <span className="text-[#8a8278]" style={{ fontFamily: "'DM Mono', monospace", fontSize: '0.7rem' }}>2 notes ≡</span>
           </div>
           
