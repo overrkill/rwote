@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from '@/lib/supabase'
-import { setLocalAuth } from '@/lib/supabase'
+import { signIn, setLocalAuth } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
@@ -41,13 +40,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Sign In</h1>
+    <div className="min-h-screen flex items-center justify-center bg-[#fafafa] dark:bg-[#0f0e0d]">
+      <div className="w-full max-w-md p-8 bg-white dark:bg-[#1a1a19] rounded-lg shadow-md border border-[#d8d8d8] dark:border-[#3a3a38]">
+        <h1 className="text-2xl font-bold mb-6 text-center text-[#1a1a1a] dark:text-[#f5f2ec]">Sign In</h1>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-secondary mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-[#555555] dark:text-[#a0a0a0] mb-1">
               Email
             </label>
             <input
@@ -55,14 +54,14 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
+              className="w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="you@example.com"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-secondary mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-[#555555] dark:text-[#a0a0a0] mb-1">
               Password
             </label>
             <input
@@ -70,7 +69,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
+              className="w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="Your password"
               required
             />
@@ -83,15 +82,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary w-full"
+            className="w-full px-6 py-2.5 bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-none rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-secondary">
+        <p className="mt-4 text-center text-sm text-[#555555] dark:text-[#a0a0a0]">
           Don&apos;t have an account?{' '}
-          <a href="/auth/register" className="text-primary underline">
+          <a href="/auth/register" className="text-[#1a1a1a] dark:text-[#f5f2ec] underline">
             Sign up
           </a>
         </p>

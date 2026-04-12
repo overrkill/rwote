@@ -26,7 +26,6 @@ export default function NoteList({
   const filteredNotes = useMemo(() => {
     let result = [...notes]
 
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       result = result.filter(
@@ -37,12 +36,10 @@ export default function NoteList({
       )
     }
 
-    // Filter by tags
     if (activeTags.length > 0) {
       result = result.filter((note) => activeTags.includes(note.tag))
     }
 
-    // Sort: pinned first, then by id (newest first)
     result.sort((a, b) => {
       if (a.pinned && !b.pinned) return -1
       if (!a.pinned && b.pinned) return 1
@@ -55,13 +52,13 @@ export default function NoteList({
   if (filteredNotes.length === 0) {
     if (notes.length === 0) {
       return (
-        <div className="text-center py-10 text-secondary">
+        <div className="text-center py-10 text-[#555555] dark:text-[#a0a0a0]">
           No notes yet. Start by adding one above.
         </div>
       )
     }
     return (
-      <div className="text-center py-10 text-secondary">
+      <div className="text-center py-10 text-[#555555] dark:text-[#a0a0a0]">
         No notes match your search.
       </div>
     )

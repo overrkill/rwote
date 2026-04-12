@@ -23,16 +23,16 @@ export default function FAQ() {
   ]
 
   return (
-    <section className="py-16" id="faq">
+    <section className="py-16 bg-[#fafafa] dark:bg-[#0f0e0d]" id="faq">
       <div className="max-w-2xl mx-auto px-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
+        <h2 className="text-2xl md:text-3xl font-bold text-center mb-12 text-[#1a1a1a] dark:text-[#f5f2ec]">
           FAQ
         </h2>
         <div className="space-y-6">
           {faqs.map((faq) => (
-            <div key={faq.q} className="border-b border-border pb-6">
-              <h3 className="font-semibold mb-2">{faq.q}</h3>
-              <p className="text-secondary text-sm">{faq.a}</p>
+            <div key={faq.q} className="border-b border-[#d8d8d8] dark:border-[#3a3a38] pb-6">
+              <h3 className="font-semibold mb-2 text-[#1a1a1a] dark:text-[#f5f2ec]">{faq.q}</h3>
+              <p className="text-[#555555] dark:text-[#a0a0a0] text-sm">{faq.a}</p>
             </div>
           ))}
         </div>
