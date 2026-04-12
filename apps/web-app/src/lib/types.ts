@@ -20,4 +20,5 @@ export interface SubscriptionStatus {
   trial_ends_at?: string;
   days_left?: number;
   can_sync?: boolean;
+  email?: string;
 }

@@ -35,6 +35,17 @@ export default function DashboardPage() {
   const [syncing, setSyncing] = useState(false)
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuOpen && !(e.target as HTMLElement).closest('.hamburger-menu')) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [menuOpen])
 
   useEffect(() => {
     const auth = getLocalAuth()
@@ -186,22 +197,68 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-white">
       <header className="bg-surface border-b border-border px-4 py-3 sticky top-0 z-30">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold">Rwote</h1>
+          <h1 className="text-2xl" style={{ fontFamily: "'Grand Hotel', cursive" }}>Rwote</h1>
+          <div className="flex items-center gap-2 relative">
             {syncing && (
               <span className="text-xs text-tertiary animate-pulse">Syncing...</span>
             )}
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-sm px-3 py-1.5 rounded-lg border bg-primary text-white border-primary">
-              ☁️ Synced
-            </div>
             <button
-              onClick={handleSignOut}
-              className="btn-secondary text-sm py-1.5"
+              onClick={(e) => {
+                e.stopPropagation()
+                setMenuOpen(!menuOpen)
+              }}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title="Menu"
             >
-              Sign Out
+              ☰
             </button>
+            <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-border ${menuOpen ? 'block' : 'hidden'}`}>
+              <div className="p-3 border-b border-border">
+                <div className="text-sm font-medium">{subscription?.email || 'User'}</div>
+                <div className="text-xs text-gray-500 capitalize">
+                  {subscription?.subscription_status === 'paid' && 'Pro Member'}
+                  {subscription?.subscription_status === 'trial' && `Trial (${subscription.days_left} days left)`}
+                  {subscription?.subscription_status === 'expired' && 'Expired'}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSubscriptionModal(true)
+                  setMenuOpen(false)
+                }}
+                className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+              >
+                🔄 <span>Subscription</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false)
+                  // Export functionality
+                  const data = JSON.stringify(notes, null, 2)
+                  const blob = new Blob([data], { type: 'application/json' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `rwote-notes-${new Date().toISOString().split('T')[0]}.json`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+                className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+              >
+                📥 <span>Export Notes</span>
+              </button>
+              <div className="border-t border-border">
+                <button
+                  onClick={() => {
+                    handleSignOut()
+                    setMenuOpen(false)
+                  }}
+                  className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3"
+                >
+                  🚪 <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
