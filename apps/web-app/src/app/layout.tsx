@@ -2,8 +2,14 @@ import type { Metadata } from 'next'
 import '@/styles/globals.css'
 
 export const metadata: Metadata = {
-  title: 'Rwote — Research Notes, Right Where You Think',
-  description: 'Capture insights while you research. Tagged, searchable, always there. A Chrome extension for researchers, builders, and curious minds.',
+  title: 'Rwote - Capture and organize insights from your learning',
+  description: 'A Chrome extension and web app for capturing and organizing insights from learning sessions. Perfect for DSA preparation and technical interviews.',
+  keywords: ['chrome extension', 'note taking', 'DSA', 'learning', 'technical interviews'],
+  openGraph: {
+    title: 'Rwote - Capture and organize insights from your learning',
+    description: 'A Chrome extension and web app for capturing and organizing insights from learning sessions.',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({
@@ -16,9 +22,9 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet" />
       </head>
-      <body>
+      <body className="min-h-screen bg-white text-primary antialiased">
         {children}
       </body>
     </html>

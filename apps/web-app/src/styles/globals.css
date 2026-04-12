@@ -1,56 +1,71 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --ink: #0f0e0d;
-  --paper: #f5f2ec;
-  --accent: #c8402a;
-  --muted: #8a8278;
-  --line: #ddd8d0;
-  --tag-blue: #e8f0fe;
-  --tag-blue-text: #3b5bdb;
-  --tag-red: #fff0f0;
-  --tag-red-text: #c8402a;
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  :root {
+    --font-size-base: 14px;
+    --chat-banner-bg: #eef5fb;
+    --chat-banner-border: #d4e6f4;
+    --chat-banner-text: #3a6f8f;
+    --card-match-border: #4090b0;
+    --mark-bg: #ffeab4;
+    --toast-bg: #1a1a1a;
+    --toast-text: #ffffff;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: var(--font-size-base);
+    background: var(--tw-bg, #ffffff);
+    color: var(--tw-primary, #1a1a1a);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-html { scroll-behavior: smooth; }
+@layer components {
+  .btn-primary {
+    @apply px-6 py-2.5 bg-accent-btn text-white border-none rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85;
+  }
 
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--paper);
-  color: var(--ink);
-  overflow-x: hidden;
-  min-height: 100vh;
+  .btn-secondary {
+    @apply px-6 py-2.5 bg-surface-alt text-primary border border-border rounded-md font-normal cursor-pointer transition-all hover:border-border-focus;
+  }
+
+  .input-field {
+    @apply w-full px-3.5 py-3 text-base text-primary bg-surface-alt border border-border rounded-md outline-none transition-all focus:border-border-focus focus:ring-2 focus:ring-border/20;
+  }
+
+  .card {
+    @apply bg-surface border border-border rounded-lg p-3.5 flex gap-3 items-start shadow-sm transition-all hover:shadow-md hover:border-border-focus;
+  }
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 1000;
-  opacity: 0.4;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Tag colors for notes */
-.tag-saas { background: var(--tag-blue); color: var(--tag-blue-text); }
-.tag-dsa { background: var(--tag-red); color: var(--tag-red-text); }
-.tag-general { background: #e8e8e8; color: #4a4a4a; }
-.tag-arrays { background: #d0e8f4; color: #2563a0; }
-.tag-strings { background: #c8e6c8; color: #2e7d32; }
-.tag-sliding-window { background: #f4c4d8; color: #a02060; }
-.tag-prefix-sum { background: #f4dcc4; color: #a05020; }
-.tag-hashing { background: #dcd8f4; color: #4a2da0; }
-.tag-trees { background: #f4e4c4; color: #7a5010; }
-.tag-graphs { background: #c4e8dc; color: #1a5a40; }
-.tag-dp { background: #f4d4d4; color: #a02020; }
-.tag-sorting { background: #d4dcf4; color: #2a4aa0; }
-.tag-backtracking { background: #e4e0d4; color: #5a4820; }
-.tag-binary-search { background: #d4e0f4; color: #2a5090; }
-.tag-heaps { background: #f4d4e4; color: #802060; }
-.tag-tries { background: #c4f4e8; color: #1a6858; }
+/* Tag colors */
+.tag-general { @apply bg-tag-general text-tag-general-text; }
+.tag-arrays { @apply bg-tag-arrays text-tag-arrays-text; }
+.tag-strings { @apply bg-tag-strings text-tag-strings-text; }
+.tag-sliding-window { @apply bg-tag-sliding-window text-tag-sliding-window-text; }
+.tag-prefix-sum { @apply bg-tag-prefix-sum text-tag-prefix-sum-text; }
+.tag-hashing { @apply bg-tag-hashing text-tag-hashing-text; }
+.tag-trees { @apply bg-tag-trees text-tag-trees-text; }
+.tag-graphs { @apply bg-tag-graphs text-tag-graphs-text; }
+.tag-dp { @apply bg-tag-dp text-tag-dp-text; }
+.tag-sorting { @apply bg-tag-sorting text-tag-sorting-text; }
+.tag-backtracking { @apply bg-tag-backtracking text-tag-backtracking-text; }
+.tag-binary-search { @apply bg-tag-binary-search text-tag-binary-search-text; }
+.tag-heaps { @apply bg-tag-heaps text-tag-heaps-text; }
+.tag-tries { @apply bg-tag-tries text-tag-tries-text; }
+.tag-uncategorized { @apply bg-tag-general text-tag-general-text; }
