@@ -206,6 +206,22 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {subscription?.subscription_status === 'trial' && subscription.days_left !== undefined && subscription.days_left > 0 && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <p className="text-sm text-amber-800">
+              ⏳ Trial period — {subscription.days_left} day{subscription.days_left !== 1 ? 's' : ''} remaining
+            </p>
+            <button
+              onClick={() => setShowSubscriptionModal(true)}
+              className="text-xs px-3 py-1 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors"
+            >
+              Upgrade Now
+            </button>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-2xl mx-auto px-4 py-6">
         <div className="flex gap-3 mb-6">
           <div className="flex-1">
