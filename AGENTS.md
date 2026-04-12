@@ -217,7 +217,7 @@ rwote/
 │       ├── sidepanel.html
 │       ├── sidepanel.css
 │       ├── sidepanel.js
-│       ├── supabase.js   # Supabase REST API client
+│       ├── supabase.js    # Supabase REST API client
 │       └── icons/
 ├── packages/
 │   └── shared/          # Shared types (future)

@@ -92,6 +92,34 @@ body {
   overflow: hidden;
 }
 
+/* ── Loader ───────────────────────────────────────── */
+.loader {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.loader.hidden {
+  display: none;
+}
+
+.loader-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── Header ───────────────────────────────────────── */
 .header {
   flex-shrink: 0;

@@ -69,7 +69,9 @@ let refreshToken = null;
 let subscriptionStatus = null;
 
 // ── DOM refs ───────────────────────────────────────
-const notesEl       = document.getElementById('notes');
+const appEl        = document.getElementById('app');
+const loaderEl     = document.getElementById('loader');
+const notesEl      = document.getElementById('notes');
 const searchEl      = document.getElementById('search');
 const clearSearchEl = document.getElementById('clear-search');
 const countEl       = document.getElementById('note-count');
@@ -222,13 +224,13 @@ async function loadFromCloud() {
     
     const localMap = new Map();
     notes.forEach(n => {
-      localMap.set(n.id, n);
+      localMap.set(String(n.id), n);
     });
     
     const merged = new Map();
     
     notes.forEach(n => {
-      merged.set(n.id, n);
+      merged.set(String(n.id), n);
     });
     
     cloudMap.forEach((cloudNote, cloudId) => {
@@ -244,7 +246,7 @@ async function loadFromCloud() {
       }
     });
     
-    notes = Array.from(merged.values()).sort((a, b) => b.id - a.id);
+    notes = Array.from(merged.values()).sort((a, b) => Number(b.id) - Number(a.id));
     saveNotes();
   } catch (e) {
     console.error('Failed to load from cloud:', e);
@@ -486,7 +488,7 @@ function renderNotes() {
   const sorted = [...filtered].sort((a, b) => {
     if (a.pinned && !b.pinned) return -1;
     if (!a.pinned && b.pinned) return 1;
-    return b.id - a.id;
+    return Number(b.id) - Number(a.id);
   });
 
   notesEl.innerHTML = sorted.map((n, idx) => {
@@ -543,7 +545,7 @@ async function addNote(text, noteText) {
   ensureTagsExist(tags);
   
   const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  const newNote = { id: Date.now(), text: text.trim(), note: noteText.trim(), tag, date, pinned: false, updated_at: Date.now() };
+  const newNote = { id: String(Date.now()), text: text.trim(), note: noteText.trim(), tag, date, pinned: false, updated_at: Date.now() };
   notes.unshift(newNote);
   saveNotes();
   
@@ -1024,11 +1026,14 @@ async function saveAuth() {
 
 async function loadAuth() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['auth_user', 'auth_token', 'auth_refresh_token'], async (res) => {
+    chrome.storage.local.get(['auth_user', 'auth_token', 'auth_refresh_token', MODE_KEY], async (res) => {
       if (res.auth_user && res.auth_token) {
         currentUser = res.auth_user;
         authToken = res.auth_token;
         refreshToken = res.auth_refresh_token || null;
+        if (res[MODE_KEY]) {
+          selectedMode = res[MODE_KEY];
+        }
         
         if (authToken && refreshToken) {
           await ensureValidToken();
@@ -1073,16 +1078,19 @@ async function refreshAuthToken() {
 }
 
 function checkOnboarding() {
-  chrome.storage.local.get([ONBOARD_KEY, MODE_KEY], (res) => {
-    if (res[ONBOARD_KEY]) {
-      onboardingEl.style.display = 'none';
-      if (res[MODE_KEY]) {
-        selectedMode = res[MODE_KEY];
+  return new Promise(resolve => {
+    chrome.storage.local.get([ONBOARD_KEY, MODE_KEY], (res) => {
+      if (res[ONBOARD_KEY]) {
+        onboardingEl.style.display = 'none';
+        if (res[MODE_KEY]) {
+          selectedMode = res[MODE_KEY];
+        }
+      } else {
+        renderModeGrid();
+        onboardingEl.style.display = 'flex';
       }
-    } else {
-      renderModeGrid();
-      onboardingEl.style.display = 'flex';
-    }
+      resolve();
+    });
   });
 }
 
@@ -1609,11 +1617,26 @@ document.addEventListener('keydown', handleKeyboard);
 // ── Init ───────────────────────────────────────────
 loadTheme();
 loadFontSize();
-loadAuth().then(() => {
+
+load().then(() => {
+  renderAll();
+  return loadAuth();
+}).then(() => {
   updateUserProfileUI();
-  checkOnboarding();
-  load().then(() => {
-    updateChatMatches();
-    renderAll();
-  });
+  updateChatMatches();
+  loaderEl.classList.add('hidden');
+  
+  if (currentUser && selectedMode === 'cloud') {
+    loadFromCloud().then(() => {
+      updateChatMatches();
+      renderAll();
+    });
+  }
+  
+  if (currentUser) {
+    onboardingEl.style.display = 'none';
+  } else {
+    renderModeGrid();
+    onboardingEl.style.display = 'flex';
+  }
 });
