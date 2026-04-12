@@ -69,3 +69,17 @@
 .tag-heaps { @apply bg-tag-heaps text-tag-heaps-text; }
 .tag-tries { @apply bg-tag-tries text-tag-tries-text; }
 .tag-uncategorized { @apply bg-tag-general text-tag-general-text; }
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.8s ease both;
+}
+
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
