@@ -4,18 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   getLocalAuth, 
-  signOut, 
-  clearLocalAuth, 
-  getLocalNotes, 
-  setLocalNotes,
-  getLocalMode,
-  setLocalMode,
+  signOut,
+  clearLocalAuth,
   loadNotes,
   saveNote,
   deleteNote as cloudDeleteNote,
   getSubscriptionStatus,
-  subscribeToPlan,
-  mergeNotes
+  subscribeToPlan
 } from '@/lib/supabase'
 import type { Note, SubscriptionStatus } from '@/lib/types'
 import { NoteList, NoteForm } from '@/components/notes'
@@ -38,11 +33,9 @@ export default function DashboardPage() {
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [mode, setMode] = useState<'local' | 'cloud'>('local')
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
 
-  // Load notes and subscription status
   useEffect(() => {
     const auth = getLocalAuth()
     if (!auth) {
@@ -50,50 +43,33 @@ export default function DashboardPage() {
       return
     }
 
-    const authToken = auth.token
-    const localMode = getLocalMode() as 'local' | 'cloud'
-    
-    // Only set cloud mode if subscribed
-    if (localMode === 'cloud') {
-      setMode('cloud')
-    }
-
-    const localNotes = getLocalNotes()
-    setNotes(localNotes)
-
-    // Load subscription status and cloud notes if in cloud mode
-    async function loadData() {
+    async function loadData(token: string) {
       try {
-        const sub = await getSubscriptionStatus(authToken)
+        setSyncing(true)
+        const sub = await getSubscriptionStatus(token)
         setSubscription(sub)
 
-        // If cloud mode but not subscribed, revert to local
-        if (localMode === 'cloud' && !sub.can_sync) {
-          setMode('local')
-          setLocalMode('local')
-        } else if (localMode === 'cloud' && sub.can_sync) {
-          setSyncing(true)
-          const { notes: cloudNotes, error } = await loadNotes(authToken)
+        if (sub.can_sync) {
+          const { notes: cloudNotes, error } = await loadNotes(token)
           
           if (!error && cloudNotes) {
-            const merged = mergeNotes(localNotes, cloudNotes)
-            setNotes(merged)
-            setLocalNotes(merged)
+            setNotes(cloudNotes)
           }
-          setSyncing(false)
+        } else {
+          setShowSubscriptionModal(true)
         }
       } catch (e) {
         console.error('Failed to load data:', e)
       }
+      setSyncing(false)
       setLoading(false)
     }
 
-    loadData()
+    loadData(auth.token)
   }, [router])
 
-  // Sync note to cloud
   const syncToCloud = async (note: Note) => {
-    if (mode !== 'cloud' || !subscription?.can_sync) return
+    if (!subscription?.can_sync) return
     const auth = getLocalAuth()
     if (!auth) return
 
@@ -104,9 +80,8 @@ export default function DashboardPage() {
     }
   }
 
-  // Delete note from cloud
   const deleteFromCloud = async (id: string) => {
-    if (mode !== 'cloud' || !subscription?.can_sync) return
+    if (!subscription?.can_sync) return
     const auth = getLocalAuth()
     if (!auth) return
 
@@ -118,15 +93,25 @@ export default function DashboardPage() {
   }
 
   const handleSaveNote = (text: string, noteText: string, tag: string) => {
+    const auth = getLocalAuth()
+    if (!auth || !subscription?.can_sync) {
+      setShowSubscriptionModal(true)
+      return
+    }
+
     if (editingNote) {
+      const updatedNote: Note = {
+        ...editingNote,
+        text,
+        note: noteText,
+        tag,
+        updated_at: Date.now()
+      }
       const updatedNotes = notes.map((n) =>
-        n.id === editingNote.id
-          ? { ...n, text, note: noteText, tag, updated_at: Date.now() }
-          : n
+        n.id === editingNote.id ? updatedNote : n
       )
       setNotes(updatedNotes)
-      setLocalNotes(updatedNotes)
-      syncToCloud(updatedNotes.find(n => n.id === editingNote.id)!)
+      syncToCloud(updatedNote)
       setEditingNote(null)
     } else {
       const newNote: Note = {
@@ -138,18 +123,14 @@ export default function DashboardPage() {
         pinned: false,
         updated_at: Date.now(),
       }
-      const updatedNotes = [newNote, ...notes]
-      setNotes(updatedNotes)
-      setLocalNotes(updatedNotes)
+      setNotes([newNote, ...notes])
       syncToCloud(newNote)
     }
     setShowForm(false)
   }
 
   const handleDelete = (id: string) => {
-    const updatedNotes = notes.filter((n) => n.id !== id)
-    setNotes(updatedNotes)
-    setLocalNotes(updatedNotes)
+    setNotes(notes.filter((n) => n.id !== id))
     deleteFromCloud(id)
   }
 
@@ -158,39 +139,7 @@ export default function DashboardPage() {
       n.id === id ? { ...n, pinned: !n.pinned, updated_at: Date.now() } : n
     )
     setNotes(updatedNotes)
-    setLocalNotes(updatedNotes)
-    syncToCloud(updatedNotes.find(n => n.id === id)!)
-  }
-
-  const handleToggleMode = async () => {
-    if (mode === 'local') {
-      // Trying to enable cloud mode - check subscription first
-      if (!subscription?.can_sync) {
-        setShowSubscriptionModal(true)
-        return
-      }
-      
-      // Enable cloud mode
-      setMode('cloud')
-      setLocalMode('cloud')
-      
-      // Load cloud notes
-      const auth = getLocalAuth()
-      if (auth) {
-        setSyncing(true)
-        const { notes: cloudNotes, error } = await loadNotes(auth.token)
-        if (!error && cloudNotes) {
-          const merged = mergeNotes(notes, cloudNotes)
-          setNotes(merged)
-          setLocalNotes(merged)
-        }
-        setSyncing(false)
-      }
-    } else {
-      // Disable cloud mode
-      setMode('local')
-      setLocalMode('local')
-    }
+    syncToCloud(updatedNotes.find((n) => n.id === id)!)
   }
 
   const handleSubscribe = async (plan: string) => {
@@ -199,22 +148,15 @@ export default function DashboardPage() {
 
     try {
       await subscribeToPlan(plan, auth.token)
-      // Refresh subscription status
       const sub = await getSubscriptionStatus(auth.token)
       setSubscription(sub)
       
-      // Enable cloud mode if subscribed
       if (sub.can_sync) {
-        setMode('cloud')
-        setLocalMode('cloud')
-        
-        // Load cloud notes
+        setShowSubscriptionModal(false)
         setSyncing(true)
         const { notes: cloudNotes, error } = await loadNotes(auth.token)
         if (!error && cloudNotes) {
-          const merged = mergeNotes(notes, cloudNotes)
-          setNotes(merged)
-          setLocalNotes(merged)
+          setNotes(cloudNotes)
         }
         setSyncing(false)
       }
@@ -232,8 +174,6 @@ export default function DashboardPage() {
     router.push('/')
   }
 
-  const canSync = subscription?.can_sync === true
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -244,7 +184,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
       <header className="bg-surface border-b border-border px-4 py-3 sticky top-0 z-30">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -254,27 +193,9 @@ export default function DashboardPage() {
             )}
           </div>
           <div className="flex items-center gap-3">
-            {/* Cloud sync status button */}
-            {!canSync ? (
-              <button
-                onClick={() => setShowSubscriptionModal(true)}
-                className="text-sm px-3 py-1.5 rounded-lg border border-border bg-surface-alt text-secondary hover:border-border-focus transition-colors"
-                title="Upgrade to enable cloud sync"
-              >
-                ⬆️ Upgrade
-              </button>
-            ) : (
-              <div
-                className={`text-sm px-3 py-1.5 rounded-lg border ${
-                  mode === 'cloud'
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-surface-alt text-secondary border-border'
-                }`}
-                title={mode === 'cloud' ? 'Cloud sync enabled' : 'Local storage'}
-              >
-                {mode === 'cloud' ? '☁️ Cloud' : '💾 Local'}
-              </div>
-            )}
+            <div className="text-sm px-3 py-1.5 rounded-lg border bg-primary text-white border-primary">
+              ☁️ Synced
+            </div>
             <button
               onClick={handleSignOut}
               className="btn-secondary text-sm py-1.5"
@@ -285,9 +206,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="max-w-2xl mx-auto px-4 py-6">
-        {/* Search and filter */}
         <div className="flex gap-3 mb-6">
           <div className="flex-1">
             <SearchBar value={searchQuery} onChange={setSearchQuery} />
@@ -299,7 +218,6 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Add note form */}
         {(showForm || editingNote) && (
           <div className="mb-6">
             <NoteForm
@@ -313,7 +231,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Add note button (when form is hidden) */}
         {!showForm && !editingNote && (
           <button
             onClick={() => setShowForm(true)}
@@ -323,17 +240,15 @@ export default function DashboardPage() {
           </button>
         )}
 
-        {/* Notes count */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-secondary">
             {notes.length} {notes.length === 1 ? 'note' : 'notes'}
-            {mode === 'cloud' && canSync && (
+            {subscription?.can_sync && (
               <span className="ml-2 text-tertiary">• Synced</span>
             )}
           </p>
         </div>
 
-        {/* Notes list */}
         <NoteList
           notes={notes}
           searchQuery={searchQuery}
@@ -347,10 +262,12 @@ export default function DashboardPage() {
         />
       </main>
 
-      {/* Subscription Modal */}
       <SubscriptionModal
         isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
+        onClose={() => {
+          if (!subscription?.can_sync) return
+          setShowSubscriptionModal(false)
+        }}
         subscription={subscription}
         onSubscribe={handleSubscribe}
       />
