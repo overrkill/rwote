@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Note, User, SubscriptionStatus } from './types'
+import type { Note, User, SubscriptionStatus, AiSettings, SummarizeResult } from './types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://joqxsbboxmkpcizasdbc.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvcXhzYmJveG1rcGNpemFzZGJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjI2ODgsImV4cCI6MjA5MTQzODY4OH0.AlJh4bvWk_aMxHnWFg4xqZhY3UzbUclcKtLvkBARAQo'
@@ -105,19 +105,29 @@ export async function getCurrentUser() {
 }
 
 async function callEdgeFunction(functionName: string, body: unknown, token: string) {
-  const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  })
+  const url = `${supabaseUrl}/functions/v1/${functionName}`
   
-  const data = await response.json()
+  let response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    })
+  } catch (networkError) {
+    console.error('Network error calling edge function:', networkError)
+    throw new Error(`Network error: ${networkError}`)
+  }
+  
+  const data = await response.json().catch(() => ({}))
   
   if (!response.ok) {
-    throw new Error(data.error || 'Request failed')
+    const errorMsg = data.error || `Request failed with status ${response.status}`
+    console.error('Edge function error:', errorMsg)
+    throw new Error(errorMsg)
   }
   
   return data
@@ -155,3 +165,112 @@ export async function getSubscriptionStatus(token: string): Promise<Subscription
 export async function subscribeToPlan(plan: string, token: string) {
   return callEdgeFunction('subscribe', { plan }, token)
 }
+
+const AI_SETTINGS_KEY = 'rwote_ai_settings'
+
+export function getAiSettings(): AiSettings {
+  if (typeof window === 'undefined') {
+    return { provider: 'disabled', ollamaUrl: 'http://localhost:11434', ollamaModel: 'llama3.2' }
+  }
+  const stored = localStorage.getItem(AI_SETTINGS_KEY)
+  if (stored) {
+    return JSON.parse(stored)
+  }
+  return { provider: 'disabled', ollamaUrl: 'http://localhost:11434', ollamaModel: 'llama3.2' }
+}
+
+export function setAiSettings(settings: AiSettings) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settings))
+}
+
+const SUMMARY_PROMPT = `You are a precise summarization assistant. Given the text below, do the following:
+
+1. Summarize the content into **4-5 concise bullet points** using markdown formatting.
+2. Each bullet point should capture a distinct key idea — no repetition.
+3. At the end, add **1-4 relevant hashtags** that best represent the topic or theme of the text.
+
+Respond ONLY in this format:
+
+**Summary:**
+- bullet point 1
+- bullet point 2
+- bullet point 3
+- bullet point 4
+- bullet point 5 (if needed)
+
+**Tags:** #tag1 #tag2 #tag3
+
+---
+Text:
+{{TEXT}}`
+
+function parseSummarizeResponse(response: string): SummarizeResult {
+  let summary = ''
+  let tags: string[] = []
+
+  const summaryMatch = response.match(/\*\*Summary:\*\*\s*([\s\S]*?)(?=\*\*Tags:|$)/i)
+  const tagsMatch = response.match(/\*\*Tags:\*\*\s*(.*?)$/im)
+
+  if (summaryMatch) {
+    summary = summaryMatch[1]
+      .trim()
+      .split('\n')
+      .map(line => line.replace(/^[-*]\s*/, '').trim())
+      .filter(line => line.length > 0)
+      .join('\n')
+  }
+
+  if (tagsMatch) {
+    const tagMatches = tagsMatch[1].match(/#?(\w+)/g) || []
+    tags = tagMatches.map(t => t.replace('#', '').toLowerCase()).filter(t => t.length > 0)
+  }
+
+  if (!summary && response.trim()) {
+    summary = response.trim().split('\n').slice(0, 4).join('\n')
+  }
+
+  if (tags.length === 0) {
+    const hashtagMatches = response.match(/#(\w+)/gi) || []
+    tags = hashtagMatches.slice(0, 4).map(t => t.replace('#', '').toLowerCase())
+  }
+
+  return { summary, tags }
+}
+
+export async function summarizeUsingCloud(text: string, token: string): Promise<SummarizeResult> {
+  try {
+    const response = await callEdgeFunction('summarize', { text }, token)
+
+    if (response.error) {
+      throw new Error(response.error)
+    }
+
+    return parseSummarizeResponse(response.response)
+  } catch (error) {
+    console.error('Cloud summarization failed:', error)
+    throw error
+  }
+}
+
+export async function summarizeUsingLocal(text: string, url: string, model: string): Promise<SummarizeResult> {
+  const prompt = SUMMARY_PROMPT.replace('{{TEXT}}', text)
+
+  const response = await fetch(`${url}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: model,
+      prompt: prompt,
+      stream: false
+    })
+  })
+
+  if (!response.ok) {
+    throw new Error(`Ollama error: ${response.status}`)
+  }
+
+  const data = await response.json()
+  return parseSummarizeResponse(data.response)
+}
+>>>>>>> 00a3a03 (Add AI summarization feature to web app)

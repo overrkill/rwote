@@ -22,3 +22,14 @@ export interface SubscriptionStatus {
   can_sync?: boolean;
   email?: string;
 }
+
+export interface AiSettings {
+  provider: 'disabled' | 'ollama' | 'groq';
+  ollamaUrl: string;
+  ollamaModel: string;
+}
+
+export interface SummarizeResult {
+  summary: string;
+  tags: string[];
+}

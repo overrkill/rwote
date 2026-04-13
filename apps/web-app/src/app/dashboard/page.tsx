@@ -12,13 +12,18 @@ import {
   saveNote,
   deleteNote as cloudDeleteNote,
   getSubscriptionStatus,
-  subscribeToPlan
+  subscribeToPlan,
+  getAiSettings,
+  setAiSettings,
+  summarizeUsingCloud,
+  summarizeUsingLocal
 } from '@/lib/supabase'
-import type { Note, SubscriptionStatus, User } from '@/lib/types'
+import type { Note, SubscriptionStatus, User, AiSettings } from '@/lib/types'
 import { NoteList, NoteForm } from '@/components/notes'
 import SearchBar from '@/components/notes/search-bar'
 import TagFilter from '@/components/notes/tag-filter'
 import SubscriptionModal from '@/components/ui/subscription-modal'
+import AiSettingsModal from '@/components/ui/ai-settings-modal'
 import { useTheme } from '@/components/providers/theme-provider'
 
 const DEFAULT_TAGS = [
@@ -40,7 +45,14 @@ export default function DashboardPage() {
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+<<<<<<< HEAD
   const [user, setUser] = useState<User | null>(getStoredUser())
+=======
+  const [aiSettings, setAiSettingsState] = useState<AiSettings>({ provider: 'disabled', ollamaUrl: 'http://localhost:11434', ollamaModel: 'llama3.2' })
+  const [aiEnabled, setAiEnabled] = useState(false)
+  const [showAiSettings, setShowAiSettings] = useState(false)
+  const [aiSummarizing, setAiSummarizing] = useState(false)
+>>>>>>> 00a3a03 (Add AI summarization feature to web app)
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -53,10 +65,40 @@ export default function DashboardPage() {
   }, [menuOpen])
 
   useEffect(() => {
+<<<<<<< HEAD
     const { data: { subscription: authSubscription } } = onAuthStateChange((user) => {
       setUser(user)
       if (!user) {
         router.push('/auth/login')
+=======
+    const auth = getLocalAuth()
+    if (!auth) {
+      router.push('/auth/login')
+      return
+    }
+
+    async function loadData(token: string) {
+      try {
+        setSyncing(true)
+        const sub = await getSubscriptionStatus(token)
+        setSubscription(sub)
+
+        const ai = getAiSettings()
+        setAiSettingsState(ai)
+        setAiEnabled(ai.provider !== 'disabled')
+
+        if (sub.can_sync) {
+          const { notes: cloudNotes, error } = await loadNotes(token)
+          
+          if (!error && cloudNotes) {
+            setNotes(cloudNotes)
+          }
+        } else {
+          setShowSubscriptionModal(true)
+        }
+      } catch (e) {
+        console.error('Failed to load data:', e)
+>>>>>>> 00a3a03 (Add AI summarization feature to web app)
       }
     })
 
@@ -131,17 +173,47 @@ export default function DashboardPage() {
   }
 
   const handleSaveNote = async (text: string, noteText: string, tag: string) => {
+<<<<<<< HEAD
     const token = await getAuthToken()
     if (!token || !subscription?.can_sync) {
+=======
+    const auth = getLocalAuth()
+    if (!auth || !subscription?.can_sync) {
+>>>>>>> 00a3a03 (Add AI summarization feature to web app)
       setShowSubscriptionModal(true)
       return
+    }
+
+    let finalText = text
+    let finalNote = noteText
+
+    if (aiEnabled && aiSettings.provider !== 'disabled' && text.trim()) {
+      setAiSummarizing(true)
+      try {
+        let result
+        if (aiSettings.provider === 'groq') {
+          result = await summarizeUsingCloud(text, auth.token)
+        } else {
+          result = await summarizeUsingLocal(text, aiSettings.ollamaUrl, aiSettings.ollamaModel)
+        }
+        finalText = result.summary
+        if (result.tags.length > 0 && tag === 'uncategorized') {
+          const matchedTag = DEFAULT_TAGS.find(t => result.tags.includes(t))
+          if (matchedTag) {
+            tag = matchedTag
+          }
+        }
+      } catch (e) {
+        console.error('AI summarization failed:', e)
+      }
+      setAiSummarizing(false)
     }
 
     if (editingNote) {
       const updatedNote: Note = {
         ...editingNote,
-        text,
-        note: noteText,
+        text: finalText,
+        note: finalNote,
         tag,
         updated_at: Date.now()
       }
@@ -154,8 +226,8 @@ export default function DashboardPage() {
     } else {
       const newNote: Note = {
         id: String(Date.now()),
-        text,
-        note: noteText,
+        text: finalText,
+        note: finalNote,
         tag,
         date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         pinned: false,
@@ -225,6 +297,20 @@ export default function DashboardPage() {
             {syncing && (
               <span className="text-xs text-tertiary-light dark:text-tertiary-dark animate-pulse">Syncing...</span>
             )}
+            {aiSummarizing && (
+              <span className="text-xs text-blue-600 dark:text-blue-400 animate-pulse">AI...</span>
+            )}
+            <button
+              onClick={() => setAiEnabled(!aiEnabled)}
+              className={`p-2 rounded-lg transition-colors ${
+                aiEnabled
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-secondary-light dark:text-secondary-dark'
+              }`}
+              title={aiEnabled ? 'AI Summarization ON' : 'AI Summarization OFF'}
+            >
+              ✨
+            </button>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -259,6 +345,15 @@ export default function DashboardPage() {
                 className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
               >
                 🔄 <span>Subscription</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowAiSettings(true)
+                  setMenuOpen(false)
+                }}
+                className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
+              >
+                ✨ <span>AI Settings</span>
               </button>
               <button
                 onClick={() => {
@@ -372,6 +467,17 @@ export default function DashboardPage() {
         }}
         subscription={subscription}
         onSubscribe={handleSubscribe}
+      />
+
+      <AiSettingsModal
+        isOpen={showAiSettings}
+        onClose={() => setShowAiSettings(false)}
+        settings={aiSettings}
+        onSave={(settings) => {
+          setAiSettings(settings)
+          setAiSettingsState(settings)
+          setAiEnabled(settings.provider !== 'disabled')
+        }}
       />
     </div>
   )
