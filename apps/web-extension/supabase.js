@@ -108,3 +108,111 @@ async function getSubscriptionStatus(token) {
 async function subscribeToPlan(plan, token) {
   return callEdgeFunction('subscribe', { plan }, token);
 }
+
+// ── Ollama Local AI ─────────────────────────────────
+const OLLAMA_URL_KEY = 'rwote_ollama_url';
+const OLLAMA_ENABLED_KEY = 'rwote_ollama_enabled';
+const OLLAMA_MODEL_KEY = 'rwote_ollama_model';
+
+function getOllamaUrl() {
+  return new Promise(resolve => {
+    chrome.storage.local.get(OLLAMA_URL_KEY, res => {
+      resolve(res[OLLAMA_URL_KEY] || 'http://localhost:11434');
+    });
+  });
+}
+
+function setOllamaUrl(url) {
+  return new Promise(resolve => {
+    chrome.storage.local.set({ [OLLAMA_URL_KEY]: url }, resolve);
+  });
+}
+
+function isOllamaEnabled() {
+  return new Promise(resolve => {
+    chrome.storage.local.get(OLLAMA_ENABLED_KEY, res => {
+      resolve(res[OLLAMA_ENABLED_KEY] || false);
+    });
+  });
+}
+
+function setOllamaEnabled(enabled) {
+  return new Promise(resolve => {
+    chrome.storage.local.set({ [OLLAMA_ENABLED_KEY]: enabled }, resolve);
+  });
+}
+
+function getOllamaModel() {
+  return new Promise(resolve => {
+    chrome.storage.local.get(OLLAMA_MODEL_KEY, res => {
+      resolve(res[OLLAMA_MODEL_KEY] || 'llama3.2');
+    });
+  });
+}
+
+function setOllamaModel(model) {
+  return new Promise(resolve => {
+    chrome.storage.local.set({ [OLLAMA_MODEL_KEY]: model }, resolve);
+  });
+}
+
+async function summarizeWithOllama(text, ollamaUrl, model) {
+  const prompt = `You are a helpful assistant. Summarize the following note in 3-4 clear bullet points. Also suggest 1-2 relevant hashtags from these categories: general, arrays, strings, sliding-window, prefix-sum, hashing, trees, graphs, dp, sorting, backtracking, binary-search, heaps, tries.
+
+Format your response exactly like this:
+SUMMARY:
+- bullet point 1
+- bullet point 2
+- bullet point 3
+- bullet point 4 (optional)
+
+TAGS:
+#tag1 #tag2
+
+ORIGINAL:
+${text}`;
+
+  try {
+    const response = await fetch(`${ollamaUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model,
+        prompt: prompt,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return parseSummarizeResponse(data.response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+function parseSummarizeResponse(response) {
+  const summaryMatch = response.match(/SUMMARY:([\s\S]*?)(?=TAGS:|$)/i);
+  const tagsMatch = response.match(/TAGS:\s*(.*?)(?=ORIGINAL:|$)/i);
+
+  let summary = '';
+  if (summaryMatch) {
+    summary = summaryMatch[1]
+      .trim()
+      .split('\n')
+      .map(line => line.replace(/^[-•]\s*/, '').trim())
+      .filter(line => line.length > 0)
+      .join('\n');
+  }
+
+  let tags = [];
+  if (tagsMatch) {
+    tags = tagsMatch[1].match(/#(\w+)/g) || [];
+    tags = tags.map(t => t.slice(1).toLowerCase());
+  }
+
+  return { summary, tags };
+}

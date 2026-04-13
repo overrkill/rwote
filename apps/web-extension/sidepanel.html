@@ -51,6 +51,10 @@
             📊
             <span>Tag Statistics</span>
           </button>
+          <button class="hamburger-item" id="menu-settings" title="Settings">
+            ⚙️
+            <span>Settings</span>
+          </button>
           <button class="hamburger-item" id="menu-export" title="Export notes as JSON">
             📥
             <span>Export</span>
@@ -171,10 +175,48 @@
       <div class="input-wrap">
         <textarea id="input-text" placeholder="Write your note… use #tag for tags" rows="2"></textarea>
         <div class="tag-autocomplete" id="tag-autocomplete"></div>
+        <button class="summarize-btn" id="summarize-btn" title="Summarize with AI">✨</button>
+        <div class="summarize-loading" id="summarize-loading" style="display:none">
+          <div class="spinner"></div>
+        </div>
       </div>
       <textarea id="input-note" placeholder="Extra context (optional)…" rows="2"></textarea>
 
       <button class="save-btn" id="save-btn">Save</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay settings-modal-overlay" id="settings-modal" style="display:none">
+    <div class="modal-content settings-modal">
+      <div class="modal-header">
+        <h3>Settings</h3>
+        <button class="modal-close" id="settings-close">×</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-section">
+          <h4>Local AI (Ollama)</h4>
+          <p class="settings-desc">Use a local AI model to summarize your notes. Requires Ollama installed.</p>
+          
+          <label class="toggle-row">
+            <span>Enable Local AI</span>
+            <input type="checkbox" id="ollama-enabled" />
+          </label>
+          
+          <div class="input-group">
+            <label for="ollama-url">Ollama URL</label>
+            <input type="text" id="ollama-url" placeholder="http://localhost:11434" />
+          </div>
+          
+          <div class="input-group">
+            <label for="ollama-model">Model</label>
+            <input type="text" id="ollama-model" placeholder="llama3.2" />
+          </div>
+          
+          <button class="test-btn" id="test-ollama-btn">Test Connection</button>
+          <p class="test-result" id="test-result"></p>
+        </div>
+      </div>
     </div>
   </div>
 

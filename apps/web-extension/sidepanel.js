@@ -1,5 +1,5 @@
 // sidepanel.js
-/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote, getSubscriptionStatus, subscribeToPlan, refreshAccessToken */
+/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote, getSubscriptionStatus, subscribeToPlan, refreshAccessToken, getOllamaUrl, setOllamaUrl, isOllamaEnabled, setOllamaEnabled, getOllamaModel, setOllamaModel, summarizeWithOllama */
 
 const STORAGE_KEY  = 'rwote_v1';
 const TAGS_KEY     = 'rwote_tags_v1';
@@ -126,6 +126,16 @@ const filterBarEl = document.getElementById('filter-bar');
 const filterDropdownEl = document.getElementById('filter-dropdown');
 const filterChipsEl = document.getElementById('filter-chips');
 const tagAutocompleteEl = document.getElementById('tag-autocomplete');
+const summarizeBtnEl = document.getElementById('summarize-btn');
+const summarizeLoadingEl = document.getElementById('summarize-loading');
+const settingsModalEl = document.getElementById('settings-modal');
+const settingsCloseEl = document.getElementById('settings-close');
+const menuSettingsEl = document.getElementById('menu-settings');
+const ollamaEnabledEl = document.getElementById('ollama-enabled');
+const ollamaUrlEl = document.getElementById('ollama-url');
+const ollamaModelEl = document.getElementById('ollama-model');
+const testOllamaBtnEl = document.getElementById('test-ollama-btn');
+const testResultEl = document.getElementById('test-result');
 
 // ── Tag helpers ────────────────────────────────────
 function slugify(str) {
@@ -1382,8 +1392,144 @@ document.querySelectorAll('.size-btn').forEach(btn => {
   btn.addEventListener('click', () => setFontSize(btn.dataset.size));
 });
 
-// ── Theme ─────────────────────────────────────────
-function updateThemeLabel() {
+// ── Summarize Button ──────────────────────────────
+let ollamaEnabled = false;
+
+function updateSummarizeVisibility() {
+  if (ollamaEnabled && inputText.value.trim().length > 10) {
+    summarizeBtnEl.classList.add('visible');
+  } else {
+    summarizeBtnEl.classList.remove('visible');
+  }
+}
+
+async function handleSummarize() {
+  const text = inputText.value.trim();
+  if (!text || text.length < 10) {
+    showToast('Need more text to summarize');
+    return;
+  }
+
+  summarizeBtnEl.style.display = 'none';
+  summarizeLoadingEl.style.display = 'block';
+  inputText.disabled = true;
+
+  try {
+    const url = await getOllamaUrl();
+    const model = await getOllamaModel();
+    
+    const result = await summarizeWithOllama(text, url, model);
+    
+    if (result.summary) {
+      const originalText = inputText.value;
+      inputNote.value = originalText;
+      inputText.value = result.summary;
+      
+      if (result.tags.length > 0) {
+        const tag = result.tags[0];
+        inputText.value = `#${tag} ${inputText.value}`;
+      }
+      
+      showToast('Summarized!');
+    }
+  } catch (error) {
+    console.error('Summarize error:', error);
+    showToast('Summarize failed: ' + error.message);
+  } finally {
+    summarizeLoadingEl.style.display = 'none';
+    inputText.disabled = false;
+    inputText.focus();
+    updateSummarizeVisibility();
+  }
+}
+
+summarizeBtnEl?.addEventListener('click', handleSummarize);
+
+inputText?.addEventListener('input', () => {
+  updateSummarizeVisibility();
+});
+
+inputText?.addEventListener('keyup', () => {
+  updateSummarizeVisibility();
+});
+
+// ── Settings Modal ────────────────────────────────
+async function loadOllamaSettings() {
+  ollamaEnabled = await isOllamaEnabled();
+  const url = await getOllamaUrl();
+  const model = await getOllamaModel();
+  
+  if (ollamaEnabledEl) ollamaEnabledEl.checked = ollamaEnabled;
+  if (ollamaUrlEl) ollamaUrlEl.value = url;
+  if (ollamaModelEl) ollamaModelEl.value = model;
+  
+  updateSummarizeVisibility();
+}
+
+async function saveOllamaSettings() {
+  const enabled = ollamaEnabledEl?.checked || false;
+  const url = ollamaUrlEl?.value.trim() || 'http://localhost:11434';
+  const model = ollamaModelEl?.value.trim() || 'llama3.2';
+  
+  await setOllamaEnabled(enabled);
+  await setOllamaUrl(url);
+  await setOllamaModel(model);
+  
+  ollamaEnabled = enabled;
+  updateSummarizeVisibility();
+  showToast('Settings saved');
+}
+
+function showSettingsModal() {
+  closeMenu();
+  loadOllamaSettings();
+  settingsModalEl.style.display = 'flex';
+}
+
+function closeSettingsModal() {
+  settingsModalEl.style.display = 'none';
+}
+
+async function testOllamaConnection() {
+  const url = ollamaUrlEl?.value.trim() || 'http://localhost:11434';
+  const model = ollamaModelEl?.value.trim() || 'llama3.2';
+  
+  testResultEl.textContent = 'Testing...';
+  testResultEl.className = 'test-result';
+  
+  try {
+    const response = await fetch(`${url}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model,
+        prompt: 'Say "OK" if you can hear me.',
+        stream: false
+      })
+    });
+    
+    if (response.ok) {
+      testResultEl.textContent = '✓ Connected successfully!';
+      testResultEl.className = 'test-result success';
+    } else {
+      testResultEl.textContent = `✗ Error: ${response.status}`;
+      testResultEl.className = 'test-result error';
+    }
+  } catch (error) {
+    testResultEl.textContent = `✗ Cannot connect: ${error.message}`;
+    testResultEl.className = 'test-result error';
+  }
+}
+
+menuSettingsEl?.addEventListener('click', showSettingsModal);
+settingsCloseEl?.addEventListener('click', closeSettingsModal);
+settingsModalEl?.addEventListener('click', (e) => {
+  if (e.target === settingsModalEl) closeSettingsModal();
+});
+ollamaEnabledEl?.addEventListener('change', saveOllamaSettings);
+ollamaUrlEl?.addEventListener('blur', saveOllamaSettings);
+ollamaModelEl?.addEventListener('blur', saveOllamaSettings);
+testOllamaBtnEl?.addEventListener('click', testOllamaConnection);
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const icon = menuThemeEl.querySelector('.theme-icon');
   const text = menuThemeEl.querySelector('.theme-text');
@@ -1617,6 +1763,7 @@ document.addEventListener('keydown', handleKeyboard);
 // ── Init ───────────────────────────────────────────
 loadTheme();
 loadFontSize();
+loadOllamaSettings();
 
 load().then(() => {
   renderAll();
