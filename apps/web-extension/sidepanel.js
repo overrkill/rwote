@@ -1,30 +1,7 @@
-// sidepanel.js
-/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote, getSubscriptionStatus, subscribeToPlan, refreshAccessToken, getAiProvider, setAiProvider, getOllamaUrl, setOllamaUrl, getOllamaModel, setOllamaModel, getGroqModel, setGroqModel, summarizeWithOllama, summarizeWithGroq */
+// sidepanel.js — UI Layer
+// No business logic - all operations go through background.js
 
-const STORAGE_KEY  = 'rwote_v1';
-const TAGS_KEY     = 'rwote_tags_v1';
-const THEME_KEY    = 'rwote_theme_v1';
-const ONBOARD_KEY  = 'rwote_onboarded_v1';
-const SIZE_KEY     = 'rwote_size_v1';
-const MODE_KEY     = 'rwote_mode_v1';
-
-const ROLE_TAGS = {
-  'software-engineer': { name: 'Software Engineer', tags: ['arrays', 'strings', 'trees', 'graphs', 'dp'] },
-  'data-scientist': { name: 'Data Scientist', tags: ['statistics', 'visualization', 'pandas', 'ml', 'cleaning'] },
-  'frontend-dev': { name: 'Frontend Developer', tags: ['css', 'react', 'performance', 'accessibility', 'responsive'] },
-  'backend-dev': { name: 'Backend Developer', tags: ['apis', 'databases', 'auth', 'caching', 'testing'] },
-  'devops': { name: 'DevOps Engineer', tags: ['docker', 'ci-cd', 'linux', 'monitoring', 'shell'] },
-  'mobile-dev': { name: 'Mobile Developer', tags: ['react-native', 'navigation', 'state', 'performance', 'gestures'] },
-  'ml-engineer': { name: 'ML Engineer', tags: ['neural-networks', 'training', 'datasets', 'optimization', 'evaluation'] },
-  'security': { name: 'Security Engineer', tags: ['encryption', 'authentication', 'vulnerabilities', 'compliance', 'forensics'] },
-  'technical-writer': { name: 'Technical Writer', tags: ['documentation', 'formatting', 'examples', 'readability', 'structure'] },
-  'system-designer': { name: 'System Designer', tags: ['scalability', 'load-balancing', 'databases', 'caching', 'microservices'] },
-};
-
-const DEFAULT_TAGS = [
-  'note', 'general', 'research','uncategorized'
-];
-
+// ── Constants ────────────────────────────────────────
 const COLOR_POOL = [
   { bg: '#deeef7', text: '#3a6f8f' },
   { bg: '#e2f0e2', text: '#3a7040' },
@@ -42,48 +19,58 @@ const COLOR_POOL = [
   { bg: '#f0ede8', text: '#6b6158' },
 ];
 
-// ── State ──────────────────────────────────────────
-let notes        = [];
-let allTags      = [...DEFAULT_TAGS];
-let tagColors    = {};
-let activeTags   = new Set();
-let searchQuery  = '';
-let chatText     = '';
+const DEFAULT_TAGS = ['note', 'general', 'research', 'uncategorized'];
+
+const ROLE_TAGS = {
+  'software-engineer': { name: 'Software Engineer', tags: ['arrays', 'strings', 'trees', 'graphs', 'dp'] },
+  'data-scientist': { name: 'Data Scientist', tags: ['statistics', 'visualization', 'pandas', 'ml', 'cleaning'] },
+  'frontend-dev': { name: 'Frontend Developer', tags: ['css', 'react', 'performance', 'accessibility', 'responsive'] },
+  'backend-dev': { name: 'Backend Developer', tags: ['apis', 'databases', 'auth', 'caching', 'testing'] },
+  'devops': { name: 'DevOps Engineer', tags: ['docker', 'ci-cd', 'linux', 'monitoring', 'shell'] },
+  'mobile-dev': { name: 'Mobile Developer', tags: ['react-native', 'navigation', 'state', 'performance', 'gestures'] },
+  'ml-engineer': { name: 'ML Engineer', tags: ['neural-networks', 'training', 'datasets', 'optimization', 'evaluation'] },
+  'security': { name: 'Security Engineer', tags: ['encryption', 'authentication', 'vulnerabilities', 'compliance', 'forensics'] },
+  'technical-writer': { name: 'Technical Writer', tags: ['documentation', 'formatting', 'examples', 'readability', 'structure'] },
+  'system-designer': { name: 'System Designer', tags: ['scalability', 'load-balancing', 'databases', 'caching', 'microservices'] },
+};
+
+// ── UI State ────────────────────────────────────────
+let notes = [];
+let allTags = [...DEFAULT_TAGS];
+let tagColors = {};
+let activeTags = new Set();
+let searchQuery = '';
+let chatText = '';
 let chatMatchIds = new Set();
-let menuOpen     = false;
-let pendingImport = null;
 let selectedNoteIndex = -1;
-let deletedNote = null;
-let deleteTimer = null;
+let selectedAutocompleteIndex = -1;
 let autocompleteOpen = false;
 let autocompleteTags = [];
-let selectedAutocompleteIndex = -1;
-let selectedMode = null;
+let user = null;
+let subscription = null;
+let settings = {};
+let mode = 'local';
+let onboarded = false;
+let aiModeActive = false;
 
-// Auth state
-let currentUser = null;
-let authToken = null;
-let refreshToken = null;
-let subscriptionStatus = null;
-
-// ── DOM refs ───────────────────────────────────────
-const appEl        = document.getElementById('app');
-const loaderEl     = document.getElementById('loader');
-const notesEl      = document.getElementById('notes');
-const searchEl      = document.getElementById('search');
+// ── DOM References ───────────────────────────────────
+const appEl = document.getElementById('app');
+const loaderEl = document.getElementById('loader');
+const notesEl = document.getElementById('notes');
+const searchEl = document.getElementById('search');
 const clearSearchEl = document.getElementById('clear-search');
-const countEl       = document.getElementById('note-count');
-const bannerEl      = document.getElementById('chat-banner');
-const bannerTextEl  = document.getElementById('chat-banner-text');
-const inputText     = document.getElementById('input-text');
-const inputNote     = document.getElementById('input-note');
-const saveBtn       = document.getElementById('save-btn');
+const countEl = document.getElementById('note-count');
+const bannerEl = document.getElementById('chat-banner');
+const bannerTextEl = document.getElementById('chat-banner-text');
+const inputText = document.getElementById('input-text');
+const inputNote = document.getElementById('input-note');
+const saveBtn = document.getElementById('save-btn');
 const themeToggleEl = document.getElementById('theme-toggle');
-const onboardingEl  = document.getElementById('onboarding');
-const modeGridEl    = document.getElementById('mode-grid');
+const onboardingEl = document.getElementById('onboarding');
+const modeGridEl = document.getElementById('mode-grid');
 const authSectionEl = document.getElementById('auth-section');
 const roleSectionEl = document.getElementById('role-section');
-const roleGridEl    = document.getElementById('role-grid');
+const roleGridEl = document.getElementById('role-grid');
 const onboardSkipEl = document.getElementById('onboard-skip');
 const onboardConfirmEl = document.getElementById('onboard-confirm');
 const authErrorEl = document.getElementById('auth-error');
@@ -125,7 +112,6 @@ const filterDropdownEl = document.getElementById('filter-dropdown');
 const filterChipsEl = document.getElementById('filter-chips');
 const tagAutocompleteEl = document.getElementById('tag-autocomplete');
 const aiToggleEl = document.getElementById('ai-toggle');
-const summarizeLoadingEl = document.getElementById('summarize-loading');
 const settingsModalEl = document.getElementById('settings-modal');
 const settingsCloseEl = document.getElementById('settings-close');
 const menuSettingsEl = document.getElementById('menu-settings');
@@ -137,7 +123,12 @@ const ollamaModelEl = document.getElementById('ollama-model');
 const testOllamaBtnEl = document.getElementById('test-ollama-btn');
 const testResultEl = document.getElementById('test-result');
 
-// ── Tag helpers ────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function slugify(str) {
   return str.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
@@ -155,162 +146,54 @@ function colorOf(slug) {
   return color;
 }
 
-function isDefaultTag(slug) { return DEFAULT_TAGS.includes(slug); }
-
-function extractTags(text) {
-  const matches = text.match(/#(\w+)/g) || [];
-  return [...new Set(matches.map(m => slugify(m.slice(1))))];
-}
-
 function stripTags(text) {
   return text.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
 }
 
-function ensureTagsExist(tags) {
-  let changed = false;
-  tags.forEach(tag => {
-    if (!allTags.includes(tag)) {
-      colorOf(tag);
-      allTags.push(tag);
-      changed = true;
-    }
-  });
-  if (changed) {
-    saveTags();
-  }
-}
-
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-// ── Storage ────────────────────────────────────────
-async function load() {
+// ── Message API ─────────────────────────────────────
+function sendMessage(message) {
   return new Promise(resolve => {
-    chrome.storage.local.get([STORAGE_KEY, TAGS_KEY, MODE_KEY], async (res) => {
-      notes = res[STORAGE_KEY] || [];
-      const saved = res[TAGS_KEY] || {};
-      if (saved.tags && saved.tags.length > 0) {
-        allTags = saved.tags;
-      }
-      if (saved.colors) tagColors = { ...saved.colors };
-      
-      const mode = res[MODE_KEY] || 'local';
-      
-      if (authToken && mode === 'cloud') {
-        await loadFromCloud();
-      }
-      resolve();
-    });
+    chrome.runtime.sendMessage(message, resolve);
   });
 }
 
-async function loadFromCloud() {
-  try {
-    await ensureValidToken();
-    const { notes: cloudNotes, error } = await cloudLoadNotes(authToken);
-    if (error) {
-      console.error('Cloud load error:', error);
-      return;
-    }
-    
-    if (!cloudNotes || cloudNotes.length === 0) return;
-    
-    const cloudMap = new Map();
-    cloudNotes.forEach(n => {
-      const id = String(n.local_id || n.id);
-      cloudMap.set(id, {
-        id,
-        text: n.text,
-        note: n.note,
-        tag: n.tag,
-        date: n.date,
-        pinned: n.pinned,
-        updated_at: new Date(n.updated_at).getTime(),
-        cloudId: n.id
-      });
-    });
-    
-    const localMap = new Map();
-    notes.forEach(n => {
-      localMap.set(String(n.id), n);
-    });
-    
-    const merged = new Map();
-    
-    notes.forEach(n => {
-      merged.set(String(n.id), n);
-    });
-    
-    cloudMap.forEach((cloudNote, cloudId) => {
-      const localNote = localMap.get(cloudId);
-      if (!localNote) {
-        merged.set(cloudId, cloudNote);
-      } else {
-        const localTime = localNote.updated_at || 0;
-        const cloudTime = cloudNote.updated_at || 0;
-        if (cloudTime > localTime) {
-          merged.set(cloudId, cloudNote);
-        }
-      }
-    });
-    
-    notes = Array.from(merged.values()).sort((a, b) => Number(b.id) - Number(a.id));
-    saveNotes();
-  } catch (e) {
-    console.error('Failed to load from cloud:', e);
+async function refreshState() {
+  const state = await sendMessage({ type: 'GET_STATE' });
+  notes = state.notes || [];
+  allTags = state.tags || [...DEFAULT_TAGS];
+  tagColors = state.tagColors || {};
+  user = state.user;
+  subscription = state.subscription;
+  settings = state.settings || {};
+  mode = state.mode || 'local';
+  onboarded = state.onboarded || false;
+  
+  // Apply theme
+  if (settings.theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
   }
+  
+  return state;
 }
 
-function saveTags() {
-  chrome.storage.local.set({ [TAGS_KEY]: { tags: allTags, colors: tagColors } });
+// ── Toast ───────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  let toast = document.querySelector('.toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 5000);
 }
 
-function saveNotes() {
-  chrome.storage.local.set({ [STORAGE_KEY]: notes });
-}
-
-async function syncNoteToCloud(note) {
-  if (!authToken) return;
-  if (!subscriptionStatus || subscriptionStatus.subscription_status === 'expired') return;
-  chrome.storage.local.get(MODE_KEY, async (res) => {
-    if (res[MODE_KEY] !== 'cloud') return;
-    await ensureValidToken();
-    cloudSaveNote(note, authToken).catch(e => console.error('Cloud save error:', e));
-  });
-}
-
-async function cloudDeleteNoteById(localId) {
-  if (!authToken) return;
-  if (!subscriptionStatus || subscriptionStatus.subscription_status === 'expired') return;
-  chrome.storage.local.get(MODE_KEY, async (res) => {
-    if (res[MODE_KEY] !== 'cloud') return;
-    await ensureValidToken();
-    cloudDeleteNote(localId, authToken).catch(e => console.error('Cloud delete error:', e));
-  });
-}
-
-// ── Chat match ─────────────────────────────────────
-function updateChatMatches() {
-  chatMatchIds.clear();
-  if (!chatText) return;
-  const chatLower = chatText.toLowerCase();
-  notes.forEach(n => {
-    const words = n.text.toLowerCase().split(/\s+/).filter(w => w.length > 4);
-    const matchCount = words.filter(w => chatLower.includes(w)).length;
-    if (matchCount >= 2 || (words.length === 1 && matchCount === 1)) chatMatchIds.add(n.id);
-  });
-}
-
-function updateChatBanner() {
-  const count = chatMatchIds.size;
-  if (count === 0) { bannerEl.style.display = 'none'; return; }
-  bannerEl.style.display = 'flex';
-  bannerTextEl.textContent = `${count} note${count !== 1 ? 's' : ''} match this chat`;
-}
-
-// ── Tag autocomplete ───────────────────────────────
+// ── Tag Filter ──────────────────────────────────────
 function showFilterInput() {
   filterInputWrap.style.display = 'flex';
   filterIconBtn.classList.add('active');
@@ -408,48 +291,7 @@ function renderTagDropdown(query) {
   });
 }
 
-filterBarEl.addEventListener('click', (e) => {
-  if (filterInputWrap.style.display === 'none') {
-    showFilterInput();
-    renderTagDropdown('');
-  }
-});
-
-filterIconBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  showFilterInput();
-  renderTagDropdown('');
-});
-
-filterInputEl.addEventListener('click', (e) => {
-  e.stopPropagation();
-  renderTagDropdown(filterInputEl.value.trim());
-});
-
-filterInputEl.addEventListener('input', () => {
-  renderTagDropdown(filterInputEl.value.trim());
-});
-
-filterInputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    hideFilterInput();
-  }
-});
-
-filterClearEl.addEventListener('click', (e) => {
-  e.stopPropagation();
-  clearFilter();
-});
-
-document.addEventListener('click', (e) => {
-  if (!filterBarEl.contains(e.target)) {
-    if (filterDropdownEl.classList.contains('open')) {
-      filterDropdownEl.classList.remove('open');
-    }
-  }
-});
-
-// ── Notes ──────────────────────────────────────────
+// ── Markdown Rendering ────────────────────────────────
 function highlight(text, query) {
   if (!query) return text;
   const esc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -489,6 +331,26 @@ function processNoteText(text, query = '') {
   return rendered;
 }
 
+// ── Chat Match ───────────────────────────────────────
+function updateChatMatches() {
+  chatMatchIds.clear();
+  if (!chatText) return;
+  const chatLower = chatText.toLowerCase();
+  notes.forEach(n => {
+    const words = n.text.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+    const matchCount = words.filter(w => chatLower.includes(w)).length;
+    if (matchCount >= 2 || (words.length === 1 && matchCount === 1)) chatMatchIds.add(n.id);
+  });
+}
+
+function updateChatBanner() {
+  const count = chatMatchIds.size;
+  if (count === 0) { bannerEl.style.display = 'none'; return; }
+  bannerEl.style.display = 'flex';
+  bannerTextEl.textContent = `${count} note${count !== 1 ? 's' : ''} match this chat`;
+}
+
+// ── Filter Logic ────────────────────────────────────
 function getFiltered() {
   let result = [...notes];
   if (activeTags.size > 0) {
@@ -505,6 +367,7 @@ function getFiltered() {
   return result;
 }
 
+// ── Render Notes ─────────────────────────────────────
 function tagBadgeStyle(slug) {
   const c = colorOf(slug);
   return `style="background:${c.bg};color:${c.text}"`;
@@ -523,7 +386,7 @@ function renderNotes() {
       ? `No notes match "<strong>${escHtml(searchQuery)}</strong>"`
       : activeTags.size > 0
         ? `No notes match selected tags`
-        : `<strong>No notes yet</strong>\nSelect text → right-click → Save to DSA Insights\nor type below and hit Save`;
+        : `<strong>No notes yet</strong>\nSelect text → right-click → Save to Rwote`;
     notesEl.innerHTML = `<div class="empty">${msg}</div>`;
     return;
   }
@@ -563,99 +426,47 @@ function renderNotes() {
   }).join('');
 
   notesEl.querySelectorAll('.card-btn.del').forEach(btn => {
-    btn.addEventListener('click', () => deleteNote(String(btn.dataset.id)));
+    btn.addEventListener('click', async () => {
+      const res = await sendMessage({ type: 'DELETE_NOTE', id: String(btn.dataset.id) });
+      if (res.ok) await refreshState();
+      renderAll();
+    });
   });
+  
   notesEl.querySelectorAll('.card-btn.copy').forEach(btn => {
-    btn.addEventListener('click', () => copyNote(String(btn.dataset.id)));
+    btn.addEventListener('click', () => {
+      const n = notes.find(x => x.id === btn.dataset.id);
+      if (!n) return;
+      const cleanText = stripTags(n.text);
+      navigator.clipboard.writeText(n.note ? `${cleanText}\n\n${n.note}` : cleanText)
+        .then(() => showToast('Copied'));
+    });
   });
+  
   notesEl.querySelectorAll('.card-btn.pin').forEach(btn => {
-    btn.addEventListener('click', () => togglePin(String(btn.dataset.id)));
+    btn.addEventListener('click', async () => {
+      const res = await sendMessage({ type: 'TOGGLE_PIN', id: String(btn.dataset.id) });
+      if (res.ok) await refreshState();
+      renderAll();
+    });
   });
+  
   notesEl.querySelectorAll('.card-btn.edit').forEach(btn => {
     btn.addEventListener('click', () => showEditModal(String(btn.dataset.id)));
   });
 }
 
 function renderAll() {
-  renderNotes();
+  updateChatMatches();
   updateChatBanner();
+  renderNotes();
+  updateUserProfileUI();
 }
 
-// ── Actions ────────────────────────────────────────
-async function addNote(text, noteText) {
-  const tags = extractTags(text);
-  const tag = tags[0] || 'uncategorized';
-  ensureTagsExist(tags);
-  
-  const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  const newNote = { id: String(Date.now()), text: text.trim(), note: noteText.trim(), tag, date, pinned: false, updated_at: Date.now() };
-  notes.unshift(newNote);
-  saveNotes();
-  
-  if (authToken && selectedMode === 'cloud') {
-    syncNoteToCloud(newNote);
-  }
-  
-  updateChatMatches();
-  renderAll();
-  showToast('Saved');
-}
-
-function deleteNote(id) {
-  const noteToDelete = notes.find(n => n.id === id);
-  if (!noteToDelete) return;
-  
-  deletedNote = noteToDelete;
-  notes = notes.filter(n => n.id !== id);
-  chatMatchIds.delete(id);
-  saveNotes();
-  cloudDeleteNoteById(id);
-  renderAll();
-  
-  clearTimeout(deleteTimer);
-  showToast('Note deleted — <span id="undo-delete">Undo</span>');
-  
-  document.getElementById('undo-delete')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    undoDelete();
-  });
-  
-  deleteTimer = setTimeout(() => {
-    deletedNote = null;
-  }, 5000);
-}
-
-function editNote(id, newText, newNote) {
-  const note = notes.find(n => n.id === id);
-  if (!note) return false;
-  
-  const oldTags = extractTags(note.text);
-  note.text = newText.trim();
-  note.note = newNote.trim();
-  
-  const newTags = extractTags(newText);
-  const allNewTags = [...new Set([...oldTags, ...newTags])];
-  ensureTagsExist(allNewTags);
-  
-  if (newTags.length > 0) {
-    note.tag = newTags[0];
-  }
-  
-  note.updated_at = Date.now();
-  saveNotes();
-  syncNoteToCloud(note);
-  
-  updateChatMatches();
-  renderAll();
-  showToast('Updated');
-  return true;
-}
-
+// ── Edit Modal ───────────────────────────────────────
 function showEditModal(id) {
   const note = notes.find(n => n.id === id);
   if (!note) return;
-  
-  const fullText = note.text;
   
   const html = `<div class="modal-overlay edit-modal-overlay" id="edit-modal-overlay">
     <div class="modal-content edit-modal">
@@ -664,7 +475,7 @@ function showEditModal(id) {
         <button class="modal-close" id="edit-modal-close">×</button>
       </div>
       <div class="edit-modal-body">
-        <textarea id="edit-text" placeholder="Your note…" rows="4">${escHtml(fullText)}</textarea>
+        <textarea id="edit-text" placeholder="Your note…" rows="4">${escHtml(note.text)}</textarea>
         <textarea id="edit-note" placeholder="Extra context (optional)…" rows="2">${escHtml(note.note || '')}</textarea>
         <div class="edit-modal-actions">
           <button class="edit-cancel" id="edit-cancel">Cancel</button>
@@ -678,142 +489,138 @@ function showEditModal(id) {
   overlay.innerHTML = html;
   document.body.appendChild(overlay);
   
-  const modalOverlay = document.getElementById('edit-modal-overlay');
   const editTextEl = document.getElementById('edit-text');
   const editNoteEl = document.getElementById('edit-note');
   const editSaveEl = document.getElementById('edit-save');
-  const editCancelEl = document.getElementById('edit-cancel');
-  const editCloseEl = document.getElementById('edit-modal-close');
   
-  const closeEditModal = () => {
-    document.body.removeChild(overlay);
-  };
+  const closeEditModal = () => overlay.remove();
   
-  editSaveEl.addEventListener('click', () => {
-    try {
-      editNote(id, editTextEl.value, editNoteEl.value);
-    } catch (e) {
-      console.error('Edit failed:', e);
+  editSaveEl.addEventListener('click', async () => {
+    const res = await sendMessage({
+      type: 'UPDATE_NOTE',
+      id,
+      text: editTextEl.value,
+      noteText: editNoteEl.value
+    });
+    if (res.ok) {
+      await refreshState();
+      renderAll();
     }
     closeEditModal();
   });
   
-  editCancelEl.addEventListener('click', closeEditModal);
-  editCloseEl.addEventListener('click', closeEditModal);
-  modalOverlay.addEventListener('click', (e) => {
-    if (e.target === modalOverlay) closeEditModal();
+  document.getElementById('edit-cancel')?.addEventListener('click', closeEditModal);
+  document.getElementById('edit-modal-close')?.addEventListener('click', closeEditModal);
+  document.getElementById('edit-modal-overlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'edit-modal-overlay') closeEditModal();
   });
   
   editTextEl.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeEditModal();
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      try {
-        editNote(id, editTextEl.value, editNoteEl.value);
-      } catch (err) {
-        console.error('Edit failed:', err);
-      }
-      closeEditModal();
+      editSaveEl.click();
     }
   });
   
   editTextEl.focus();
-  editTextEl.setSelectionRange(editTextEl.value.length, editTextEl.value.length);
 }
 
-function undoDelete() {
-  if (!deletedNote) return;
-  notes.unshift(deletedNote);
-  deletedNote = null;
-  clearTimeout(deleteTimer);
-  saveNotes();
-  renderAll();
-  showToast('Note restored');
-}
-
-function togglePin(id) {
-  const note = notes.find(n => n.id === id);
-  if (!note) return;
-  note.pinned = !note.pinned;
-  note.updated_at = Date.now();
-  saveNotes();
-  syncNoteToCloud(note);
-  renderAll();
-}
-
-function copyNote(id) {
-  const n = notes.find(n => n.id === id);
-  if (!n) return;
-  const cleanText = stripTags(n.text);
-  navigator.clipboard.writeText(n.note ? `${cleanText}\n\n${n.note}` : cleanText)
-    .then(() => showToast('Copied'));
-}
-
-// ── Toast ──────────────────────────────────────────
-let toastTimer;
-function showToast(msg) {
-  let toast = document.querySelector('.toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.className = 'toast';
-    document.body.appendChild(toast);
-  }
-  toast.innerHTML = msg;
-  toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 5000);
-}
-
-// ── Event listeners ────────────────────────────────
-saveBtn.addEventListener('click', async () => {
-  const textEl = document.getElementById('input-text');
-  const text = textEl.value.trim();
-  if (!text) { textEl.focus(); return; }
-  hideAutocomplete();
+// ── Tag Autocomplete ─────────────────────────────────
+function showAutocomplete(query) {
+  const q = query.toLowerCase();
+  autocompleteTags = allTags.filter(tag => labelOf(tag).toLowerCase().includes(q));
   
+  if (autocompleteTags.length === 0) {
+    hideAutocomplete();
+    return;
+  }
+  
+  selectedAutocompleteIndex = 0;
+  autocompleteOpen = true;
+  
+  tagAutocompleteEl.innerHTML = autocompleteTags.map((tag, idx) => {
+    const c = colorOf(tag);
+    return `<div class="tag-autocomplete-item${idx === 0 ? ' selected' : ''}" data-tag="${tag}">
+      <span style="background:${c.bg};color:${c.text}">${escHtml(labelOf(tag))}</span>
+    </div>`;
+  }).join('') + `<div class="tag-autocomplete-hint">Press Enter to insert</div>`;
+  
+  tagAutocompleteEl.classList.add('open');
+  
+  tagAutocompleteEl.querySelectorAll('.tag-autocomplete-item').forEach(item => {
+    item.addEventListener('click', () => insertTag(item.dataset.tag));
+  });
+}
+
+function updateAutocompleteSelection() {
+  tagAutocompleteEl.querySelectorAll('.tag-autocomplete-item').forEach((item, idx) => {
+    item.classList.toggle('selected', idx === selectedAutocompleteIndex);
+  });
+}
+
+function insertTag(tag) {
+  const cursorPos = inputText.selectionStart;
+  const textBeforeCursor = inputText.value.substring(0, cursorPos);
+  const textAfterCursor = inputText.value.substring(cursorPos);
+  const hashStart = textBeforeCursor.lastIndexOf('#');
+  
+  const newTextBefore = textBeforeCursor.substring(0, hashStart) + '#' + tag + ' ';
+  inputText.value = newTextBefore + textAfterCursor;
+  
+  const newCursorPos = newTextBefore.length;
+  inputText.setSelectionRange(newCursorPos, newCursorPos);
+  hideAutocomplete();
+}
+
+function hideAutocomplete() {
+  autocompleteOpen = false;
+  autocompleteTags = [];
+  selectedAutocompleteIndex = -1;
+  tagAutocompleteEl.classList.remove('open');
+}
+
+// ── Save Button Handler ────────────────────────────────
+saveBtn.addEventListener('click', async () => {
+  const text = inputText.value.trim();
+  if (!text) { inputText.focus(); return; }
+  
+  hideAutocomplete();
   let finalText = text;
   
-  if (aiModeActive && text.length > 10) {
-    const provider = await getAiProvider();
-    
-    textEl.disabled = true;
-    
+  if (aiModeActive && settings.aiProvider !== 'disabled' && text.length > 10) {
+    inputText.disabled = true;
     const overlay = document.createElement('div');
     overlay.className = 'ai-overlay';
     overlay.innerHTML = '<div class="spinner-large"></div>';
-    textEl.parentElement.style.position = 'relative';
-    textEl.parentElement.appendChild(overlay);
+    inputText.parentElement.style.position = 'relative';
+    inputText.parentElement.appendChild(overlay);
     
     try {
-      let result;
-      
-      if (provider === 'ollama') {
-        const url = await getOllamaUrl();
-        const model = await getOllamaModel();
-        result = await summarizeWithOllama(text, url, model);
-      } else if (provider === 'groq') {
-        result = await summarizeWithGroq(text, authToken);
-      }
-      
-      if (result && result.summary) {
-        finalText = result.summary;
-        if (result.tags && result.tags.length > 0) {
-          finalText = `#${result.tags[0]} ${finalText}`;
+      const res = await sendMessage({ type: 'SUMMARIZE', text });
+      if (res.summary) {
+        finalText = res.summary;
+        if (res.tags && res.tags.length > 0) {
+          finalText = `#${res.tags[0]} ${finalText}`;
         }
       }
     } catch (e) {
-      console.error('Summarize error:', e);
       showToast('Summarize failed: ' + e.message);
     } finally {
       overlay.remove();
-      textEl.disabled = false;
-      textEl.focus();
+      inputText.disabled = false;
+      inputText.focus();
     }
   }
   
-  addNote(finalText, '');
-  textEl.value = '';
-  textEl.focus();
+  const res = await sendMessage({ type: 'ADD_NOTE', text: finalText, noteText: '' });
+  if (res.ok) {
+    await refreshState();
+    renderAll();
+    showToast('Saved');
+  }
+  
+  inputText.value = '';
+  inputText.focus();
 });
 
 inputText.addEventListener('keydown', e => {
@@ -849,8 +656,7 @@ inputText.addEventListener('input', () => {
   const hashMatch = textBeforeCursor.match(/#(\w*)$/);
   
   if (hashMatch) {
-    const query = hashMatch[1];
-    showAutocomplete(query);
+    showAutocomplete(hashMatch[1]);
   } else {
     hideAutocomplete();
   }
@@ -860,62 +666,7 @@ inputText.addEventListener('blur', () => {
   setTimeout(() => hideAutocomplete(), 150);
 });
 
-// ── Tag autocomplete ────────────────────────────────
-function showAutocomplete(query) {
-  const q = query.toLowerCase();
-  autocompleteTags = allTags.filter(tag => labelOf(tag).toLowerCase().includes(q));
-  
-  if (autocompleteTags.length === 0) {
-    hideAutocomplete();
-    return;
-  }
-  
-  selectedAutocompleteIndex = 0;
-  autocompleteOpen = true;
-  
-  tagAutocompleteEl.innerHTML = autocompleteTags.map((tag, idx) => {
-    const c = colorOf(tag);
-    return `<div class="tag-autocomplete-item${idx === 0 ? ' selected' : ''}" data-tag="${tag}">
-      <span style="background:${c.bg};color:${c.text}">${escHtml(labelOf(tag))}</span>
-    </div>`;
-  }).join('') + `<div class="tag-autocomplete-hint">Press Enter to insert</div>`;
-  
-  tagAutocompleteEl.classList.add('open');
-  
-  tagAutocompleteEl.querySelectorAll('.tag-autocomplete-item').forEach(item => {
-    item.addEventListener('click', () => {
-      insertTag(item.dataset.tag);
-    });
-  });
-}
-
-function updateAutocompleteSelection() {
-  tagAutocompleteEl.querySelectorAll('.tag-autocomplete-item').forEach((item, idx) => {
-    item.classList.toggle('selected', idx === selectedAutocompleteIndex);
-  });
-}
-
-function insertTag(tag) {
-  const cursorPos = inputText.selectionStart;
-  const textBeforeCursor = inputText.value.substring(0, cursorPos);
-  const textAfterCursor = inputText.value.substring(cursorPos);
-  const hashStart = textBeforeCursor.lastIndexOf('#');
-  
-  const newTextBefore = textBeforeCursor.substring(0, hashStart) + '#' + tag + ' ';
-  inputText.value = newTextBefore + textAfterCursor;
-  
-  const newCursorPos = newTextBefore.length;
-  inputText.setSelectionRange(newCursorPos, newCursorPos);
-  hideAutocomplete();
-}
-
-function hideAutocomplete() {
-  autocompleteOpen = false;
-  autocompleteTags = [];
-  selectedAutocompleteIndex = -1;
-  tagAutocompleteEl.classList.remove('open');
-}
-
+// ── Search ───────────────────────────────────────────
 searchEl.addEventListener('input', () => {
   searchQuery = searchEl.value.trim();
   clearSearchEl.classList.toggle('visible', searchQuery.length > 0);
@@ -930,36 +681,246 @@ clearSearchEl.addEventListener('click', () => {
   searchEl.focus();
 });
 
-// ── Message listener ───────────────────────────────
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.type === 'CHAT_TEXT') {
-    chatText = message.text || '';
-    updateChatMatches();
-    updateChatBanner();
-    renderNotes();
+// ── Filter Bar Events ────────────────────────────────
+filterBarEl.addEventListener('click', () => {
+  if (filterInputWrap.style.display === 'none') {
+    showFilterInput();
+    renderTagDropdown('');
   }
-  if (message.type === 'SAVE_SELECTION') {
-    const text = message.text?.trim();
-    if (text) {
-      inputText.value = text;
-      inputText.focus();
-      showToast('Text ready — pick a tag and save');
-      inputText.scrollIntoView({ behavior: 'smooth' });
+});
+
+filterIconBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  showFilterInput();
+  renderTagDropdown('');
+});
+
+filterInputEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  renderTagDropdown(filterInputEl.value.trim());
+});
+
+filterInputEl.addEventListener('input', () => {
+  renderTagDropdown(filterInputEl.value.trim());
+});
+
+filterInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideFilterInput();
+});
+
+filterClearEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  clearFilter();
+});
+
+document.addEventListener('click', (e) => {
+  if (!filterBarEl.contains(e.target) && filterDropdownEl.classList.contains('open')) {
+    filterDropdownEl.classList.remove('open');
+  }
+});
+
+// ── Theme ────────────────────────────────────────────
+function updateThemeLabel() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const icon = menuThemeEl.querySelector('.theme-icon');
+  const text = menuThemeEl.querySelector('.theme-text');
+  if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+  if (text) text.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    settings.theme = 'light';
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    settings.theme = 'dark';
+  }
+  sendMessage({ type: 'UPDATE_SETTINGS', settings });
+  updateThemeLabel();
+}
+
+// ── User Profile ─────────────────────────────────────
+function updateUserProfileUI() {
+  if (user) {
+    userProfileEl.style.display = 'flex';
+    userDividerEl.style.display = 'block';
+    menuLogoutEl.style.display = 'flex';
+    menuLoginEl.style.display = 'none';
+    
+    const name = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+    const initial = name.charAt(0).toUpperCase();
+    userAvatarEl.textContent = initial;
+    userNameEl.textContent = name;
+    userEmailEl.textContent = user.email || '';
+    
+    updateUserStatus();
+  } else {
+    userProfileEl.style.display = 'none';
+    userDividerEl.style.display = 'none';
+    menuLogoutEl.style.display = 'none';
+    menuLoginEl.style.display = 'flex';
+    userStatusEl.textContent = '';
+  }
+}
+
+function updateUserStatus() {
+  if (!user) {
+    userStatusEl.textContent = '';
+    userStatusEl.className = 'user-status';
+    menuSubscriptionEl.style.display = 'none';
+    return;
+  }
+  
+  if (!subscription) {
+    userStatusEl.textContent = '';
+    menuSubscriptionEl.style.display = 'none';
+    return;
+  }
+  
+  const status = subscription.subscription_status;
+  const daysLeft = subscription.days_left;
+  
+  if (status === 'paid') {
+    userStatusEl.textContent = '☁️ Pro';
+    userStatusEl.className = 'user-status paid';
+    menuSubscriptionEl.style.display = 'flex';
+  } else if (status === 'trial') {
+    userStatusEl.textContent = `Trial · ${daysLeft} days left`;
+    userStatusEl.className = 'user-status trial';
+    menuSubscriptionEl.style.display = 'flex';
+  } else if (status === 'expired') {
+    userStatusEl.textContent = '⚠️ Trial expired';
+    userStatusEl.className = 'user-status expired';
+    menuSubscriptionEl.style.display = 'flex';
+  } else {
+    userStatusEl.textContent = '';
+    menuSubscriptionEl.style.display = 'none';
+  }
+}
+
+// ── Hamburger Menu ────────────────────────────────────
+let menuOpen = false;
+
+function toggleMenu() {
+  menuOpen = !menuOpen;
+  hamburgerMenuEl.classList.toggle('open', menuOpen);
+}
+
+function closeMenu() {
+  menuOpen = false;
+  hamburgerMenuEl.classList.remove('open');
+}
+
+hamburgerBtnEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleMenu();
+});
+
+document.addEventListener('click', (e) => {
+  if (menuOpen && !hamburgerMenuEl.contains(e.target)) {
+    closeMenu();
+  }
+});
+
+menuStatsEl.addEventListener('click', () => { closeMenu(); showStatsModal(); });
+menuThemeEl.addEventListener('click', () => { closeMenu(); toggleTheme(); });
+
+// ── Export/Import ────────────────────────────────────
+function exportNotes() {
+  closeMenu();
+  const data = {
+    version: 1,
+    exported: new Date().toISOString().split('T')[0],
+    notes,
+    tags: allTags,
+    colors: tagColors
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rwote-backup-${data.exported}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported');
+}
+
+menuExportEl.addEventListener('click', exportNotes);
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.notes && Array.isArray(data.notes)) {
+        // Replace notes with imported data
+        notes = data.notes;
+        if (data.tags) allTags = data.tags;
+        if (data.colors) tagColors = data.colors;
+        sendMessage({ type: 'UPDATE_NOTE', id: 'import', notes: data.notes }).then(() => {
+          refreshState().then(renderAll);
+        });
+        showToast('Imported');
+      } else {
+        showToast('Invalid file');
+      }
+    } catch {
+      showToast('Failed to parse');
     }
-  }
-});
+  };
+  reader.readAsText(file);
+  importFileEl.value = '';
+}
 
-chrome.storage.session.get('pendingSelection', (res) => {
-  if (res.pendingSelection) {
-    inputText.value = res.pendingSelection;
-    chrome.storage.session.remove('pendingSelection');
-    showToast('Text ready — pick a tag and save');
-  }
-});
+menuImportEl.addEventListener('click', () => { closeMenu(); importFileEl.click(); });
+importFileEl.addEventListener('change', handleFileSelect);
 
-// ── Onboarding ─────────────────────────────────────
+// ── Stats Modal ───────────────────────────────────────
+function showStatsModal() {
+  const byTag = {};
+  notes.forEach(n => {
+    byTag[n.tag] = (byTag[n.tag] || 0) + 1;
+  });
+  const sorted = Object.entries(byTag).sort((a, b) => b[1] - a[1]);
+  const maxCount = Math.max(...Object.values(byTag), 1);
+  
+  const statsHtml = sorted.map(([tag, count]) => {
+    const pct = (count / maxCount) * 100;
+    return `<div class="stat-row">
+      <span class="stat-tag">${escHtml(labelOf(tag))}</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${pct}%"></div></div>
+      <span class="stat-count">${count}</span>
+    </div>`;
+  }).join('');
+
+  const html = `<div class="modal-overlay" id="stats-modal">
+    <div class="modal-content stats-modal">
+      <div class="modal-header">
+        <h3>Tag Statistics</h3>
+        <button class="modal-close" id="stats-close">×</button>
+      </div>
+      <div class="stats-body">
+        <div class="stats-total">${notes.length} total notes</div>
+        ${statsHtml || '<div class="stats-empty">No notes yet</div>'}
+      </div>
+    </div>
+  </div>`;
+
+  const overlay = document.createElement('div');
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+
+  document.getElementById('stats-close').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ── Auth UI ──────────────────────────────────────────
+let selectedMode = 'local';
 let selectedRole = null;
-let onboardingStep = 'mode';
 
 function renderModeGrid() {
   modeGridEl.querySelectorAll('.mode-card').forEach(card => {
@@ -969,7 +930,7 @@ function renderModeGrid() {
   if (selectedMode === 'local') {
     authSectionEl.style.display = 'none';
     roleSectionEl.style.display = 'block';
-    onboardConfirmEl.textContent = 'Continue';
+    onboardConfirmEl.textContent = 'Get Started';
     onboardConfirmEl.style.display = 'block';
   } else if (selectedMode === 'cloud') {
     roleSectionEl.style.display = 'none';
@@ -994,191 +955,25 @@ function renderRoleGrid() {
   });
 }
 
-function applyRoleTags() {
-  if (selectedRole && ROLE_TAGS[selectedRole]) {
-    allTags = ROLE_TAGS[selectedRole].tags;
-    allTags.forEach(tag => colorOf(tag));
-    saveTags();
-  }
-}
-
-function finishOnboarding() {
-  chrome.storage.local.set({ 
-    [ONBOARD_KEY]: true,
-    [MODE_KEY]: selectedMode || 'local'
-  });
+async function finishOnboarding() {
   if (selectedMode === 'local') {
-    applyRoleTags();
+    await sendMessage({ type: 'SET_MODE', mode: 'local' });
+    if (selectedRole && ROLE_TAGS[selectedRole]) {
+      // Apply role tags - would need a new message type
+    }
+  } else {
+    await sendMessage({ type: 'SET_MODE', mode: 'cloud' });
   }
+  
+  await sendMessage({ type: 'SET_ONBOARDED' });
   onboardingEl.style.display = 'none';
+  await refreshState();
   renderAll();
-}
-
-async function handleRegister(e) {
-  e.preventDefault();
-  authErrorEl.textContent = '';
-  const email = document.getElementById('register-email').value;
-  const password = document.getElementById('register-password').value;
-  const name = document.getElementById('register-name').value;
-  
-  const submitBtn = registerForm.querySelector('.auth-submit');
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Creating account...';
-  
-  const { data, error } = await signUp(email, password, name);
-  
-  submitBtn.disabled = false;
-  submitBtn.textContent = 'Create Account';
-  
-  if (error) {
-    authErrorEl.textContent = error.message;
-    return;
-  }
-  
-  if (data?.user) {
-    currentUser = data.user;
-    authToken = data.session?.access_token;
-    refreshToken = data.session?.refresh_token;
-    await saveAuth();
-    updateUserProfileUI();
-    showToast('Account created! Welcome!');
-    onboardingStep = 'role';
-    authSectionEl.style.display = 'none';
-    roleSectionEl.style.display = 'block';
-    onboardConfirmEl.textContent = 'Get Started';
-    onboardConfirmEl.style.display = 'block';
-    renderRoleGrid();
-    await loadSubscriptionStatus();
-  }
-}
-
-async function handleLogin(e) {
-  e.preventDefault();
-  authErrorEl.textContent = '';
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-  
-  const submitBtn = loginForm.querySelector('.auth-submit');
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Signing in...';
-  
-  const { data, error } = await signIn(email, password);
-  
-  submitBtn.disabled = false;
-  submitBtn.textContent = 'Sign In';
-  
-  if (error) {
-    authErrorEl.textContent = error.message;
-    return;
-  }
-  
-  if (data?.user) {
-    currentUser = data.user;
-    authToken = data.session?.access_token;
-    refreshToken = data.session?.refresh_token;
-    await saveAuth();
-    updateUserProfileUI();
-    showToast('Welcome back!');
-    finishOnboarding();
-    
-    await loadSubscriptionStatus();
-    
-    if (selectedMode === 'cloud') {
-      await loadFromCloud();
-      updateChatMatches();
-      renderAll();
-    }
-  }
-}
-
-async function saveAuth() {
-  return new Promise(resolve => {
-    chrome.storage.local.set({
-      auth_user: {
-        id: currentUser?.id,
-        email: currentUser?.email,
-        name: currentUser?.user_metadata?.name
-      },
-      auth_token: authToken,
-      auth_refresh_token: refreshToken
-    }, resolve);
-  });
-}
-
-async function loadAuth() {
-  return new Promise(resolve => {
-    chrome.storage.local.get(['auth_user', 'auth_token', 'auth_refresh_token', MODE_KEY], async (res) => {
-      if (res.auth_user && res.auth_token) {
-        currentUser = res.auth_user;
-        authToken = res.auth_token;
-        refreshToken = res.auth_refresh_token || null;
-        if (res[MODE_KEY]) {
-          selectedMode = res[MODE_KEY];
-        }
-        
-        if (authToken && refreshToken) {
-          await ensureValidToken();
-        }
-        await loadSubscriptionStatus();
-      }
-      resolve();
-    });
-  });
-}
-
-async function ensureValidToken() {
-  try {
-    const payload = JSON.parse(atob(authToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    const exp = payload.exp * 1000;
-    const now = Date.now();
-    
-    if (exp - now < 5 * 60 * 1000) {
-      await refreshAuthToken();
-    }
-  } catch (e) {
-    console.error('Token check failed:', e);
-  }
-}
-
-async function refreshAuthToken() {
-  if (!refreshToken) return false;
-  
-  try {
-    const result = await refreshAccessToken(refreshToken);
-    if (result.error) return false;
-    
-    authToken = result.data.session.access_token;
-    refreshToken = result.data.session.refresh_token;
-    currentUser = result.data.user;
-    await saveAuth();
-    return true;
-  } catch (e) {
-    console.error('Token refresh failed:', e);
-    return false;
-  }
-}
-
-function checkOnboarding() {
-  return new Promise(resolve => {
-    chrome.storage.local.get([ONBOARD_KEY, MODE_KEY], (res) => {
-      if (res[ONBOARD_KEY]) {
-        onboardingEl.style.display = 'none';
-        if (res[MODE_KEY]) {
-          selectedMode = res[MODE_KEY];
-        }
-      } else {
-        renderModeGrid();
-        onboardingEl.style.display = 'flex';
-      }
-      resolve();
-    });
-  });
 }
 
 modeGridEl.querySelectorAll('.mode-card').forEach(card => {
   card.addEventListener('click', () => {
     selectedMode = card.dataset.mode;
-    onboardingStep = 'mode';
     renderModeGrid();
   });
 });
@@ -1189,11 +984,8 @@ onboardSkipEl.addEventListener('click', () => {
 });
 
 onboardConfirmEl.addEventListener('click', () => {
-  if (selectedMode === 'cloud' && onboardingStep === 'role') {
-    finishOnboarding();
-  } else if (selectedMode === 'local') {
-    finishOnboarding();
-  }
+  if (selectedMode === 'cloud') return;
+  finishOnboarding();
 });
 
 // Auth tab switching
@@ -1214,115 +1006,62 @@ tabRegister?.addEventListener('click', () => {
 });
 
 // Auth form submissions
-loginForm?.addEventListener('submit', handleLogin);
-registerForm?.addEventListener('submit', handleRegister);
-
-// ── Hamburger Menu ─────────────────────────────────
-function toggleMenu() {
-  menuOpen = !menuOpen;
-  hamburgerMenuEl.classList.toggle('open', menuOpen);
-}
-
-function closeMenu() {
-  menuOpen = false;
-  hamburgerMenuEl.classList.remove('open');
-}
-
-hamburgerBtnEl.addEventListener('click', (e) => {
-  e.stopPropagation();
-  toggleMenu();
+loginForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  authErrorEl.textContent = '';
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  
+  const submitBtn = loginForm.querySelector('.auth-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Signing in...';
+  
+  const res = await sendMessage({ type: 'SIGN_IN', email, password });
+  
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Sign In';
+  
+  if (res.error) {
+    authErrorEl.textContent = res.error;
+    return;
+  }
+  
+  if (res.ok) {
+    await refreshState();
+    finishOnboarding();
+    showToast('Welcome back!');
+  }
 });
 
-document.addEventListener('click', (e) => {
-  if (menuOpen && !hamburgerMenuEl.contains(e.target)) {
-    closeMenu();
+registerForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  authErrorEl.textContent = '';
+  const email = document.getElementById('register-email').value;
+  const password = document.getElementById('register-password').value;
+  const name = document.getElementById('register-name').value;
+  
+  const submitBtn = registerForm.querySelector('.auth-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating account...';
+  
+  const res = await sendMessage({ type: 'SIGN_UP', email, password, name });
+  
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Create Account';
+  
+  if (res.error) {
+    authErrorEl.textContent = res.error;
+    return;
+  }
+  
+  if (res.ok) {
+    await refreshState();
+    finishOnboarding();
+    showToast('Account created!');
   }
 });
 
-menuStatsEl.addEventListener('click', () => { closeMenu(); showStatsModal(); });
-menuExportEl.addEventListener('click', () => { closeMenu(); exportNotes(); });
-menuImportEl.addEventListener('click', () => { closeMenu(); importFileEl.click(); });
-menuThemeEl.addEventListener('click', () => { closeMenu(); toggleTheme(); });
-
-importFileEl.addEventListener('change', handleFileSelect);
-
-// ── User Profile ───────────────────────────────────
-function updateUserProfileUI() {
-  if (currentUser) {
-    userProfileEl.style.display = 'flex';
-    userDividerEl.style.display = 'block';
-    menuLogoutEl.style.display = 'flex';
-    menuLoginEl.style.display = 'none';
-    
-    const name = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'User';
-    const initial = name.charAt(0).toUpperCase();
-    userAvatarEl.textContent = initial;
-    userNameEl.textContent = name;
-    userEmailEl.textContent = currentUser.email || '';
-  } else {
-    userProfileEl.style.display = 'none';
-    userDividerEl.style.display = 'none';
-    menuLogoutEl.style.display = 'none';
-    menuLoginEl.style.display = 'flex';
-  }
-}
-
-async function loadSubscriptionStatus() {
-  if (!authToken) {
-    subscriptionStatus = null;
-    return;
-  }
-  
-  try {
-    await ensureValidToken();
-    const result = await getSubscriptionStatus(authToken);
-    if (result.error) {
-      console.error('Failed to load subscription status:', result.error);
-      return;
-    }
-    subscriptionStatus = result;
-    updateSubscriptionUI();
-  } catch (e) {
-    console.error('Failed to load subscription status:', e);
-  }
-}
-
-function updateSubscriptionUI() {
-  if (!currentUser) {
-    userStatusEl.textContent = '';
-    userStatusEl.className = 'user-status';
-    menuSubscriptionEl.style.display = 'none';
-    return;
-  }
-  
-  if (!subscriptionStatus) {
-    userStatusEl.textContent = 'Loading...';
-    menuSubscriptionEl.style.display = 'flex';
-    return;
-  }
-  
-  const status = subscriptionStatus.subscription_status;
-  const daysLeft = subscriptionStatus.days_left;
-  
-  if (status === 'paid') {
-    userStatusEl.textContent = '☁️ Pro';
-    userStatusEl.className = 'user-status paid';
-    menuSubscriptionEl.style.display = 'flex';
-  } else if (status === 'trial' || status === 'expired') {
-    if (daysLeft > 0) {
-      userStatusEl.textContent = `Trial · ${daysLeft} days left`;
-      userStatusEl.className = 'user-status trial';
-    } else {
-      userStatusEl.textContent = '⚠️ Trial expired';
-      userStatusEl.className = 'user-status expired';
-    }
-    menuSubscriptionEl.style.display = 'flex';
-  } else {
-    userStatusEl.textContent = '';
-    menuSubscriptionEl.style.display = 'none';
-  }
-}
-
+// ── Subscription Modal ──────────────────────────────
 function showSubscriptionModal() {
   closeMenu();
   subscriptionModalEl.style.display = 'flex';
@@ -1330,7 +1069,7 @@ function showSubscriptionModal() {
 }
 
 function updateSubscriptionModal() {
-  if (!subscriptionStatus) {
+  if (!subscription) {
     statusIconEl.textContent = '☁️';
     statusTextEl.textContent = 'Loading...';
     subscriptionPlansEl.classList.remove('visible');
@@ -1338,8 +1077,8 @@ function updateSubscriptionModal() {
     return;
   }
   
-  const status = subscriptionStatus.subscription_status;
-  const daysLeft = subscriptionStatus.days_left;
+  const status = subscription.subscription_status;
+  const daysLeft = subscription.days_left;
   
   if (status === 'paid') {
     statusIconEl.textContent = '✓';
@@ -1372,20 +1111,15 @@ async function handleUpgrade(plan) {
   planMonthlyEl.textContent = 'Processing...';
   planLifetimeEl.textContent = 'Processing...';
   
-  try {
-    await ensureValidToken();
-    const result = await subscribeToPlan(plan, authToken);
-    
-    if (result.error) {
-      showToast('Failed to upgrade: ' + result.error.message);
-    } else {
-      subscriptionStatus = { ...subscriptionStatus, subscription_status: 'paid' };
-      updateSubscriptionUI();
-      updateSubscriptionModal();
-      showToast('Upgraded to Pro!');
-    }
-  } catch (e) {
-    showToast('Upgrade failed');
+  const res = await sendMessage({ type: 'SUBSCRIBE', plan });
+  
+  if (res.error) {
+    showToast('Failed: ' + res.error);
+  } else {
+    subscription.subscription_status = 'paid';
+    updateUserStatus();
+    updateSubscriptionModal();
+    showToast('Upgraded to Pro!');
   }
   
   planMonthlyEl.disabled = false;
@@ -1394,101 +1128,49 @@ async function handleUpgrade(plan) {
   planLifetimeEl.innerHTML = 'Lifetime — <span class="plan-price">$30</span>';
 }
 
-async function handleLogout() {
-  closeMenu();
-  try {
-    if (authToken) {
-      await signOut(authToken);
-    }
-  } catch (e) {
-    console.error('Logout error:', e);
-  }
-  currentUser = null;
-  authToken = null;
-  refreshToken = null;
-  subscriptionStatus = null;
-  chrome.storage.local.remove(['auth_user', 'auth_token', 'auth_refresh_token']);
-  updateUserProfileUI();
-  showToast('Signed out');
-}
-
-function openLoginModal() {
-  closeMenu();
-  selectedMode = 'cloud';
-  onboardingStep = 'mode';
-  renderModeGrid();
-  onboardingEl.style.display = 'flex';
-}
-
-menuLogoutEl.addEventListener('click', handleLogout);
-menuLoginEl.addEventListener('click', openLoginModal);
-menuSubscriptionEl.addEventListener('click', showSubscriptionModal);
-subscriptionBackEl.addEventListener('click', () => {
-  subscriptionModalEl.style.display = 'none';
-});
-subscriptionCloseEl.addEventListener('click', () => {
-  subscriptionModalEl.style.display = 'none';
-});
+subscriptionBackEl.addEventListener('click', () => subscriptionModalEl.style.display = 'none');
+subscriptionCloseEl.addEventListener('click', () => subscriptionModalEl.style.display = 'none');
 subscriptionModalEl.addEventListener('click', (e) => {
-  if (e.target === subscriptionModalEl) {
-    subscriptionModalEl.style.display = 'none';
-  }
+  if (e.target === subscriptionModalEl) subscriptionModalEl.style.display = 'none';
 });
 planMonthlyEl.addEventListener('click', () => handleUpgrade('monthly'));
 planLifetimeEl.addEventListener('click', () => handleUpgrade('lifetime'));
 
-// ── Font Size ─────────────────────────────────────
-function loadFontSize() {
-  chrome.storage.local.get(SIZE_KEY, (res) => {
-    const size = res[SIZE_KEY] || 'medium';
-    document.documentElement.setAttribute('data-size', size);
-    updateSizeButtons(size);
-  });
+menuSubscriptionEl.addEventListener('click', showSubscriptionModal);
+
+// ── Logout/Login ─────────────────────────────────────
+async function handleLogout() {
+  closeMenu();
+  await sendMessage({ type: 'SIGN_OUT' });
+  user = null;
+  subscription = null;
+  updateUserProfileUI();
+  showToast('Signed out');
 }
 
-function setFontSize(size) {
-  document.documentElement.setAttribute('data-size', size);
-  chrome.storage.local.set({ [SIZE_KEY]: size });
-  updateSizeButtons(size);
-}
-
-function updateSizeButtons(active) {
-  document.querySelectorAll('.size-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.size === active);
-  });
-}
-
-// Font size button listeners
-document.querySelectorAll('.size-btn').forEach(btn => {
-  btn.addEventListener('click', () => setFontSize(btn.dataset.size));
+menuLogoutEl.addEventListener('click', handleLogout);
+menuLoginEl.addEventListener('click', () => {
+  closeMenu();
+  selectedMode = 'cloud';
+  renderModeGrid();
+  onboardingEl.style.display = 'flex';
 });
 
-// ── AI Toggle ──────────────────────────────────
-let aiModeActive = false;
+// ── Settings Modal ───────────────────────────────────
+function showSettingsModal() {
+  closeMenu();
+  loadSettings();
+  settingsModalEl.style.display = 'flex';
+}
 
-aiToggleEl?.addEventListener('change', async (e) => {
-  aiModeActive = e.target.checked;
-  
-  if (aiModeActive) {
-    const provider = await getAiProvider();
-    if (provider === 'disabled') {
-      showToast('Enable AI in Settings first');
-      aiToggleEl.checked = false;
-      aiModeActive = false;
-    }
-  }
-});
+function closeSettingsModal() {
+  settingsModalEl.style.display = 'none';
+}
 
-// ── Settings Modal ────────────────────────────────
-async function loadOllamaSettings() {
-  const provider = await getAiProvider();
-  const url = await getOllamaUrl();
-  const model = await getOllamaModel();
-
-  if (aiProviderEl) aiProviderEl.value = provider;
-  if (ollamaUrlEl) ollamaUrlEl.value = url;
-  if (ollamaModelEl) ollamaModelEl.value = model;
-  
+function loadSettings() {
+  if (aiProviderEl) aiProviderEl.value = settings.aiProvider || 'disabled';
+  if (ollamaUrlEl) ollamaUrlEl.value = settings.ollamaUrl || 'http://localhost:11434';
+  if (ollamaModelEl) ollamaModelEl.value = settings.ollamaModel || 'llama3.2';
   updateProviderSettings();
 }
 
@@ -1507,81 +1189,31 @@ function updateProviderSettings() {
   }
 }
 
-async function saveOllamaSettings() {
+async function saveSettings() {
   const provider = aiProviderEl?.value || 'disabled';
   const url = ollamaUrlEl?.value.trim() || 'http://localhost:11434';
   const model = ollamaModelEl?.value.trim() || 'llama3.2';
   
-  await setAiProvider(provider);
-  await setOllamaUrl(url);
-  await setOllamaModel(model);
-  
+  await sendMessage({ type: 'UPDATE_AI_SETTINGS', provider, ollamaUrl: url, ollamaModel: model });
+  settings.aiProvider = provider;
+  settings.ollamaUrl = url;
+  settings.ollamaModel = model;
   showToast('Settings saved');
 }
 
-function showSettingsModal() {
-  closeMenu();
-  loadOllamaSettings();
-  settingsModalEl.style.display = 'flex';
-}
-
-function closeSettingsModal() {
-  settingsModalEl.style.display = 'none';
-}
-
 async function testOllamaConnection() {
-  const provider = aiProviderEl?.value;
-  
   testResultEl.textContent = 'Testing...';
   testResultEl.className = 'test-result';
   
-  try {
-    if (provider === 'ollama') {
-      const url = ollamaUrlEl?.value.trim() || 'http://localhost:11434';
-      const model = ollamaModelEl?.value.trim() || 'llama3.2';
-      
-      const response = await fetch(`${url}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: model,
-          prompt: 'Say "OK" if you can hear me.',
-          stream: false
-        })
-      });
-      
-      if (response.ok) {
-        testResultEl.textContent = '✓ Connected successfully!';
-        testResultEl.className = 'test-result success';
-      } else if (response.status === 403) {
-        testResultEl.textContent = '✗ CORS blocked. Run: ollama serve --cors';
-        testResultEl.className = 'test-result error';
-      } else {
-        testResultEl.textContent = `✗ Error: ${response.status}`;
-        testResultEl.className = 'test-result error';
-      }
-    } else if (provider === 'groq') {
-      if (!authToken) {
-        testResultEl.textContent = '✗ Sign in required for Groq';
-        testResultEl.className = 'test-result error';
-        return;
-      }
-      
-      const result = await summarizeWithGroq('Say "OK" if you can hear me.', authToken);
-      if (result && result.summary) {
-        testResultEl.textContent = '✓ Connected successfully!';
-        testResultEl.className = 'test-result success';
-      } else {
-        testResultEl.textContent = '✗ Groq error';
-        testResultEl.className = 'test-result error';
-      }
-    }
-  } catch (error) {
-    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      testResultEl.textContent = '✗ Cannot connect. Is Ollama running?';
-    } else {
-      testResultEl.textContent = `✗ Error: ${error.message}`;
-    }
+  const res = await sendMessage({ type: 'TEST_OLLAMA' });
+  
+  if (res.ok) {
+    testResultEl.textContent = '✓ Connected successfully!';
+    testResultEl.className = 'test-result success';
+  } else {
+    testResultEl.textContent = res.error?.includes('Failed to fetch') || res.error?.includes('NetworkError')
+      ? '✗ Cannot connect. Is Ollama running?'
+      : `✗ Error: ${res.error || 'Unknown'}`;
     testResultEl.className = 'test-result error';
   }
 }
@@ -1593,161 +1225,42 @@ settingsModalEl?.addEventListener('click', (e) => {
 });
 aiProviderEl?.addEventListener('change', () => {
   updateProviderSettings();
-  saveOllamaSettings();
+  saveSettings();
 });
-ollamaUrlEl?.addEventListener('blur', saveOllamaSettings);
-ollamaModelEl?.addEventListener('blur', saveOllamaSettings);
+ollamaUrlEl?.addEventListener('blur', saveSettings);
+ollamaModelEl?.addEventListener('blur', saveSettings);
 testOllamaBtnEl?.addEventListener('click', testOllamaConnection);
 
-// ── Theme ─────────────────────────────────────────
-function updateThemeLabel() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const icon = menuThemeEl.querySelector('.theme-icon');
-  const text = menuThemeEl.querySelector('.theme-text');
-  if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-  if (text) text.textContent = isDark ? 'Light Mode' : 'Dark Mode';
-}
-
-function loadTheme() {
-  chrome.storage.local.get(THEME_KEY, (res) => {
-    if (res[THEME_KEY] === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-    updateThemeLabel();
-  });
-}
-
-function toggleTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if (isDark) {
-    document.documentElement.removeAttribute('data-theme');
-    chrome.storage.local.set({ [THEME_KEY]: 'light' });
-  } else {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    chrome.storage.local.set({ [THEME_KEY]: 'dark' });
+// ── AI Toggle ────────────────────────────────────────
+aiToggleEl?.addEventListener('change', async (e) => {
+  aiModeActive = e.target.checked;
+  
+  if (aiModeActive && settings.aiProvider === 'disabled') {
+    showToast('Enable AI in Settings first');
+    aiToggleEl.checked = false;
+    aiModeActive = false;
   }
-  updateThemeLabel();
-}
+});
 
-// ── Export/Import ──────────────────────────────────
-function exportNotes() {
-  const data = {
-    version: 1,
-    exported: new Date().toISOString().split('T')[0],
-    notes: notes,
-    tags: allTags,
-    colors: tagColors
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `rwote-backup-${data.exported}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Exported');
-}
-
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (data.notes && Array.isArray(data.notes)) {
-        pendingImport = data;
-        showImportConfirm(data.notes.length);
-      } else {
-        showToast('Invalid file');
-      }
-    } catch {
-      showToast('Failed to parse');
-    }
-  };
-  reader.readAsText(file);
-  importFileEl.value = '';
-}
-
-function showImportConfirm(count) {
-  if (confirm(`This will replace ${count} notes. Continue?`)) {
-    applyImport();
-  }
-}
-
-function applyImport() {
-  if (!pendingImport) return;
-  notes = pendingImport.notes;
-  if (pendingImport.tags) allTags = pendingImport.tags;
-  if (pendingImport.colors) tagColors = pendingImport.colors;
-  saveNotes();
-  saveTags();
-  pendingImport = null;
-  updateChatMatches();
-  renderAll();
-  showToast('Imported');
-}
-
-// ── Tag Stats ──────────────────────────────────────
-function computeTagStats() {
-  const byTag = {};
-  let total = notes.length;
-  notes.forEach(n => {
-    byTag[n.tag] = (byTag[n.tag] || 0) + 1;
+// ── Font Size ────────────────────────────────────────
+document.querySelectorAll('.size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const size = btn.dataset.size;
+    document.documentElement.setAttribute('data-size', size);
+    settings.fontSize = size;
+    sendMessage({ type: 'UPDATE_SETTINGS', settings });
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.toggle('active', b === btn));
   });
-  const sorted = Object.entries(byTag).sort((a, b) => b[1] - a[1]);
-  const mostUsed = sorted[0]?.[0] || null;
-  const leastUsed = sorted[sorted.length - 1]?.[0] || null;
-  return { total, byTag, mostUsed, leastUsed };
-}
+});
 
-function showStatsModal() {
-  const stats = computeTagStats();
-  const maxCount = Math.max(...Object.values(stats.byTag), 1);
-  const statsHtml = Object.entries(stats.byTag)
-    .sort((a, b) => b[1] - a[1])
-    .map(([tag, count]) => {
-      const pct = (count / maxCount) * 100;
-      return `<div class="stat-row">
-        <span class="stat-tag">${escHtml(labelOf(tag))}</span>
-        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${pct}%"></div></div>
-        <span class="stat-count">${count}</span>
-      </div>`;
-    }).join('');
-
-  const html = `<div class="modal-overlay" id="stats-modal">
-    <div class="modal-content stats-modal">
-      <div class="modal-header">
-        <h3>Tag Statistics</h3>
-        <button class="modal-close" id="stats-close">×</button>
-      </div>
-      <div class="stats-body">
-        <div class="stats-total">${stats.total} total notes</div>
-        ${statsHtml || '<div class="stats-empty">No notes yet</div>'}
-        ${stats.mostUsed ? `<div class="stats-summary">
-          <span>Most used: <strong>${escHtml(labelOf(stats.mostUsed))}</strong></span>
-          ${stats.leastUsed ? `<span>Least used: <strong>${escHtml(labelOf(stats.leastUsed))}</strong></span>` : ''}
-        </div>` : ''}
-      </div>
-    </div>
-  </div>`;
-
-  const overlay = document.createElement('div');
-  overlay.innerHTML = html;
-  document.body.appendChild(overlay);
-
-  document.getElementById('stats-close').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-}
-
-// ── Keyboard Navigation ─────────────────────────────
+// ── Keyboard Navigation ───────────────────────────────
 function updateSelectedCard() {
   const cards = notesEl.querySelectorAll('.card');
   cards.forEach((card, idx) => {
     const realIndex = parseInt(card.dataset.index);
     card.classList.toggle('selected', realIndex === selectedNoteIndex);
   });
-  
+
   if (selectedNoteIndex >= 0) {
     const selectedCard = notesEl.querySelector(`.card[data-index="${selectedNoteIndex}"]`);
     if (selectedCard) {
@@ -1810,51 +1323,89 @@ function handleKeyboard(e) {
   if (e.key === 'Enter' && selectedNoteIndex >= 0) {
     e.preventDefault();
     const note = filtered[selectedNoteIndex];
-    if (note) copyNote(note.id);
+    if (note) {
+      const cleanText = stripTags(note.text);
+      navigator.clipboard.writeText(note.note ? `${cleanText}\n\n${note.note}` : cleanText)
+        .then(() => showToast('Copied'));
+    }
     return;
   }
   
   if (e.key === 'd' && selectedNoteIndex >= 0) {
     e.preventDefault();
     const note = filtered[selectedNoteIndex];
-    if (note) deleteNote(note.id);
+    if (note) {
+      sendMessage({ type: 'DELETE_NOTE', id: note.id }).then(async (res) => {
+        if (res.ok) {
+          await refreshState();
+          renderAll();
+        }
+      });
+    }
     return;
   }
   
   if (e.key === 'p' && selectedNoteIndex >= 0) {
     e.preventDefault();
     const note = filtered[selectedNoteIndex];
-    if (note) togglePin(note.id);
+    if (note) {
+      sendMessage({ type: 'TOGGLE_PIN', id: note.id }).then(async (res) => {
+        if (res.ok) {
+          await refreshState();
+          renderAll();
+        }
+      });
+    }
     return;
   }
 }
 
 document.addEventListener('keydown', handleKeyboard);
 
-// ── Init ───────────────────────────────────────────
-loadTheme();
-loadFontSize();
-
-load().then(async () => {
-  await loadOllamaSettings();
-  renderAll();
-  return loadAuth();
-}).then(() => {
-  updateUserProfileUI();
-  updateChatMatches();
-  loaderEl.classList.add('hidden');
-  
-  if (currentUser && selectedMode === 'cloud') {
-    loadFromCloud().then(() => {
-      updateChatMatches();
-      renderAll();
-    });
+// ── Message Listener (from background) ─────────────────
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'STATE_UPDATED') {
+    notes = message.notes || notes;
+    allTags = message.tags || allTags;
+    tagColors = message.tagColors || tagColors;
+    renderAll();
   }
-  
-  if (currentUser) {
-    onboardingEl.style.display = 'none';
-  } else {
-    renderModeGrid();
-    onboardingEl.style.display = 'flex';
+  if (message.type === 'AUTH_UPDATED') {
+    user = message.user;
+    subscription = message.subscription;
+    updateUserProfileUI();
+  }
+  if (message.type === 'CHAT_TEXT') {
+    chatText = message.text || '';
+    updateChatMatches();
+    updateChatBanner();
+    renderNotes();
   }
 });
+
+// ── Init ─────────────────────────────────────────────
+async function init() {
+  await refreshState();
+  updateThemeLabel();
+  renderAll();
+  
+  // Check for pending selection from context menu
+  const pending = await sendMessage({ type: 'GET_PENDING_SELECTION' });
+  if (pending.text) {
+    inputText.value = pending.text;
+    showToast('Text ready — pick a tag and save');
+  }
+  
+  // Show onboarding if needed
+  if (!onboarded) {
+    renderModeGrid();
+    onboardingEl.style.display = 'flex';
+  } else {
+    onboardingEl.style.display = 'none';
+  }
+  
+  loaderEl.classList.add('hidden');
+}
+
+// Start
+init();

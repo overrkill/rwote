@@ -1,4 +1,5 @@
-// content.js — Runs on all pages (focused on claude.ai)
+// content.js — Action Triggers Only
+// No business logic - sends messages to background.js
 
 let lastSentText = '';
 
@@ -9,16 +10,15 @@ document.addEventListener('keydown', (e) => {
     if (selected && selected !== lastSentText) {
       lastSentText = selected;
       chrome.runtime.sendMessage({
-        type: 'SELECTION_FROM_CONTENT',
+        type: 'TEXT_SELECTION',
         text: selected
       }).catch(() => {});
     }
   }
 });
 
-// Extract visible chat text from Claude's UI and send to side panel
+// Extract visible chat text from Claude's UI
 function extractChatText() {
-  // Claude.ai uses these selectors for message content
   const selectors = [
     '[data-testid="user-message"]',
     '.font-claude-message',
