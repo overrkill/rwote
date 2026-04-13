@@ -772,24 +772,38 @@ saveBtn.addEventListener('click', async () => {
   if (!text) { textEl.focus(); return; }
   hideAutocomplete();
   
+  let finalText = text;
+  
   if (aiModeActive && text.length > 10) {
     const url = await getOllamaUrl();
     const model = await getOllamaModel();
     
+    textEl.disabled = true;
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-overlay';
+    overlay.innerHTML = '<div class="spinner-large"></div>';
+    textEl.parentElement.style.position = 'relative';
+    textEl.parentElement.appendChild(overlay);
+    
     try {
       const result = await summarizeWithOllama(text, url, model);
       if (result && result.summary) {
-        textEl.value = result.summary;
+        finalText = result.summary;
         if (result.tags && result.tags.length > 0) {
-          textEl.value = `#${result.tags[0]} ${textEl.value}`;
+          finalText = `#${result.tags[0]} ${finalText}`;
         }
       }
     } catch (e) {
       console.error('Summarize error:', e);
+    } finally {
+      overlay.remove();
+      textEl.disabled = false;
+      textEl.focus();
     }
   }
   
-  addNote(textEl.value.trim(), '');
+  addNote(finalText, '');
   textEl.value = '';
   textEl.focus();
 });
@@ -1445,66 +1459,6 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 let ollamaEnabled = false;
 let aiModeActive = false;
 
-function updateSummarizeVisibility() {
-  if (aiModeActive && inputText.value.trim().length > 10) {
-    summarizeLoadingEl.style.display = 'block';
-  } else {
-    summarizeLoadingEl.style.display = 'none';
-  }
-}
-
-async function handleSummarize() {
-  if (!aiModeActive) return;
-  
-  const text = inputText.value.trim();
-  if (!text || text.length < 10) {
-    showToast('Need more text to summarize');
-    return;
-  }
-
-  summarizeLoadingEl.style.display = 'none';
-  const spinner = document.createElement('div');
-  spinner.className = 'spinner';
-  spinner.style.position = 'absolute';
-  spinner.style.bottom = '8px';
-  spinner.style.right = '56px';
-  summarizeLoadingEl.parentElement.appendChild(spinner);
-  inputText.disabled = true;
-
-  try {
-    const url = await getOllamaUrl();
-    const model = await getOllamaModel();
-    
-    const result = await summarizeWithOllama(text, url, model);
-    
-    if (result && result.summary) {
-      const originalText = inputText.value;
-      inputText.value = result.summary;
-      
-      if (result.tags && result.tags.length > 0) {
-        const tag = result.tags[0];
-        inputText.value = `#${tag} ${inputText.value}`;
-      }
-      
-      showToast('Summarized! Save to store.');
-    } else {
-      showToast('Could not parse summary. Try again.');
-    }
-  } catch (error) {
-    console.error('Summarize error:', error);
-    if (error.message.includes('403') || error.message.includes('Failed to fetch')) {
-      showToast('CORS blocked. Run: ollama serve --cors');
-    } else {
-      showToast('Summarize failed: ' + error.message);
-    }
-  } finally {
-    spinner.remove();
-    inputText.disabled = false;
-    inputText.focus();
-    updateSummarizeVisibility();
-  }
-}
-
 aiToggleEl?.addEventListener('change', async (e) => {
   aiModeActive = e.target.checked;
   
@@ -1514,21 +1468,8 @@ aiToggleEl?.addEventListener('change', async (e) => {
       showToast('Enable Ollama in Settings first');
       aiToggleEl.checked = false;
       aiModeActive = false;
-      return;
-    }
-    
-    if (inputText.value.trim().length > 10) {
-      await handleSummarize();
     }
   }
-});
-
-inputText?.addEventListener('input', () => {
-  updateSummarizeVisibility();
-});
-
-inputText?.addEventListener('keyup', () => {
-  updateSummarizeVisibility();
 });
 
 // ── Settings Modal ────────────────────────────────
