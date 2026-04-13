@@ -69,8 +69,8 @@ rwote/
 ### 🚧 In Progress / TODO
 
 **High Priority:**
-- [ ] Deploy web app to Vercel (blocked: pnpm version issue)
-- [ ] Fix Vercel build settings (use npm instead of pnpm)
+- [x] Deploy web app to Vercel (blocked: pnpm version issue)
+- [x] Fix Vercel build settings (use npm instead of pnpm)
 - [ ] Test cloud sync between extension and web app
 - [ ] Add actual Stripe integration for payments
 
