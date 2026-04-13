@@ -468,15 +468,14 @@ function renderMarkdown(text) {
   html = html.replace(/`(.+?)`/g, '<code>$1</code>');
   
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-  
   html = html.replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
-  
   html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
   
+  html = html.replace(/(<li>.*<\/li>)+/g, '<ul>$&</ul>');
+  html = html.replace(/(<blockquote>.*<\/blockquote>)+/g, '<blockquote>$&</blockquote>');
+  
+  html = html.replace(/\n\n/g, '<p></p>');
   html = html.replace(/\n/g, '<br>');
-  html = html.replace(/<br><li>/g, '<li>');
-  html = html.replace(/<\/li><br>/g, '</li>');
   
   return html;
 }
