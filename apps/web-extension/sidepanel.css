@@ -1030,28 +1030,42 @@ body {
   gap: 6px;
 }
 
-#input-text, #input-note {
+#input-text {
   width: 100%;
   font-family: inherit;
-  font-size: 1em;
+  font-size: 15px;
   color: var(--text-primary);
   background: var(--surface-alt);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 14px 16px;
   resize: none;
   outline: none;
   transition: border-color 0.13s, box-shadow 0.13s;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-#input-text:focus, #input-note:focus {
+#input-text:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(160,160,160,0.2);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
   background: var(--surface);
 }
 
-#input-text::placeholder, #input-note::placeholder { color: var(--text-tertiary); }
+#input-text::placeholder { 
+  color: var(--text-tertiary); 
+}
+
+/* Dark mode input improvements */
+[data-theme="dark"] #input-text {
+  background: #2a2a32;
+  color: #e8e8e8;
+}
+
+[data-theme="dark"] #input-text:focus {
+  background: #1a1a22;
+  border-color: #6b5b95;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
+}
 
 /* ── Tag autocomplete ─────────────────────────────── */
 .input-wrap {
@@ -1116,24 +1130,40 @@ body {
 
 .save-btn {
   font-family: inherit;
-  font-size: 1em;
+  font-size: 15px;
   font-weight: 600;
-  padding: 10px 24px;
-  background: var(--accent-btn);
-  color: var(--bg);
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  color: #ffffff;
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.13s, transform 0.1s;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-[data-theme="dark"] .save-btn {
-  background: var(--surface-alt);
-  color: var(--text-primary);
+.save-btn:hover { 
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
-.save-btn:hover { opacity: 0.85; }
-.save-btn:active { transform: scale(0.97); }
+
+.save-btn:active { 
+  transform: scale(0.97);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* Dark mode save button */
+[data-theme="dark"] .save-btn {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+[data-theme="dark"] .save-btn:hover {
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
 
 /* ── Toast ────────────────────────────────────────── */
 .toast {

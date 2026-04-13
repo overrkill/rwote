@@ -734,14 +734,11 @@ function showToast(msg) {
 // ── Event listeners ────────────────────────────────
 saveBtn.addEventListener('click', () => {
   const textEl = document.getElementById('input-text');
-  const noteEl = document.getElementById('input-note');
   const text = textEl.value.trim();
-  const note = noteEl.value;
   if (!text) { textEl.focus(); return; }
   hideAutocomplete();
-  addNote(text, note);
+  addNote(text, '');
   textEl.value = '';
-  noteEl.value = '';
   textEl.focus();
 });
 
@@ -1422,7 +1419,6 @@ async function handleSummarize() {
     
     if (result && result.summary) {
       const originalText = inputText.value;
-      inputNote.value = originalText;
       inputText.value = result.summary;
       
       if (result.tags && result.tags.length > 0) {
