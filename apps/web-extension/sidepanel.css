@@ -1641,33 +1641,67 @@ body {
 .tag-heaps          { background: var(--tag-heaps);          color: var(--tag-heaps-text); }
 .tag-tries          { background: var(--tag-tries);          color: var(--tag-tries-text); }
 
-/* ── Summarize Button ─────────────────────────────── */
-.summarize-btn {
+/* ── AI Toggle ─────────────────────────────────── */
+.ai-toggle-wrap {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   z-index: 10;
 }
 
-.summarize-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+.ai-toggle-label {
+  font-size: 14px;
 }
 
-.summarize-btn.visible {
-  display: block;
+.ai-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
 }
 
-.summarize-btn:disabled {
+.ai-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ai-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #4a4a4a;
+  transition: 0.3s;
+  border-radius: 22px;
+}
+
+.ai-toggle-slider::before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.ai-toggle input:checked + .ai-toggle-slider {
+  background-color: #22c55e;
+}
+
+.ai-toggle input:checked + .ai-toggle-slider::before {
+  transform: translateX(18px);
+}
+
+.ai-toggle input:disabled + .ai-toggle-slider {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1675,7 +1709,7 @@ body {
 .summarize-loading {
   position: absolute;
   bottom: 8px;
-  right: 8px;
+  right: 56px;
   z-index: 10;
 }
 

@@ -127,6 +127,7 @@ const filterDropdownEl = document.getElementById('filter-dropdown');
 const filterChipsEl = document.getElementById('filter-chips');
 const tagAutocompleteEl = document.getElementById('tag-autocomplete');
 const summarizeBtnEl = document.getElementById('summarize-btn');
+const aiToggleEl = document.getElementById('ai-toggle');
 const summarizeLoadingEl = document.getElementById('summarize-loading');
 const settingsModalEl = document.getElementById('settings-modal');
 const settingsCloseEl = document.getElementById('settings-close');
@@ -1422,26 +1423,34 @@ document.querySelectorAll('.size-btn').forEach(btn => {
   btn.addEventListener('click', () => setFontSize(btn.dataset.size));
 });
 
-// ── Summarize Button ──────────────────────────────
+// ── AI Toggle ──────────────────────────────────
 let ollamaEnabled = false;
+let aiModeActive = false;
 
 function updateSummarizeVisibility() {
-  if (ollamaEnabled && inputText.value.trim().length > 10) {
-    summarizeBtnEl.classList.add('visible');
+  if (aiModeActive && inputText.value.trim().length > 10) {
+    summarizeLoadingEl.style.display = 'block';
   } else {
-    summarizeBtnEl.classList.remove('visible');
+    summarizeLoadingEl.style.display = 'none';
   }
 }
 
 async function handleSummarize() {
+  if (!aiModeActive) return;
+  
   const text = inputText.value.trim();
   if (!text || text.length < 10) {
     showToast('Need more text to summarize');
     return;
   }
 
-  summarizeBtnEl.style.display = 'none';
-  summarizeLoadingEl.style.display = 'block';
+  summarizeLoadingEl.style.display = 'none';
+  const spinner = document.createElement('div');
+  spinner.className = 'spinner';
+  spinner.style.position = 'absolute';
+  spinner.style.bottom = '8px';
+  spinner.style.right = '56px';
+  summarizeLoadingEl.parentElement.appendChild(spinner);
   inputText.disabled = true;
 
   try {
@@ -1459,7 +1468,7 @@ async function handleSummarize() {
         inputText.value = `#${tag} ${inputText.value}`;
       }
       
-      showToast('Summarized! Click Save to store.');
+      showToast('Summarized! Save to store.');
     } else {
       showToast('Could not parse summary. Try again.');
     }
@@ -1471,14 +1480,30 @@ async function handleSummarize() {
       showToast('Summarize failed: ' + error.message);
     }
   } finally {
-    summarizeLoadingEl.style.display = 'none';
+    spinner.remove();
     inputText.disabled = false;
     inputText.focus();
     updateSummarizeVisibility();
   }
 }
 
-summarizeBtnEl?.addEventListener('click', handleSummarize);
+aiToggleEl?.addEventListener('change', async (e) => {
+  aiModeActive = e.target.checked;
+  
+  if (aiModeActive) {
+    ollamaEnabled = await isOllamaEnabled();
+    if (!ollamaEnabled) {
+      showToast('Enable Ollama in Settings first');
+      aiToggleEl.checked = false;
+      aiModeActive = false;
+      return;
+    }
+    
+    if (inputText.value.trim().length > 10) {
+      await handleSummarize();
+    }
+  }
+});
 
 inputText?.addEventListener('input', () => {
   updateSummarizeVisibility();
