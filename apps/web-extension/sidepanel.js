@@ -1777,9 +1777,10 @@ document.addEventListener('keydown', handleKeyboard);
 // ── Init ───────────────────────────────────────────
 loadTheme();
 loadFontSize();
-loadOllamaSettings();
 
-load().then(() => {
+load().then(async () => {
+  await loadOllamaSettings();
+  updateSummarizeVisibility();
   renderAll();
   return loadAuth();
 }).then(() => {
