@@ -109,10 +109,25 @@ async function subscribeToPlan(plan, token) {
   return callEdgeFunction('subscribe', { plan }, token);
 }
 
-// ── Ollama Local AI ─────────────────────────────────
+// ── AI Settings ─────────────────────────────────────
+const AI_PROVIDER_KEY = 'rwote_ai_provider';
 const OLLAMA_URL_KEY = 'rwote_ollama_url';
-const OLLAMA_ENABLED_KEY = 'rwote_ollama_enabled';
 const OLLAMA_MODEL_KEY = 'rwote_ollama_model';
+const GROQ_MODEL_KEY = 'rwote_groq_model';
+
+function getAiProvider() {
+  return new Promise(resolve => {
+    chrome.storage.local.get(AI_PROVIDER_KEY, res => {
+      resolve(res[AI_PROVIDER_KEY] || 'disabled');
+    });
+  });
+}
+
+function setAiProvider(provider) {
+  return new Promise(resolve => {
+    chrome.storage.local.set({ [AI_PROVIDER_KEY]: provider }, resolve);
+  });
+}
 
 function getOllamaUrl() {
   return new Promise(resolve => {
@@ -128,20 +143,6 @@ function setOllamaUrl(url) {
   });
 }
 
-function isOllamaEnabled() {
-  return new Promise(resolve => {
-    chrome.storage.local.get(OLLAMA_ENABLED_KEY, res => {
-      resolve(res[OLLAMA_ENABLED_KEY] || false);
-    });
-  });
-}
-
-function setOllamaEnabled(enabled) {
-  return new Promise(resolve => {
-    chrome.storage.local.set({ [OLLAMA_ENABLED_KEY]: enabled }, resolve);
-  });
-}
-
 function getOllamaModel() {
   return new Promise(resolve => {
     chrome.storage.local.get(OLLAMA_MODEL_KEY, res => {
@@ -153,6 +154,20 @@ function getOllamaModel() {
 function setOllamaModel(model) {
   return new Promise(resolve => {
     chrome.storage.local.set({ [OLLAMA_MODEL_KEY]: model }, resolve);
+  });
+}
+
+function getGroqModel() {
+  return new Promise(resolve => {
+    chrome.storage.local.get(GROQ_MODEL_KEY, res => {
+      resolve(res[GROQ_MODEL_KEY] || 'llama-3.1-8b-instant');
+    });
+  });
+}
+
+function setGroqModel(model) {
+  return new Promise(resolve => {
+    chrome.storage.local.set({ [GROQ_MODEL_KEY]: model }, resolve);
   });
 }
 
@@ -195,6 +210,20 @@ ${text}`;
 
     const data = await response.json();
     return parseSummarizeResponse(data.response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function summarizeWithGroq(text, token) {
+  try {
+    const response = await callEdgeFunction('summarize', { text }, token);
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    return parseSummarizeResponse(response.response);
   } catch (error) {
     throw error;
   }

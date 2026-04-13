@@ -200,25 +200,37 @@
       </div>
       <div class="settings-body">
         <div class="settings-section">
-          <h4>Local AI (Ollama)</h4>
-          <p class="settings-desc">Use a local AI model to summarize your notes. Requires Ollama installed.</p>
-          
-          <label class="toggle-row">
-            <span>Enable Local AI</span>
-            <input type="checkbox" id="ollama-enabled" />
-          </label>
+          <h4>AI Summarization</h4>
+          <p class="settings-desc">Use AI to summarize your notes into bullet points.</p>
           
           <div class="input-group">
-            <label for="ollama-url">Ollama URL</label>
-            <input type="text" id="ollama-url" placeholder="http://localhost:11434" />
+            <label for="ai-provider">Provider</label>
+            <select id="ai-provider">
+              <option value="disabled">Disabled</option>
+              <option value="ollama">Local (Ollama)</option>
+              <option value="groq">Cloud (Groq)</option>
+            </select>
           </div>
           
-          <div class="input-group">
-            <label for="ollama-model">Model</label>
-            <input type="text" id="ollama-model" placeholder="llama3.2" />
+          <div id="ollama-settings">
+            <div class="input-group">
+              <label for="ollama-url">Ollama URL</label>
+              <input type="text" id="ollama-url" placeholder="http://localhost:11434" />
+            </div>
+            
+            <div class="input-group">
+              <label for="ollama-model">Model</label>
+              <input type="text" id="ollama-model" placeholder="llama3.2" />
+            </div>
+            
+            <button class="test-btn" id="test-ollama-btn">Test Connection</button>
           </div>
           
-          <button class="test-btn" id="test-ollama-btn">Test Connection</button>
+          <div id="groq-settings" style="display:none">
+            <p class="settings-desc">Uses server-side Groq API. No API key needed.</p>
+            <p class="settings-desc-small">Supported models: llama-3.1-8b-instant, mixtral-8x7b-32768</p>
+          </div>
+          
           <p class="test-result" id="test-result"></p>
         </div>
       </div>

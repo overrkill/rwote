@@ -1,5 +1,5 @@
 // sidepanel.js
-/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote, getSubscriptionStatus, subscribeToPlan, refreshAccessToken, getOllamaUrl, setOllamaUrl, isOllamaEnabled, setOllamaEnabled, getOllamaModel, setOllamaModel, summarizeWithOllama */
+/* global signUp, signIn, signOut, getCurrentUser, getSession, SUPABASE_URL, API_BASE, cloudSaveNote, cloudLoadNotes, cloudDeleteNote, getSubscriptionStatus, subscribeToPlan, refreshAccessToken, getAiProvider, setAiProvider, getOllamaUrl, setOllamaUrl, getOllamaModel, setOllamaModel, getGroqModel, setGroqModel, summarizeWithOllama, summarizeWithGroq */
 
 const STORAGE_KEY  = 'rwote_v1';
 const TAGS_KEY     = 'rwote_tags_v1';
@@ -22,9 +22,7 @@ const ROLE_TAGS = {
 };
 
 const DEFAULT_TAGS = [
-  'uncategorized', 'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
-  'hashing', 'trees', 'graphs', 'dp', 'sorting',
-  'backtracking', 'binary-search', 'heaps', 'tries'
+  'note', 'general', 'research','uncategorized'
 ];
 
 const COLOR_POOL = [
@@ -126,13 +124,14 @@ const filterBarEl = document.getElementById('filter-bar');
 const filterDropdownEl = document.getElementById('filter-dropdown');
 const filterChipsEl = document.getElementById('filter-chips');
 const tagAutocompleteEl = document.getElementById('tag-autocomplete');
-const summarizeBtnEl = document.getElementById('summarize-btn');
 const aiToggleEl = document.getElementById('ai-toggle');
 const summarizeLoadingEl = document.getElementById('summarize-loading');
 const settingsModalEl = document.getElementById('settings-modal');
 const settingsCloseEl = document.getElementById('settings-close');
 const menuSettingsEl = document.getElementById('menu-settings');
-const ollamaEnabledEl = document.getElementById('ollama-enabled');
+const aiProviderEl = document.getElementById('ai-provider');
+const ollamaSettingsEl = document.getElementById('ollama-settings');
+const groqSettingsEl = document.getElementById('groq-settings');
 const ollamaUrlEl = document.getElementById('ollama-url');
 const ollamaModelEl = document.getElementById('ollama-model');
 const testOllamaBtnEl = document.getElementById('test-ollama-btn');
@@ -775,8 +774,7 @@ saveBtn.addEventListener('click', async () => {
   let finalText = text;
   
   if (aiModeActive && text.length > 10) {
-    const url = await getOllamaUrl();
-    const model = await getOllamaModel();
+    const provider = await getAiProvider();
     
     textEl.disabled = true;
     
@@ -787,7 +785,16 @@ saveBtn.addEventListener('click', async () => {
     textEl.parentElement.appendChild(overlay);
     
     try {
-      const result = await summarizeWithOllama(text, url, model);
+      let result;
+      
+      if (provider === 'ollama') {
+        const url = await getOllamaUrl();
+        const model = await getOllamaModel();
+        result = await summarizeWithOllama(text, url, model);
+      } else if (provider === 'groq') {
+        result = await summarizeWithGroq(text, authToken);
+      }
+      
       if (result && result.summary) {
         finalText = result.summary;
         if (result.tags && result.tags.length > 0) {
@@ -796,6 +803,7 @@ saveBtn.addEventListener('click', async () => {
       }
     } catch (e) {
       console.error('Summarize error:', e);
+      showToast('Summarize failed: ' + e.message);
     } finally {
       overlay.remove();
       textEl.disabled = false;
@@ -1456,16 +1464,15 @@ document.querySelectorAll('.size-btn').forEach(btn => {
 });
 
 // ── AI Toggle ──────────────────────────────────
-let ollamaEnabled = false;
 let aiModeActive = false;
 
 aiToggleEl?.addEventListener('change', async (e) => {
   aiModeActive = e.target.checked;
   
   if (aiModeActive) {
-    ollamaEnabled = await isOllamaEnabled();
-    if (!ollamaEnabled) {
-      showToast('Enable Ollama in Settings first');
+    const provider = await getAiProvider();
+    if (provider === 'disabled') {
+      showToast('Enable AI in Settings first');
       aiToggleEl.checked = false;
       aiModeActive = false;
     }
@@ -1474,25 +1481,41 @@ aiToggleEl?.addEventListener('change', async (e) => {
 
 // ── Settings Modal ────────────────────────────────
 async function loadOllamaSettings() {
-  ollamaEnabled = await isOllamaEnabled();
+  const provider = await getAiProvider();
   const url = await getOllamaUrl();
   const model = await getOllamaModel();
-  
-  if (ollamaEnabledEl) ollamaEnabledEl.checked = ollamaEnabled;
+
+  if (aiProviderEl) aiProviderEl.value = provider;
   if (ollamaUrlEl) ollamaUrlEl.value = url;
   if (ollamaModelEl) ollamaModelEl.value = model;
+  
+  updateProviderSettings();
+}
+
+function updateProviderSettings() {
+  const provider = aiProviderEl?.value || 'disabled';
+  
+  if (provider === 'ollama') {
+    ollamaSettingsEl.style.display = 'block';
+    groqSettingsEl.style.display = 'none';
+  } else if (provider === 'groq') {
+    ollamaSettingsEl.style.display = 'none';
+    groqSettingsEl.style.display = 'block';
+  } else {
+    ollamaSettingsEl.style.display = 'none';
+    groqSettingsEl.style.display = 'none';
+  }
 }
 
 async function saveOllamaSettings() {
-  const enabled = ollamaEnabledEl?.checked || false;
+  const provider = aiProviderEl?.value || 'disabled';
   const url = ollamaUrlEl?.value.trim() || 'http://localhost:11434';
   const model = ollamaModelEl?.value.trim() || 'llama3.2';
   
-  await setOllamaEnabled(enabled);
+  await setAiProvider(provider);
   await setOllamaUrl(url);
   await setOllamaModel(model);
   
-  ollamaEnabled = enabled;
   showToast('Settings saved');
 }
 
@@ -1507,32 +1530,51 @@ function closeSettingsModal() {
 }
 
 async function testOllamaConnection() {
-  const url = ollamaUrlEl?.value.trim() || 'http://localhost:11434';
-  const model = ollamaModelEl?.value.trim() || 'llama3.2';
+  const provider = aiProviderEl?.value;
   
   testResultEl.textContent = 'Testing...';
   testResultEl.className = 'test-result';
   
   try {
-    const response = await fetch(`${url}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: model,
-        prompt: 'Say "OK" if you can hear me.',
-        stream: false
-      })
-    });
-    
-    if (response.ok) {
-      testResultEl.textContent = '✓ Connected successfully!';
-      testResultEl.className = 'test-result success';
-    } else if (response.status === 403) {
-      testResultEl.textContent = '✗ CORS blocked. Run: ollama serve --cors';
-      testResultEl.className = 'test-result error';
-    } else {
-      testResultEl.textContent = `✗ Error: ${response.status}`;
-      testResultEl.className = 'test-result error';
+    if (provider === 'ollama') {
+      const url = ollamaUrlEl?.value.trim() || 'http://localhost:11434';
+      const model = ollamaModelEl?.value.trim() || 'llama3.2';
+      
+      const response = await fetch(`${url}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: model,
+          prompt: 'Say "OK" if you can hear me.',
+          stream: false
+        })
+      });
+      
+      if (response.ok) {
+        testResultEl.textContent = '✓ Connected successfully!';
+        testResultEl.className = 'test-result success';
+      } else if (response.status === 403) {
+        testResultEl.textContent = '✗ CORS blocked. Run: ollama serve --cors';
+        testResultEl.className = 'test-result error';
+      } else {
+        testResultEl.textContent = `✗ Error: ${response.status}`;
+        testResultEl.className = 'test-result error';
+      }
+    } else if (provider === 'groq') {
+      if (!authToken) {
+        testResultEl.textContent = '✗ Sign in required for Groq';
+        testResultEl.className = 'test-result error';
+        return;
+      }
+      
+      const result = await summarizeWithGroq('Say "OK" if you can hear me.', authToken);
+      if (result && result.summary) {
+        testResultEl.textContent = '✓ Connected successfully!';
+        testResultEl.className = 'test-result success';
+      } else {
+        testResultEl.textContent = '✗ Groq error';
+        testResultEl.className = 'test-result error';
+      }
     }
   } catch (error) {
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
@@ -1549,7 +1591,10 @@ settingsCloseEl?.addEventListener('click', closeSettingsModal);
 settingsModalEl?.addEventListener('click', (e) => {
   if (e.target === settingsModalEl) closeSettingsModal();
 });
-ollamaEnabledEl?.addEventListener('change', saveOllamaSettings);
+aiProviderEl?.addEventListener('change', () => {
+  updateProviderSettings();
+  saveOllamaSettings();
+});
 ollamaUrlEl?.addEventListener('blur', saveOllamaSettings);
 ollamaModelEl?.addEventListener('blur', saveOllamaSettings);
 testOllamaBtnEl?.addEventListener('click', testOllamaConnection);

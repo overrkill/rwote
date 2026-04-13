@@ -1812,6 +1812,31 @@ body {
   border-color: var(--border-focus);
 }
 
+.input-group select {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.9em;
+  color: var(--text-primary);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color 0.13s;
+  cursor: pointer;
+}
+
+.input-group select:focus {
+  border-color: var(--border-focus);
+}
+
+.settings-desc-small {
+  font-size: 0.75em;
+  color: var(--text-tertiary);
+  margin-top: -8px;
+  margin-bottom: 12px;
+}
+
 .test-btn {
   width: 100%;
   padding: 10px;
