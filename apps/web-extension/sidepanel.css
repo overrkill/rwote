@@ -988,6 +988,65 @@ body {
   color: #8b5cf6;
 }
 
+/* Markdown styles */
+.card-text h2, .card-text h3, .card-text h4 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 8px 0 4px;
+  color: var(--text-primary);
+}
+
+.card-text strong {
+  font-weight: 600;
+}
+
+.card-text em {
+  font-style: italic;
+}
+
+.card-text code {
+  background: var(--surface-alt);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.card-text ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0;
+}
+
+.card-text li {
+  padding-left: 16px;
+  position: relative;
+  margin: 2px 0;
+}
+
+.card-text li::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  color: var(--text-tertiary);
+}
+
+.card-text blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 12px;
+  margin: 8px 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+[data-theme="dark"] .card-text code {
+  background: #2a2a32;
+}
+
+[data-theme="dark"] .card-text blockquote {
+  border-color: #6b5b95;
+}
+
 .card-note {
   font-size: 0.9em;
   color: var(--text-secondary);
