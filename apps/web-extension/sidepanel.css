@@ -971,6 +971,23 @@ body {
   padding: 1px 3px;
 }
 
+.card-text .list-item {
+  display: block;
+  padding-left: 12px;
+  position: relative;
+}
+
+.card-text .list-item::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .card-text .list-item::before {
+  color: #8b5cf6;
+}
+
 .card-note {
   font-size: 0.9em;
   color: var(--text-secondary);

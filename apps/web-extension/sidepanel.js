@@ -456,6 +456,16 @@ function highlight(text, query) {
   return escHtml(text).replace(new RegExp(`(${esc})`, 'gi'), '<mark>$1</mark>');
 }
 
+function formatListItems(text) {
+  const lines = text.split('\n');
+  return lines.map(line => {
+    if (line.trim().startsWith('- ')) {
+      return `<span class="list-item">${escHtml(line)}</span>`;
+    }
+    return escHtml(line);
+  }).join('\n');
+}
+
 function getFiltered() {
   let result = [...notes];
   if (activeTags.size > 0) {
@@ -508,7 +518,7 @@ function renderNotes() {
     <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
       <div class="card-body">
         <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
-        <div class="card-text">${highlight(stripTags(n.text), searchQuery)}</div>
+        <div class="card-text">${highlight(formatListItems(stripTags(n.text)), searchQuery)}</div>
         ${n.note ? `<div class="card-note">${highlight(n.note, searchQuery)}</div>` : ''}
         <div class="card-meta"><span class="card-date">${n.date}</span></div>
       </div>
