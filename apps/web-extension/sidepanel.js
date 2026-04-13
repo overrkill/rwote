@@ -451,19 +451,28 @@ document.addEventListener('click', (e) => {
 
 // ── Notes ──────────────────────────────────────────
 function highlight(text, query) {
-  if (!query) return escHtml(text);
+  if (!query) return text;
   const esc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return escHtml(text).replace(new RegExp(`(${esc})`, 'gi'), '<mark>$1</mark>');
+  return text.replace(new RegExp(`(${esc})`, 'gi'), '<mark>$1</mark>');
 }
 
 function formatListItems(text) {
   const lines = text.split('\n');
   return lines.map(line => {
+    const escaped = escHtml(line);
     if (line.trim().startsWith('- ')) {
-      return `<span class="list-item">${escHtml(line)}</span>`;
+      return `<span class="list-item">${escaped}</span>`;
     }
-    return escHtml(line);
+    return escaped;
   }).join('\n');
+}
+
+function processNoteText(text, query = '') {
+  let processed = formatListItems(stripTags(text));
+  if (query) {
+    processed = highlight(processed, query);
+  }
+  return processed;
 }
 
 function getFiltered() {
@@ -518,8 +527,8 @@ function renderNotes() {
     <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
       <div class="card-body">
         <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
-        <div class="card-text">${highlight(formatListItems(stripTags(n.text)), searchQuery)}</div>
-        ${n.note ? `<div class="card-note">${highlight(n.note, searchQuery)}</div>` : ''}
+        <div class="card-text">${processNoteText(n.text, searchQuery)}</div>
+        ${n.note ? `<div class="card-note">${highlight(formatListItems(n.note), searchQuery)}</div>` : ''}
         <div class="card-meta"><span class="card-date">${n.date}</span></div>
       </div>
       <div class="card-actions">
