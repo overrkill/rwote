@@ -1,140 +1,223 @@
 # Rwote
 
-Chrome extension for capturing and organizing insights with hashtag-based tagging.
+A Chrome extension and web app for capturing and organizing insights from learning sessions. Perfect for DSA preparation, research, and technical interviews.
 
-## Structure
+## Overview
+
+- **Chrome Extension** - Capture insights while browsing with right-click context menu
+- **Web App** - Access notes anywhere with cloud sync (paid)
+- **Hashtag-based tagging** - Organize notes with DSA tags (arrays, trees, graphs, dp, etc.)
+
+## Project Structure
 
 ```
 rwote/
 ├── apps/
-│   └── web-extension/    # Chrome extension (Manifest V3)
-├── packages/
-│   └── shared/          # Shared types (future)
+│   ├── web-extension/     # Chrome extension (Manifest V3)
+│   └── web-app/          # Next.js web app with Tailwind CSS
 ├── supabase/
-│   ├── migrations/      # Database schema
-│   └── functions/       # Edge Functions API
-└── package.json
+│   └── functions/        # Edge Functions API
+├── .gitignore
+├── package.json
+├── pnpm-workspace.yaml
+└── README.md
 ```
+
+## Current Status
+
+### ✅ Completed
+
+**Chrome Extension:**
+- Right-click context menu to save selected text
+- Side panel UI with note list, search, and filtering
+- Local storage with IndexedDB fallback
+- Cloud sync via Supabase Edge Functions (paid)
+- Keyboard navigation (j/k arrows, Enter, d, p)
+- Undo delete (p to restore)
+- Pin notes
+- Export/Import notes as JSON
+- Font size toggle (S/M/L)
+- User auth (sign in/up/out)
+- Subscription status display
+- Token refresh for API calls
+
+**Web App:**
+- Landing page with hero, features, pricing, FAQ
+- Browser mockup preview
+- Auth pages (login/register)
+- Dashboard with note CRUD
+- Full dark mode support
+- Cloud sync (always on, paid feature)
+- Trial banner with days remaining
+- Grand Hotel font branding
+- Hamburger menu with export
+- Favicon and PWA icons
+
+**Backend:**
+- Supabase Auth (email/password)
+- Edge Functions: save-note, load-notes, delete-note, subscription-status, subscribe
+- RLS policies for note security
+- Profile table with subscription status
+
+**Design:**
+- Paper aesthetic (#f5f2ec background, #0f0e0d ink)
+- Grand Hotel font for logo
+- Playfair Display, DM Mono, DM Sans fonts
+- Dark mode with system preference detection
+- Consistent dark mode across all components
+
+### 🚧 In Progress / TODO
+
+**High Priority:**
+- [ ] Deploy web app to Vercel (blocked: pnpm version issue)
+- [ ] Fix Vercel build settings (use npm instead of pnpm)
+- [ ] Test cloud sync between extension and web app
+- [ ] Add actual Stripe integration for payments
+
+**Medium Priority:**
+- [ ] Chrome Web Store submission
+- [ ] Extension store compliance review
+- [ ] Add more DSA tag suggestions
+- [ ] Improve onboarding flow
+
+**Low Priority:**
+- [ ] Email/password reset flow
+- [ ] Note sharing functionality
+- [ ] Note categories/folders
+- [ ] Mobile responsive improvements
+- [ ] Performance optimization
 
 ## Quick Start
 
-```bash
-# Install dependencies
-pnpm install
+### Web App (Development)
 
-# Load extension in Chrome
+```bash
+cd apps/web-app
+npm install
+npm run dev
+```
+
+Open http://localhost:3000
+
+### Web App (Production)
+
+Deploy to Vercel:
+- Build Command: `npm install && npm run build`
+- Install Command: `npm install`
+- Output Directory: `.next`
+
+### Chrome Extension (Development)
+
+```bash
+# No build step required
 1. Open chrome://extensions/
 2. Enable Developer mode
 3. Click "Load unpacked"
 4. Select apps/web-extension/
-5. Reload after code changes
+5. Reload extension after code changes
 ```
 
-## Scripts
+### Extension Permissions
+- `storage` - Local note storage
+- `contextMenus` - Right-click "Save to Rwote"
+- `sidePanel` - Side panel UI
+- `activeTab`, `scripting`, `tabs` - Content script injection
 
-| Command | Description |
-|---------|-------------|
-| `pnpm install` | Install all workspaces |
-| `pnpm lint` | Lint all packages |
-| `pnpm dev` | Dev mode (extension: no build step) |
+## API Reference
 
-## Development
-
-- Extension loads directly from source — no build step
-- Reload at `chrome://extensions` after changes
-- Test content script: open Claude.ai, select text, right-click → "Save to Rwote"
-- Test side panel: click extension icon, use keyboard nav (j/k/Enter/d/p/)
-
-## API (Supabase Edge Functions)
-
-Base URL: `https://<project>.supabase.co/functions/v1`
+Base URL: `https://joqxsbboxmkpcizasdbc.supabase.co/functions/v1`
 
 ### Endpoints
 
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
-| `/sync` | POST | Required | Bidirectional note sync |
-| `/subscription-status` | GET | Required | Get subscription status |
-| `/subscribe` | POST | Required | Activate subscription (dummy) |
-| `/webhook-stripe` | POST | None | Stripe webhook handler |
+| `/save-note` | POST | Bearer | Save or update a note |
+| `/load-notes` | POST | Bearer | Load all user notes |
+| `/delete-note` | POST | Bearer | Soft delete a note |
+| `/subscription-status` | POST | Bearer | Get subscription info |
+| `/subscribe` | POST | Bearer | Activate subscription |
 
-### /sync
+### Authentication
 
-Bidirectional sync endpoint.
-
-**Request:**
-```json
-{
-  "notes": [
-    { "id": "local-123", "text": "...", "updated_at": 1712000000 }
-  ],
-  "last_synced_at": 1711900000
-}
-```
-
-**Response:**
-```json
-{
-  "notes": [...],
-  "server_time": 1712000001,
-  "can_sync": true
-}
-```
-
-### /subscription-status
-
-Check if user can sync.
-
-**Response:**
-```json
-{
-  "user_id": "uuid",
-  "email": "user@example.com",
-  "subscription_status": "trial",
-  "trial_ends_at": "2024-04-25T00:00:00Z",
-  "days_left": 7,
-  "can_sync": true
-}
-```
-
-### /subscribe
-
-Activate subscription (dummy payment for now).
-
-**Request:**
-```json
-{ "plan": "monthly" }
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Monthly subscription activated!",
-  "subscription_status": "paid",
-  "can_sync": true
-}
-```
-
-## Supabase Setup
-
-See [supabase/SETUP.md](./supabase/SETUP.md) for detailed setup instructions.
-
-```bash
-# Local development
-supabase init
-supabase start
-supabase db reset
-
-# Deploy
-supabase link --project-ref <ref>
-supabase functions deploy
-```
+All endpoints require `Authorization: Bearer <token>` header where token is the Supabase JWT from login.
 
 ## Tech Stack
 
+- **Web App:** Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Extension:** Vanilla JS, Manifest V3
 - **Backend:** Supabase Edge Functions (Deno)
-- **Database:** Supabase (Postgres)
-- **Auth:** Supabase Auth (Google/GitHub OAuth)
-- **Payments:** Stripe (webhook-based, dummy for now)
+- **Database:** Supabase (Postgres) with RLS
+- **Auth:** Supabase Auth (email/password)
+- **Payments:** Stripe (placeholder - needs integration)
+
+## Scripts
+
+```bash
+pnpm install       # Install all workspaces
+pnpm lint          # Lint all packages
+pnpm dev           # Dev mode for all packages
+```
+
+## Environment Variables
+
+### Web App (.env.local)
+```
+NEXT_PUBLIC_SUPABASE_URL=https://joqxsbboxmkpcizasdbc.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+```
+
+### Supabase
+- Project URL: `https://joqxsbboxmkpcizasdbc.supabase.co`
+- Edge Functions deployed with `verify_jwt: false` (manual JWT decode)
+
+## Database Schema
+
+### profiles
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | User ID (from Supabase Auth) |
+| email | text | User email |
+| subscription_status | text | 'trial', 'paid', 'expired' |
+| trial_ends_at | timestamptz | Trial end date |
+
+### notes
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | Owner |
+| local_id | text | Client-generated ID |
+| text | text | Note content |
+| note | text | Extra context |
+| tag | text | Tag name |
+| date | text | Formatted date |
+| pinned | boolean | Pinned status |
+| updated_at | timestamptz | Last update |
+| deleted_at | timestamptz | Soft delete |
+
+RLS: Users can only access their own notes.
+
+## Design System
+
+### Colors (Light)
+- Background: `#f5f2ec` (paper)
+- Ink: `#0f0e0d`
+- Muted: `#8a8278`
+- Line: `#ddd8d0`
+- Accent: `#c8402a`
+
+### Colors (Dark)
+- Background: `#0f0e0d`
+- Surface: `#1a1a19`
+- Surface Alt: `#2a2a28`
+- Border: `#3a3a38`
+- Text: `#f5f2ec`
+
+### Fonts
+- Logo: Grand Hotel
+- Headings: Playfair Display
+- Code/Mono: DM Mono
+- Body: DM Sans
+
+## License
+
+Private - All rights reserved
