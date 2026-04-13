@@ -1530,6 +1530,9 @@ ollamaEnabledEl?.addEventListener('change', saveOllamaSettings);
 ollamaUrlEl?.addEventListener('blur', saveOllamaSettings);
 ollamaModelEl?.addEventListener('blur', saveOllamaSettings);
 testOllamaBtnEl?.addEventListener('click', testOllamaConnection);
+
+// ── Theme ─────────────────────────────────────────
+function updateThemeLabel() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const icon = menuThemeEl.querySelector('.theme-icon');
   const text = menuThemeEl.querySelector('.theme-text');
