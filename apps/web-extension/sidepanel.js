@@ -1481,8 +1481,6 @@ async function loadOllamaSettings() {
   if (ollamaEnabledEl) ollamaEnabledEl.checked = ollamaEnabled;
   if (ollamaUrlEl) ollamaUrlEl.value = url;
   if (ollamaModelEl) ollamaModelEl.value = model;
-  
-  updateSummarizeVisibility();
 }
 
 async function saveOllamaSettings() {
@@ -1495,7 +1493,6 @@ async function saveOllamaSettings() {
   await setOllamaModel(model);
   
   ollamaEnabled = enabled;
-  updateSummarizeVisibility();
   showToast('Settings saved');
 }
 
@@ -1795,7 +1792,6 @@ loadFontSize();
 
 load().then(async () => {
   await loadOllamaSettings();
-  updateSummarizeVisibility();
   renderAll();
   return loadAuth();
 }).then(() => {
