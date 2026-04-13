@@ -766,12 +766,30 @@ function showToast(msg) {
 }
 
 // ── Event listeners ────────────────────────────────
-saveBtn.addEventListener('click', () => {
+saveBtn.addEventListener('click', async () => {
   const textEl = document.getElementById('input-text');
   const text = textEl.value.trim();
   if (!text) { textEl.focus(); return; }
   hideAutocomplete();
-  addNote(text, '');
+  
+  if (aiModeActive && text.length > 10) {
+    const url = await getOllamaUrl();
+    const model = await getOllamaModel();
+    
+    try {
+      const result = await summarizeWithOllama(text, url, model);
+      if (result && result.summary) {
+        textEl.value = result.summary;
+        if (result.tags && result.tags.length > 0) {
+          textEl.value = `#${result.tags[0]} ${textEl.value}`;
+        }
+      }
+    } catch (e) {
+      console.error('Summarize error:', e);
+    }
+  }
+  
+  addNote(textEl.value.trim(), '');
   textEl.value = '';
   textEl.focus();
 });
