@@ -456,23 +456,24 @@ function highlight(text, query) {
   return text.replace(new RegExp(`(${esc})`, 'gi'), '<mark>$1</mark>');
 }
 
-function formatListItems(text) {
-  const lines = text.split('\n');
-  return lines.map(line => {
-    const escaped = escHtml(line);
-    if (line.trim().startsWith('- ')) {
-      return `<span class="list-item">${escaped}</span>`;
-    }
-    return escaped;
-  }).join('\n');
+function renderMarkdown(text) {
+  if (typeof marked === 'undefined') {
+    return escHtml(text);
+  }
+  const html = marked.parse(text);
+  if (typeof DOMPurify !== 'undefined') {
+    return DOMPurify.sanitize(html);
+  }
+  return html;
 }
 
 function processNoteText(text, query = '') {
-  let processed = formatListItems(stripTags(text));
+  const stripped = stripTags(text);
+  let rendered = renderMarkdown(stripped);
   if (query) {
-    processed = highlight(processed, query);
+    rendered = highlight(rendered, query);
   }
-  return processed;
+  return rendered;
 }
 
 function getFiltered() {
@@ -528,7 +529,7 @@ function renderNotes() {
       <div class="card-body">
         <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
         <div class="card-text">${processNoteText(n.text, searchQuery)}</div>
-        ${n.note ? `<div class="card-note">${highlight(formatListItems(n.note), searchQuery)}</div>` : ''}
+        ${n.note ? `<div class="card-note">${processNoteText(n.note, searchQuery)}</div>` : ''}
         <div class="card-meta"><span class="card-date">${n.date}</span></div>
       </div>
       <div class="card-actions">
