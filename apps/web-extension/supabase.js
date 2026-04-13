@@ -157,19 +157,25 @@ function setOllamaModel(model) {
 }
 
 async function summarizeWithOllama(text, ollamaUrl, model) {
-  const prompt = `You are a helpful assistant. Summarize the following note in 3-4 clear bullet points. Also suggest 1-2 relevant hashtags from these categories: general, arrays, strings, sliding-window, prefix-sum, hashing, trees, graphs, dp, sorting, backtracking, binary-search, heaps, tries.
+  const prompt = `You are a precise summarization assistant. Given the text below, do the following:
 
-Format your response exactly like this:
-SUMMARY:
+1. Summarize the content into **4-5 concise bullet points** using markdown formatting.
+2. Each bullet point should capture a distinct key idea — no repetition.
+3. At the end, add **1-4 relevant hashtags** that best represent the topic or theme of the text.
+
+Respond ONLY in this format:
+
+**Summary:**
 - bullet point 1
 - bullet point 2
 - bullet point 3
-- bullet point 4 (optional)
+- bullet point 4
+- bullet point 5 (if needed)
 
-TAGS:
-#tag1 #tag2
+**Tags:** #tag1 #tag2 #tag3
 
-ORIGINAL:
+---
+Text:
 ${text}`;
 
   try {
@@ -198,15 +204,14 @@ function parseSummarizeResponse(response) {
   let summary = '';
   let tags = [];
 
-  // Try to parse structured response
-  const summaryMatch = response.match(/SUMMARY:([\s\S]*?)(?=TAGS:|$)/i);
-  const tagsMatch = response.match(/TAGS:\s*(.*?)(?=ORIGINAL:|$)/i);
+  const summaryMatch = response.match(/\*\*Summary:\*\*\s*([\s\S]*?)(?=\*\*Tags:|$)/i);
+  const tagsMatch = response.match(/\*\*Tags:\*\*\s*(.*?)$/im);
 
   if (summaryMatch) {
     summary = summaryMatch[1]
       .trim()
       .split('\n')
-      .map(line => line.replace(/^[-•*]\s*/, '').trim())
+      .map(line => line.replace(/^[-*]\s*/, '').trim())
       .filter(line => line.length > 0)
       .join('\n');
   }
@@ -216,15 +221,13 @@ function parseSummarizeResponse(response) {
     tags = tags.map(t => t.replace('#', '').toLowerCase()).filter(t => t.length > 0);
   }
 
-  // Fallback: if parsing failed, use raw response as summary
   if (!summary && response.trim()) {
     summary = response.trim().split('\n').slice(0, 4).join('\n');
   }
 
-  // Fallback: try to extract any hashtags from response
   if (tags.length === 0) {
     const hashtagMatches = response.match(/#(\w+)/gi) || [];
-    tags = hashtagMatches.slice(0, 2).map(t => t.replace('#', '').toLowerCase());
+    tags = hashtagMatches.slice(0, 4).map(t => t.replace('#', '').toLowerCase());
   }
 
   return { summary, tags };
