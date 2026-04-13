@@ -1043,6 +1043,16 @@ body {
   outline: none;
   transition: border-color 0.13s, box-shadow 0.13s;
   line-height: 1.6;
+  overflow-y: hidden;
+}
+
+#input-text::-webkit-scrollbar {
+  display: none;
+}
+
+#input-text {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 #input-text:focus {
