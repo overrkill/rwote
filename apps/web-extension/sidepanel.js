@@ -1434,7 +1434,11 @@ async function handleSummarize() {
     }
   } catch (error) {
     console.error('Summarize error:', error);
-    showToast('Summarize failed: ' + error.message);
+    if (error.message.includes('403') || error.message.includes('Failed to fetch')) {
+      showToast('CORS blocked. Run: ollama serve --cors');
+    } else {
+      showToast('Summarize failed: ' + error.message);
+    }
   } finally {
     summarizeLoadingEl.style.display = 'none';
     inputText.disabled = false;
@@ -1511,12 +1515,19 @@ async function testOllamaConnection() {
     if (response.ok) {
       testResultEl.textContent = '✓ Connected successfully!';
       testResultEl.className = 'test-result success';
+    } else if (response.status === 403) {
+      testResultEl.textContent = '✗ CORS blocked. Run: ollama serve --cors';
+      testResultEl.className = 'test-result error';
     } else {
       testResultEl.textContent = `✗ Error: ${response.status}`;
       testResultEl.className = 'test-result error';
     }
   } catch (error) {
-    testResultEl.textContent = `✗ Cannot connect: ${error.message}`;
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      testResultEl.textContent = '✗ Cannot connect. Is Ollama running?';
+    } else {
+      testResultEl.textContent = `✗ Error: ${error.message}`;
+    }
     testResultEl.className = 'test-result error';
   }
 }
