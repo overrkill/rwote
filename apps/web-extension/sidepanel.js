@@ -1420,17 +1420,19 @@ async function handleSummarize() {
     
     const result = await summarizeWithOllama(text, url, model);
     
-    if (result.summary) {
+    if (result && result.summary) {
       const originalText = inputText.value;
       inputNote.value = originalText;
       inputText.value = result.summary;
       
-      if (result.tags.length > 0) {
+      if (result.tags && result.tags.length > 0) {
         const tag = result.tags[0];
         inputText.value = `#${tag} ${inputText.value}`;
       }
       
-      showToast('Summarized!');
+      showToast('Summarized! Click Save to store.');
+    } else {
+      showToast('Could not parse summary. Try again.');
     }
   } catch (error) {
     console.error('Summarize error:', error);

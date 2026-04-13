@@ -195,23 +195,36 @@ ${text}`;
 }
 
 function parseSummarizeResponse(response) {
+  let summary = '';
+  let tags = [];
+
+  // Try to parse structured response
   const summaryMatch = response.match(/SUMMARY:([\s\S]*?)(?=TAGS:|$)/i);
   const tagsMatch = response.match(/TAGS:\s*(.*?)(?=ORIGINAL:|$)/i);
 
-  let summary = '';
   if (summaryMatch) {
     summary = summaryMatch[1]
       .trim()
       .split('\n')
-      .map(line => line.replace(/^[-•]\s*/, '').trim())
+      .map(line => line.replace(/^[-•*]\s*/, '').trim())
       .filter(line => line.length > 0)
       .join('\n');
   }
 
-  let tags = [];
   if (tagsMatch) {
-    tags = tagsMatch[1].match(/#(\w+)/g) || [];
-    tags = tags.map(t => t.slice(1).toLowerCase());
+    tags = tagsMatch[1].match(/#?(\w+)/g) || [];
+    tags = tags.map(t => t.replace('#', '').toLowerCase()).filter(t => t.length > 0);
+  }
+
+  // Fallback: if parsing failed, use raw response as summary
+  if (!summary && response.trim()) {
+    summary = response.trim().split('\n').slice(0, 4).join('\n');
+  }
+
+  // Fallback: try to extract any hashtags from response
+  if (tags.length === 0) {
+    const hashtagMatches = response.match(/#(\w+)/gi) || [];
+    tags = hashtagMatches.slice(0, 2).map(t => t.replace('#', '').toLowerCase());
   }
 
   return { summary, tags };
