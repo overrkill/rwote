@@ -21,19 +21,19 @@ export default function Pricing() {
               </li>
               <li className="flex items-center gap-2 text-sm text-[#1a1a1a] dark:text-[#f5f2ec]">
                 <span className="text-green-600">✓</span>
-                Chrome extension
+                Browser extension
               </li>
               <li className="flex items-center gap-2 text-sm text-[#1a1a1a] dark:text-[#f5f2ec]">
                 <span className="text-green-600">✓</span>
-                Web app access
+                Select to add
               </li>
               <li className="flex items-center gap-2 text-sm text-[#555555] dark:text-[#a0a0a0]">
                 <span>−</span>
                 Local storage only
               </li>
             </ul>
-            <a href="/auth/register" className="block w-full px-6 py-2.5 bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md font-normal text-center">
-              Get Started
+            <a href="/auth/register" className="block w-full px-6 py-2.5 bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-full font-normal cursor-pointer transition-all hover:border-[#a0a0a0] dark:hover:border-[#5a5a58] text-center">
+              Get Extension
             </a>
           </div>
 
@@ -63,9 +63,9 @@ export default function Pricing() {
                 Automatic backup
               </li>
             </ul>
-            <div className="bg-[#f0f0f0] dark:bg-[#2a2a28] rounded-lg p-4 text-center text-sm text-[#555555] dark:text-[#a0a0a0]">
-              Coming soon
-            </div>
+            <a href="/auth/register" className="block w-full px-8 py-3 bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-none rounded-full font-semibold cursor-pointer transition-opacity hover:opacity-85 text-center">
+              Try 7 Days free trial 
+            </a>
           </div>
         </div>
       </div>
