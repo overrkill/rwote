@@ -115,12 +115,27 @@
       <h2>Welcome to Rwote</h2>
       <p class="onboarding-sub">Capture and organize insights from your learning</p>
       
-      <!-- Auth section (shown for cloud mode) -->
-      <div class="auth-section" id="auth-section" style="display:none">
-        <div class="auth-tabs">
-          <button class="auth-tab active" id="tab-login">Sign In</button>
-          <button class="auth-tab" id="tab-register">Create Account</button>
+      <!-- Mode selection (step 1) -->
+      <div class="mode-section" id="mode-section">
+        <div class="mode-grid" id="mode-grid">
+          <div class="mode-card" data-mode="local">
+            <div class="mode-icon">💾</div>
+            <div class="mode-name">Local</div>
+            <div class="mode-desc">Free</div>
+            <div class="mode-features">Store notes on device</div>
+          </div>
+          <div class="mode-card" data-mode="cloud">
+            <div class="mode-icon">☁️</div>
+            <div class="mode-name">Cloud Sync</div>
+            <div class="mode-desc">$5/month</div>
+            <div class="mode-features">Sync across devices + backup</div>
+          </div>
         </div>
+      </div>
+      
+      <!-- Auth section (step 2 - cloud mode only) -->
+      <div class="auth-section" id="auth-section" style="display:none">
+        <h3 class="auth-title">Sign in to continue</h3>
         
         <!-- Google Sign In -->
         <button class="google-btn" id="google-signin-btn">
@@ -133,59 +148,53 @@
           <span>Continue with Google</span>
         </button>
         
-        <div class="auth-divider">
-          <span>or</span>
+        <p class="auth-toggle-link">
+          <a href="#" id="show-email-login">Sign in with email instead</a>
+        </p>
+        
+        <!-- Email forms (hidden by default) -->
+        <div class="email-forms" id="email-forms" style="display:none">
+          <!-- Login form -->
+          <form class="auth-form" id="login-form">
+            <input type="email" id="login-email" placeholder="Email" required />
+            <input type="password" id="login-password" placeholder="Password" required />
+            <button type="submit" class="auth-submit">Sign In</button>
+          </form>
+          
+          <!-- Register form -->
+          <form class="auth-form" id="register-form" style="display:none">
+            <input type="text" id="register-name" placeholder="Your name" />
+            <input type="email" id="register-email" placeholder="Email" required />
+            <input type="password" id="register-password" placeholder="Password" required minlength="6" />
+            <button type="submit" class="auth-submit">Create Account</button>
+          </form>
+          
+          <p class="auth-toggle-link">
+            <a href="#" id="show-register-form">Create an account</a>
+            <span class="auth-toggle-sep"> · </span>
+            <a href="#" id="show-login-form" style="display:none">Already have an account?</a>
+          </p>
         </div>
         
-        <!-- Login form -->
-        <form class="auth-form" id="login-form">
-          <input type="email" id="login-email" placeholder="Email" required />
-          <input type="password" id="login-password" placeholder="Password" required />
-          <button type="submit" class="auth-submit">Sign In</button>
-        </form>
-        
-        <!-- Register form -->
-        <form class="auth-form" id="register-form" style="display:none">
-          <input type="text" id="register-name" placeholder="Your name" />
-          <input type="email" id="register-email" placeholder="Email" required />
-          <input type="password" id="register-password" placeholder="Password" required minlength="6" />
-          <button type="submit" class="auth-submit">Create Account</button>
-        </form>
-        
         <p class="auth-error" id="auth-error"></p>
+        
+        <button class="auth-back-btn" id="auth-back-btn">← Back</button>
       </div>
       
       <!-- Role selection (shown after local mode or successful auth) -->
       <div class="role-section" id="role-section" style="display:none">
         <p class="onboarding-sub">Select your role for personalized tags (optional)</p>
         <div class="role-grid" id="role-grid"></div>
+        <button class="onboard-confirm" id="role-confirm-btn">Get Started</button>
       </div>
       
-      <!-- Mode selection -->
-      <div class="mode-grid" id="mode-grid">
-        <div class="mode-card" data-mode="local">
-          <div class="mode-icon">💾</div>
-          <div class="mode-name">Local</div>
-          <div class="mode-desc">Free</div>
-          <div class="mode-features">Store notes on device</div>
-        </div>
-        <div class="mode-card" data-mode="cloud">
-          <div class="mode-icon">☁️</div>
-          <div class="mode-name">Cloud Sync</div>
-          <div class="mode-desc">$5/month</div>
-          <div class="mode-features">Sync across devices + backup</div>
-        </div>
-      </div>
-      
-      <div class="onboarding-actions">
-        <button class="onboard-skip" id="onboard-skip">Skip</button>
-        <button class="onboard-confirm" id="onboard-confirm">Continue</button>
-      </div>
+      <!-- Actions -->
+      <div class="onboarding-actions" id="onboarding-actions"></div>
     </div>
   </div>
 
   <!-- Add note panel -->
-  <div class="add-panel">
+  <div class="add-panel" id="add-panel">
     <div class="add-panel-inner">
       <div class="input-wrap">
         <textarea id="input-text" placeholder="Write your note… use #tag for tags" rows="4"></textarea>

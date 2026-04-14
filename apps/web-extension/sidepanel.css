@@ -67,6 +67,11 @@
   --toast-text: #1a1a1a;
 }
 
+[data-theme="dark"] .onboard-confirm {
+  background: #f5f2ec;
+  color: #1a1a1a;
+}
+
 /* Font size variations */
 [data-size="small"] { --font-size-base: 12px; }
 [data-size="medium"] { --font-size-base: 14px; }
@@ -1094,10 +1099,20 @@ body {
 
 /* ── Add panel ────────────────────────────────────── */
 .add-panel {
+  display: flex;
   flex-shrink: 0;
   border-top: 1px solid var(--border);
   background: var(--surface);
   padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.add-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
 }
 
 .add-panel-inner {
@@ -1108,6 +1123,7 @@ body {
 
 #input-text {
   width: 100%;
+  box-sizing: border-box;
   font-family: inherit;
   font-size: 15px;
   color: var(--text-primary);
@@ -1156,6 +1172,7 @@ body {
 /* ── Tag autocomplete ─────────────────────────────── */
 .input-wrap {
   position: relative;
+  width: 100%;
 }
 
 .tag-autocomplete {
@@ -1362,30 +1379,50 @@ body {
   cursor: not-allowed;
 }
 
+.google-btn .btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
 .google-icon {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
 }
 
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 16px 0;
+.auth-title {
+  font-size: 1.1em;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--text-primary);
 }
 
-.auth-divider::before,
-.auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
+.auth-toggle-link {
+  text-align: center;
+  margin: 12px 0;
+  font-size: 0.9em;
 }
 
-.auth-divider span {
-  font-size: 0.85em;
+.auth-toggle-link a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.13s;
+}
+
+.auth-toggle-link a:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.auth-toggle-sep {
   color: var(--text-tertiary);
+  margin: 0 4px;
 }
 
 .auth-form {
@@ -1446,6 +1483,24 @@ body {
   text-align: center;
   margin-top: 8px;
   min-height: 20px;
+}
+
+.auth-back-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.13s;
+}
+
+.auth-back-btn:hover {
+  color: var(--text-primary);
 }
 
 /* ── Onboarding ──────────────────────────────────── */
@@ -1533,6 +1588,11 @@ body {
   margin-bottom: 16px;
 }
 
+.role-section .onboard-confirm {
+  width: 100%;
+  margin-top: 8px;
+}
+
 .role-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1598,7 +1658,7 @@ body {
 .onboard-confirm {
   background: var(--accent-btn);
   border: none;
-  color: var(--bg);
+  color: #ffffff;
   font-family: inherit;
   font-size: 1em;
   font-weight: 600;
