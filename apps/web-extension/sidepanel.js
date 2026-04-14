@@ -87,8 +87,6 @@ const googleSigninBtn = document.getElementById('google-signin-btn');
 const hamburgerBtnEl = document.getElementById('hamburger-btn');
 const hamburgerMenuEl = document.getElementById('hamburger-menu');
 const menuStatsEl = document.getElementById('menu-stats');
-const menuExportEl = document.getElementById('menu-export');
-const menuImportEl = document.getElementById('menu-import');
 const menuLogoutEl = document.getElementById('menu-logout');
 const menuLoginEl = document.getElementById('menu-login');
 const importFileEl = document.getElementById('import-file');
@@ -98,7 +96,6 @@ const userAvatarEl = document.getElementById('user-avatar');
 const userNameEl = document.getElementById('user-name');
 const userEmailEl = document.getElementById('user-email');
 const userDividerEl = document.getElementById('user-divider');
-const userStatusEl = document.getElementById('user-status');
 const menuSubscriptionEl = document.getElementById('menu-subscription');
 const subscriptionModalEl = document.getElementById('subscription-modal');
 const subscriptionBackEl = document.getElementById('subscription-back');
@@ -416,16 +413,16 @@ function renderNotes() {
       </div>
       <div class="card-actions">
         <button class="card-btn pin${n.pinned ? ' active' : ''}" data-id="${n.id}" title="${n.pinned ? 'Unpin' : 'Pin'}">
-          ${n.pinned ? '📌' : '📍'}
+          ${n.pinned ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C9.24 2 7 4.24 7 7c0 1.71.87 3.2 2.18 4.06L12 17l2.82-5.94C16.13 10.2 17 8.71 17 7c0-2.76-2.24-5-5-5zm0 7.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>'}
         </button>
         <button class="card-btn edit" data-id="${n.id}" title="Edit">
-          ✏️
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
         <button class="card-btn copy" data-id="${n.id}" title="Copy">
-          📋
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
         <button class="card-btn del" data-id="${n.id}" title="Delete">
-          ✕
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </button>
       </div>
     </div>`;
@@ -728,10 +725,9 @@ document.addEventListener('click', (e) => {
 // ── Theme ────────────────────────────────────────────
 function updateThemeLabel() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const icon = menuThemeEl.querySelector('.theme-icon');
-  const text = menuThemeEl.querySelector('.theme-text');
-  if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-  if (text) text.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  const sunSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+  const moonSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  menuThemeEl.innerHTML = isDark ? `${sunSvg} <span>Light Mode</span>` : `${moonSvg} <span>Dark Mode</span>`;
 }
 
 function toggleTheme() {
@@ -756,8 +752,16 @@ function updateUserProfileUI() {
     menuLoginEl.style.display = 'none';
     
     const name = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
-    const initial = name.charAt(0).toUpperCase();
-    userAvatarEl.textContent = initial;
+    const avatarUrl = user.user_metadata?.avatar_url || 
+                       user.identities?.[0]?.identity_data?.avatar_url;
+    
+    if (avatarUrl) {
+      userAvatarEl.innerHTML = `<img src="${avatarUrl}" alt="${name}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+    } else {
+      const initial = name.charAt(0).toUpperCase();
+      userAvatarEl.textContent = initial;
+    }
+    
     userNameEl.textContent = name;
     userEmailEl.textContent = user.email || '';
     
@@ -767,41 +771,29 @@ function updateUserProfileUI() {
     userDividerEl.style.display = 'none';
     menuLogoutEl.style.display = 'none';
     menuLoginEl.style.display = 'flex';
-    userStatusEl.textContent = '';
   }
 }
 
 function updateUserStatus() {
-  if (!user) {
-    userStatusEl.textContent = '';
-    userStatusEl.className = 'user-status';
-    menuSubscriptionEl.style.display = 'none';
-    return;
-  }
-  
-  if (!subscription) {
-    userStatusEl.textContent = '';
+  if (!user || !subscription) {
     menuSubscriptionEl.style.display = 'none';
     return;
   }
   
   const status = subscription.subscription_status;
   const daysLeft = subscription.days_left;
+  const subStatusEl = menuSubscriptionEl.querySelector('.sub-status');
   
   if (status === 'paid') {
-    userStatusEl.textContent = '☁️ Pro';
-    userStatusEl.className = 'user-status paid';
+    subStatusEl.textContent = 'Pro';
     menuSubscriptionEl.style.display = 'flex';
   } else if (status === 'trial') {
-    userStatusEl.textContent = `Trial · ${daysLeft} days left`;
-    userStatusEl.className = 'user-status trial';
+    subStatusEl.textContent = `Trial · ${daysLeft}d left`;
     menuSubscriptionEl.style.display = 'flex';
   } else if (status === 'expired') {
-    userStatusEl.textContent = '⚠️ Trial expired';
-    userStatusEl.className = 'user-status expired';
+    subStatusEl.textContent = 'Expired';
     menuSubscriptionEl.style.display = 'flex';
   } else {
-    userStatusEl.textContent = '';
     menuSubscriptionEl.style.display = 'none';
   }
 }
@@ -853,8 +845,6 @@ function exportNotes() {
   showToast('Exported');
 }
 
-menuExportEl.addEventListener('click', exportNotes);
-
 function handleFileSelect(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -863,7 +853,6 @@ function handleFileSelect(e) {
     try {
       const data = JSON.parse(ev.target.result);
       if (data.notes && Array.isArray(data.notes)) {
-        // Replace notes with imported data
         notes = data.notes;
         if (data.tags) allTags = data.tags;
         if (data.colors) tagColors = data.colors;
@@ -882,7 +871,6 @@ function handleFileSelect(e) {
   importFileEl.value = '';
 }
 
-menuImportEl.addEventListener('click', () => { closeMenu(); importFileEl.click(); });
 importFileEl.addEventListener('change', handleFileSelect);
 
 // ── Stats Modal ───────────────────────────────────────
@@ -1188,6 +1176,35 @@ planMonthlyEl.addEventListener('click', () => handleUpgrade('monthly'));
 planLifetimeEl.addEventListener('click', () => handleUpgrade('lifetime'));
 
 menuSubscriptionEl.addEventListener('click', showSubscriptionModal);
+
+// Import/Export Modal
+const importExportModalEl = document.getElementById('import-export-modal');
+const importExportCloseEl = document.getElementById('import-export-close');
+const exportBtnEl = document.getElementById('export-btn');
+const importBtnEl = document.getElementById('import-btn');
+
+document.getElementById('menu-import-export')?.addEventListener('click', () => {
+  closeMenu();
+  importExportModalEl.style.display = 'flex';
+});
+
+importExportCloseEl?.addEventListener('click', () => {
+  importExportModalEl.style.display = 'none';
+});
+
+importExportModalEl?.addEventListener('click', (e) => {
+  if (e.target === importExportModalEl) importExportModalEl.style.display = 'none';
+});
+
+exportBtnEl?.addEventListener('click', () => {
+  importExportModalEl.style.display = 'none';
+  exportNotes();
+});
+
+importBtnEl?.addEventListener('click', () => {
+  importExportModalEl.style.display = 'none';
+  importFileEl.click();
+});
 
 // ── Logout/Login ─────────────────────────────────────
 async function handleLogout() {
