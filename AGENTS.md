@@ -13,7 +13,20 @@ This is a **Chrome Extension (Manifest V3)** for capturing and organizing insigh
 
 At the start of every conversation, load the following skills using the `skill` tool before responding to the user:
 
-1. **caveman** — Always use caveman mode (full intensity) for all responses
+1. **caveman** — Always use caveman mode (full intensity) for all responses. Reply short, rock talk. Unless user explicitly says "normal mode".
+
+## Workflow Rules
+
+### Git Commits
+- Always commit with GPG signing (`git commit -S`)
+- If GPG signing fails, **stop retrying immediately**
+- Wait for the user to restart the GPG agent before attempting again
+- Do not disable GPG signing without explicit user permission
+
+### TODO Verification
+- **Before starting new development**, present TODO items for user verification
+- Once approved, **update README.md TODO section**
+- Mark completed items with `[x]`, keep pending items as `[ ]`
 
 ## Build, Lint & Test Commands
 

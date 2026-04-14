@@ -37,14 +37,16 @@ rwote/
 - Pin notes
 - Export/Import notes as JSON
 - Font size toggle (S/M/L)
-- User auth (sign in/up/out)
+- User auth (email/password + Google OAuth)
 - Subscription status display
 - Token refresh for API calls
+- Session storage for secure token management
 
 **Web App:**
 - Landing page with hero, features, pricing, FAQ
 - Browser mockup preview
 - Auth pages (login/register)
+- Google OAuth sign-in
 - Dashboard with note CRUD
 - Full dark mode support
 - Cloud sync (always on, paid feature)
@@ -71,6 +73,7 @@ rwote/
 **High Priority:**
 - [x] Deploy web app to Vercel (blocked: pnpm version issue)
 - [x] Fix Vercel build settings (use npm instead of pnpm)
+- [x] Google OAuth sign-in (extension + web app)
 - [ ] Test cloud sync between extension and web app
 - [ ] Add actual Stripe integration for payments
 
@@ -118,10 +121,11 @@ Deploy to Vercel:
 ```
 
 ### Extension Permissions
-- `storage` - Local note storage
+- `storage` - Local note storage (session + local)
 - `contextMenus` - Right-click "Save to Rwote"
 - `sidePanel` - Side panel UI
 - `activeTab`, `scripting`, `tabs` - Content script injection
+- `identity` - Google OAuth via chrome.identity
 
 ## API Reference
 
@@ -147,7 +151,7 @@ All endpoints require `Authorization: Bearer <token>` header where token is the 
 - **Extension:** Vanilla JS, Manifest V3
 - **Backend:** Supabase Edge Functions (Deno)
 - **Database:** Supabase (Postgres) with RLS
-- **Auth:** Supabase Auth (email/password)
+- **Auth:** Supabase Auth (email/password + Google OAuth)
 - **Payments:** Stripe (placeholder - needs integration)
 
 ## Scripts
