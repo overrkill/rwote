@@ -1192,11 +1192,32 @@ menuSubscriptionEl.addEventListener('click', showSubscriptionModal);
 // ── Logout/Login ─────────────────────────────────────
 async function handleLogout() {
   closeMenu();
-  await sendMessage({ type: 'SIGN_OUT' });
-  user = null;
-  subscription = null;
-  updateUserProfileUI();
-  showToast('Signed out');
+  const currentMode = await sendMessage({ type: 'GET_MODE' });
+  if (currentMode === 'cloud') {
+    await sendMessage({ type: 'SIGN_OUT_CLOUD' });
+    user = null;
+    subscription = null;
+    notes = [];
+    allTags = [...DEFAULT_TAGS];
+    tagColors = {};
+    activeTags = new Set();
+    searchQuery = '';
+    mode = 'local';
+    onboarded = false;
+    googleSigninBtn.disabled = false;
+    googleSigninBtn.querySelector('span').textContent = 'Continue with Google';
+    updateUserProfileUI();
+    countEl.textContent = '0 notes';
+    renderAll();
+    selectedMode = null;
+    showModeSelection();
+    onboardingEl.style.display = 'flex';
+    addPanelEl.style.display = 'none';
+    showToast('Signed out');
+  } else {
+    await sendMessage({ type: 'SIGN_OUT' });
+    showToast('Signed out');
+  }
 }
 
 menuLogoutEl.addEventListener('click', handleLogout);

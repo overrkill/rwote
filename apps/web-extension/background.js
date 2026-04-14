@@ -36,6 +36,9 @@ const storage = {
   remove(keys) {
     return new Promise(resolve => chrome.storage.local.remove(keys, resolve));
   },
+  clear() {
+    return new Promise(resolve => chrome.storage.local.clear(resolve));
+  },
   sessionGet(keys) {
     return new Promise(resolve => chrome.storage.session.get(keys, resolve));
   },
@@ -44,6 +47,9 @@ const storage = {
   },
   sessionRemove(keys) {
     return new Promise(resolve => chrome.storage.session.remove(keys, resolve));
+  },
+  sessionClear() {
+    return new Promise(resolve => chrome.storage.session.clear(resolve));
   }
 };
 
@@ -64,7 +70,8 @@ async function apiRequest(method, endpoint, body = null, token = null) {
   }
   
   const response = await fetch(`${SUPABASE_URL}${endpoint}`, config);
-  const data = await response.json();
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
   
   if (!response.ok) {
     throw new Error(data.msg || data.error_description || data.error || 'Request failed');
@@ -712,11 +719,13 @@ async function handleMessage(message) {
         user: auth?.user || null,
         mode,
         onboarded,
-        subscription: subscription?.ok ? subscription : null
+        subscription
       };
     }
+
+    case 'GET_MODE':
+      return await getMode();
     
-    // Notes
     case 'ADD_NOTE':
       return await addNote(message.text, message.noteText);
     
@@ -760,6 +769,18 @@ async function handleMessage(message) {
     
     case 'SIGN_OUT':
       return await handleSignOut();
+    
+    case 'SIGN_OUT_CLOUD': {
+      const auth = await getAuth();
+      if (auth?.token) {
+        await apiRequest('POST', '/auth/v1/logout', null, auth.token);
+      }
+      await clearAuth();
+      await storage.clear();
+      await storage.sessionClear();
+      broadcastAuthUpdate();
+      return { ok: true };
+    }
     
     case 'REFRESH_AUTH':
       return { ok: true, valid: !!(await ensureValidToken()) };
