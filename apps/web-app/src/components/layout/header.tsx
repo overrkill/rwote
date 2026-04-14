@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { getLocalAuth } from '@/lib/supabase'
+import { getStoredUser, onAuthStateChange } from '@/lib/supabase'
 import { useTheme } from '@/components/providers/theme-provider'
 
 export default function Header() {
@@ -10,8 +10,14 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme()
 
   useEffect(() => {
-    const auth = getLocalAuth()
-    setIsLoggedIn(!!auth)
+    const user = getStoredUser()
+    setIsLoggedIn(!!user)
+
+    const { data: { subscription } } = onAuthStateChange((user) => {
+      setIsLoggedIn(!!user)
+    })
+
+    return () => subscription?.unsubscribe()
   }, [])
 
   return (

@@ -3,16 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
-  getLocalAuth, 
+  getAuthToken,
+  getAuthUser,
+  getStoredUser,
+  onAuthStateChange,
   signOut,
-  clearLocalAuth,
   loadNotes,
   saveNote,
   deleteNote as cloudDeleteNote,
   getSubscriptionStatus,
   subscribeToPlan
 } from '@/lib/supabase'
-import type { Note, SubscriptionStatus } from '@/lib/types'
+import type { Note, SubscriptionStatus, User } from '@/lib/types'
 import { NoteList, NoteForm } from '@/components/notes'
 import SearchBar from '@/components/notes/search-bar'
 import TagFilter from '@/components/notes/tag-filter'
@@ -38,6 +40,7 @@ export default function DashboardPage() {
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(getStoredUser())
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -50,44 +53,66 @@ export default function DashboardPage() {
   }, [menuOpen])
 
   useEffect(() => {
-    const auth = getLocalAuth()
-    if (!auth) {
-      router.push('/auth/login')
-      return
-    }
-
-    async function loadData(token: string) {
-      try {
-        setSyncing(true)
-        const sub = await getSubscriptionStatus(token)
-        setSubscription(sub)
-
-        if (sub.can_sync) {
-          const { notes: cloudNotes, error } = await loadNotes(token)
-          
-          if (!error && cloudNotes) {
-            setNotes(cloudNotes)
-          }
-        } else {
-          setShowSubscriptionModal(true)
-        }
-      } catch (e) {
-        console.error('Failed to load data:', e)
+    const { data: { subscription: authSubscription } } = onAuthStateChange((user) => {
+      setUser(user)
+      if (!user) {
+        router.push('/auth/login')
       }
-      setSyncing(false)
-      setLoading(false)
+    })
+
+    async function init() {
+      const token = await getAuthToken()
+      if (!token) {
+        router.push('/auth/login')
+        return
+      }
+
+      const currentUser = await getAuthUser()
+      if (!currentUser) {
+        router.push('/auth/login')
+        return
+      }
+      setUser(currentUser)
+
+      await loadData(token)
     }
 
-    loadData(auth.token)
+    init()
+
+    return () => {
+      authSubscription?.unsubscribe()
+    }
   }, [router])
+
+  async function loadData(token: string) {
+    try {
+      setSyncing(true)
+      const sub = await getSubscriptionStatus(token)
+      setSubscription(sub)
+
+      if (sub.can_sync) {
+        const { notes: cloudNotes, error } = await loadNotes(token)
+        
+        if (!error && cloudNotes) {
+          setNotes(cloudNotes)
+        }
+      } else {
+        setShowSubscriptionModal(true)
+      }
+    } catch (e) {
+      console.error('Failed to load data:', e)
+    }
+    setSyncing(false)
+    setLoading(false)
+  }
 
   const syncToCloud = async (note: Note) => {
     if (!subscription?.can_sync) return
-    const auth = getLocalAuth()
-    if (!auth) return
+    const token = await getAuthToken()
+    if (!token) return
 
     try {
-      await saveNote(note, auth.token)
+      await saveNote(note, token)
     } catch (e) {
       console.error('Failed to sync note:', e)
     }
@@ -95,19 +120,19 @@ export default function DashboardPage() {
 
   const deleteFromCloud = async (id: string) => {
     if (!subscription?.can_sync) return
-    const auth = getLocalAuth()
-    if (!auth) return
+    const token = await getAuthToken()
+    if (!token) return
 
     try {
-      await cloudDeleteNote(id, auth.token)
+      await cloudDeleteNote(id, token)
     } catch (e) {
       console.error('Failed to delete from cloud:', e)
     }
   }
 
-  const handleSaveNote = (text: string, noteText: string, tag: string) => {
-    const auth = getLocalAuth()
-    if (!auth || !subscription?.can_sync) {
+  const handleSaveNote = async (text: string, noteText: string, tag: string) => {
+    const token = await getAuthToken()
+    if (!token || !subscription?.can_sync) {
       setShowSubscriptionModal(true)
       return
     }
@@ -156,18 +181,18 @@ export default function DashboardPage() {
   }
 
   const handleSubscribe = async (plan: string) => {
-    const auth = getLocalAuth()
-    if (!auth) return
+    const token = await getAuthToken()
+    if (!token) return
 
     try {
-      await subscribeToPlan(plan, auth.token)
-      const sub = await getSubscriptionStatus(auth.token)
+      await subscribeToPlan(plan, token)
+      const sub = await getSubscriptionStatus(token)
       setSubscription(sub)
       
       if (sub.can_sync) {
         setShowSubscriptionModal(false)
         setSyncing(true)
-        const { notes: cloudNotes, error } = await loadNotes(auth.token)
+        const { notes: cloudNotes, error } = await loadNotes(token)
         if (!error && cloudNotes) {
           setNotes(cloudNotes)
         }
@@ -179,11 +204,7 @@ export default function DashboardPage() {
   }
 
   const handleSignOut = async () => {
-    const auth = getLocalAuth()
-    if (auth?.token) {
-      await signOut()
-    }
-    clearLocalAuth()
+    await signOut()
     router.push('/')
   }
 
@@ -223,7 +244,7 @@ export default function DashboardPage() {
             </button>
             <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#2a2a28] rounded-lg shadow-lg border border-border-light dark:border-border-dark ${menuOpen ? 'block' : 'hidden'}`}>
               <div className="p-3 border-b border-border-light dark:border-border-dark">
-                <div className="text-sm font-medium text-primary-light dark:text-primary-dark">{subscription?.email || 'User'}</div>
+                <div className="text-sm font-medium text-primary-light dark:text-primary-dark">{user?.name || user?.email || 'User'}</div>
                 <div className="text-xs text-secondary-light dark:text-secondary-dark capitalize">
                   {subscription?.subscription_status === 'paid' && 'Pro Member'}
                   {subscription?.subscription_status === 'trial' && `Trial (${subscription.days_left} days left)`}

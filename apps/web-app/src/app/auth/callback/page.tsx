@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, setLocalAuth } from '@/lib/supabase'
+import { supabase, setStoredUser } from '@/lib/supabase'
 
 export default function CallbackPage() {
   const router = useRouter()
@@ -19,15 +19,11 @@ export default function CallbackPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
-        setLocalAuth(
-          {
-            id: user.id,
-            email: user.email || '',
-            name: user.user_metadata?.name || user.user_metadata?.full_name,
-          },
-          session.access_token,
-          session.refresh_token
-        )
+        setStoredUser({
+          id: user.id,
+          email: user.email || '',
+          name: user.user_metadata?.name || user.user_metadata?.full_name,
+        })
         router.push('/dashboard')
       } else {
         router.push('/auth/login')

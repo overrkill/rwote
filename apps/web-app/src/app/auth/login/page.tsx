@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn, signInWithGoogle, setLocalAuth } from '@/lib/supabase'
+import { signIn, signInWithGoogle, setStoredUser } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useTheme } from '@/components/providers/theme-provider'
@@ -39,15 +39,11 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      setLocalAuth(
-        {
-          id: data.user.id,
-          email: data.user.email || '',
-          name: data.user.user_metadata?.name,
-        },
-        data.session?.access_token || '',
-        data.session?.refresh_token || ''
-      )
+      setStoredUser({
+        id: data.user.id,
+        email: data.user.email || '',
+        name: data.user.user_metadata?.name,
+      })
       router.push('/dashboard')
     }
     setLoading(false)

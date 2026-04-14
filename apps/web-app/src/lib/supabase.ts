@@ -6,6 +6,61 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOi
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// ── Auth Helpers ─────────────────────────────────────
+const AUTH_USER_KEY = 'rwote_auth_user'
+
+export async function getAuthToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token || null
+}
+
+export async function getAuthUser(): Promise<User | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  return {
+    id: user.id,
+    email: user.email || '',
+    name: user.user_metadata?.name || user.user_metadata?.full_name,
+  }
+}
+
+export function getStoredUser(): User | null {
+  if (typeof window === 'undefined') return null
+  const stored = localStorage.getItem(AUTH_USER_KEY)
+  if (!stored) return null
+  try {
+    return JSON.parse(stored)
+  } catch {
+    return null
+  }
+}
+
+export function setStoredUser(user: User | null) {
+  if (typeof window === 'undefined') return
+  if (user) {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user))
+  } else {
+    localStorage.removeItem(AUTH_USER_KEY)
+  }
+}
+
+export function onAuthStateChange(callback: (user: User | null) => void) {
+  return supabase.auth.onAuthStateChange((event, session) => {
+    if (session?.user) {
+      const user: User = {
+        id: session.user.id,
+        email: session.user.email || '',
+        name: session.user.user_metadata?.name || session.user.user_metadata?.full_name,
+      }
+      setStoredUser(user)
+      callback(user)
+    } else {
+      setStoredUser(null)
+      callback(null)
+    }
+  })
+}
+
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -99,38 +154,4 @@ export async function getSubscriptionStatus(token: string): Promise<Subscription
 
 export async function subscribeToPlan(plan: string, token: string) {
   return callEdgeFunction('subscribe', { plan }, token)
-}
-
-const AUTH_USER_KEY = 'auth_user'
-const AUTH_TOKEN_KEY = 'auth_token'
-const AUTH_REFRESH_KEY = 'auth_refresh_token'
-
-export function getLocalAuth() {
-  if (typeof window === 'undefined') return null
-  const user = localStorage.getItem(AUTH_USER_KEY)
-  const token = localStorage.getItem(AUTH_TOKEN_KEY)
-  const refreshToken = localStorage.getItem(AUTH_REFRESH_KEY)
-  
-  if (user && token) {
-    return {
-      user: JSON.parse(user) as User,
-      token,
-      refreshToken,
-    }
-  }
-  return null
-}
-
-export function setLocalAuth(user: User, token: string, refreshToken: string) {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user))
-  localStorage.setItem(AUTH_TOKEN_KEY, token)
-  localStorage.setItem(AUTH_REFRESH_KEY, refreshToken)
-}
-
-export function clearLocalAuth() {
-  if (typeof window === 'undefined') return
-  localStorage.removeItem(AUTH_USER_KEY)
-  localStorage.removeItem(AUTH_TOKEN_KEY)
-  localStorage.removeItem(AUTH_REFRESH_KEY)
 }
