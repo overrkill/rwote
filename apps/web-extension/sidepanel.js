@@ -78,6 +78,7 @@ const tabLogin = document.getElementById('tab-login');
 const tabRegister = document.getElementById('tab-register');
 const loginForm = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
+const googleSigninBtn = document.getElementById('google-signin-btn');
 const hamburgerBtnEl = document.getElementById('hamburger-btn');
 const hamburgerMenuEl = document.getElementById('hamburger-menu');
 const menuStatsEl = document.getElementById('menu-stats');
@@ -1003,6 +1004,29 @@ tabRegister?.addEventListener('click', () => {
   registerForm.style.display = 'flex';
   loginForm.style.display = 'none';
   authErrorEl.textContent = '';
+});
+
+// Google Sign In
+googleSigninBtn?.addEventListener('click', async () => {
+  authErrorEl.textContent = '';
+  googleSigninBtn.disabled = true;
+  googleSigninBtn.querySelector('span').textContent = 'Signing in...';
+  
+  const res = await sendMessage({ type: 'SIGN_IN_GOOGLE' });
+  
+  googleSigninBtn.disabled = false;
+  googleSigninBtn.querySelector('span').textContent = 'Continue with Google';
+  
+  if (res.error) {
+    authErrorEl.textContent = res.error;
+    return;
+  }
+  
+  if (res.ok) {
+    await refreshState();
+    finishOnboarding();
+    showToast('Welcome!');
+  }
 });
 
 // Auth form submissions

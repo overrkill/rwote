@@ -79,16 +79,16 @@ async function callEdgeFunction(functionName, body, token) {
 
 // ── Auth Module ──────────────────────────────────────
 async function getAuth() {
-  const res = await storage.get(STORAGE_KEYS.AUTH);
+  const res = await storage.sessionGet(STORAGE_KEYS.AUTH);
   return res[STORAGE_KEYS.AUTH] || null;
 }
 
 async function setAuth(auth) {
-  await storage.set({ [STORAGE_KEYS.AUTH]: auth });
+  await storage.sessionSet({ [STORAGE_KEYS.AUTH]: auth });
 }
 
 async function clearAuth() {
-  await storage.remove(STORAGE_KEYS.AUTH);
+  await storage.sessionRemove(STORAGE_KEYS.AUTH);
 }
 
 async function decodeToken(token) {
@@ -99,6 +99,95 @@ async function decodeToken(token) {
   } catch {
     return null;
   }
+}
+
+function generateCodeVerifier() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode.apply(null, array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+async function generateCodeChallenge(verifier) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+const OAUTH_VERIFIER_KEY = 'oauth_verifier';
+
+async function handleSignInWithGoogle() {
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+  
+  await storage.sessionSet({ [OAUTH_VERIFIER_KEY]: codeVerifier });
+
+  const callbackUrl = chrome.identity.getRedirectURL('callback.html');
+  const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}&scopes=email profile&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+
+  return new Promise((resolve) => {
+    chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
+      if (chrome.runtime.lastError) {
+        await storage.sessionRemove(OAUTH_VERIFIER_KEY);
+        resolve({ ok: false, error: chrome.runtime.lastError.message });
+        return;
+      }
+
+      if (!responseUrl) {
+        await storage.sessionRemove(OAUTH_VERIFIER_KEY);
+        resolve({ ok: false, error: 'Authentication cancelled' });
+        return;
+      }
+
+      const url = new URL(responseUrl);
+      const code = url.searchParams.get('code');
+      const error = url.searchParams.get('error');
+
+      if (error) {
+        await storage.sessionRemove(OAUTH_VERIFIER_KEY);
+        resolve({ ok: false, error: url.searchParams.get('error_description') || error });
+        return;
+      }
+
+      if (!code) {
+        await storage.sessionRemove(OAUTH_VERIFIER_KEY);
+        resolve({ ok: false, error: 'No authorization code received' });
+        return;
+      }
+
+      const storedVerifier = (await storage.sessionGet(OAUTH_VERIFIER_KEY))[OAUTH_VERIFIER_KEY];
+      await storage.sessionRemove(OAUTH_VERIFIER_KEY);
+
+      if (!storedVerifier) {
+        resolve({ ok: false, error: 'OAuth state lost. Please try again.' });
+        return;
+      }
+
+      try {
+        const tokenRes = await apiRequest('POST', '/auth/v1/token?grant_type=pkce', {
+          auth_code: code,
+          code_verifier: storedVerifier
+        });
+
+        const auth = {
+          user: tokenRes.user,
+          token: tokenRes.access_token,
+          refreshToken: tokenRes.refresh_token
+        };
+        await setAuth(auth);
+        broadcastAuthUpdate();
+        resolve({ ok: true, user: auth.user });
+      } catch (e) {
+        resolve({ ok: false, error: e.message });
+      }
+    });
+  });
 }
 
 async function ensureValidToken() {
@@ -646,6 +735,28 @@ async function handleMessage(message) {
     
     case 'SIGN_UP':
       return await handleSignUp(message.email, message.password, message.name);
+    
+    case 'SIGN_IN_GOOGLE':
+      return await handleSignInWithGoogle();
+    
+    case 'OAUTH_CODE': {
+      const { code } = message;
+      const tokenRes = await apiRequest('POST', '/auth/v1/token?grant_type=pkce', {
+        auth_code: code
+      });
+      const auth = {
+        user: tokenRes.user,
+        token: tokenRes.access_token,
+        refreshToken: tokenRes.refresh_token
+      };
+      await setAuth(auth);
+      broadcastAuthUpdate();
+      return { ok: true, user: auth.user };
+    }
+    
+    case 'OAUTH_ERROR': {
+      return { ok: false, error: message.error_description || message.error };
+    }
     
     case 'SIGN_OUT':
       return await handleSignOut();
