@@ -25,6 +25,20 @@ export async function signUp(email: string, password: string, name?: string) {
   return { data, error }
 }
 
+export async function signInWithGoogle() {
+  const redirectTo = typeof window !== 'undefined' 
+    ? `${window.location.origin}/auth/callback` 
+    : '/auth/callback'
+  
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+    },
+  })
+  return { data, error }
+}
+
 export async function signOut() {
   const { error } = await supabase.auth.signOut()
   return { error }
