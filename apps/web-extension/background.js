@@ -17,7 +17,7 @@ const STORAGE_KEYS = {
 const DEFAULT_TAGS = ['note', 'general', 'research', 'uncategorized'];
 
 const DEFAULT_SETTINGS = {
-  theme: 'light',
+  theme: 'dark',
   fontSize: 'medium',
   aiProvider: 'disabled',
   ollamaUrl: 'http://localhost:11434',
@@ -91,13 +91,13 @@ async function clearAuth() {
   await storage.remove(STORAGE_KEYS.AUTH);
 }
 
-async function isTokenExpired(token) {
-  if (!token) return true;
+async function decodeToken(token) {
+  if (!token) return null;
   try {
     const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.exp * 1000 < Date.now();
+    return payload;
   } catch {
-    return true;
+    return null;
   }
 }
 
@@ -105,30 +105,30 @@ async function ensureValidToken() {
   const auth = await getAuth();
   if (!auth || !auth.token || !auth.refreshToken) return null;
   
-  if (await isTokenExpired(auth.token)) {
-    const fiveMinutes = 5 * 60 * 1000;
-    const payload = JSON.parse(atob(auth.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    const expTime = payload.exp * 1000;
-    const timeUntilExpiry = expTime - Date.now();
-    
-    if (timeUntilExpiry < fiveMinutes) {
-      try {
-        const refreshRes = await apiRequest('POST', '/auth/v1/token?grant_type=refresh_token', {
-          refresh_token: auth.refreshToken
-        });
-        
-        const newAuth = {
-          user: refreshRes.user,
-          token: refreshRes.access_token,
-          refreshToken: refreshRes.refresh_token
-        };
-        await setAuth(newAuth);
-        return newAuth;
-      } catch (e) {
-        console.error('Token refresh failed:', e);
-        await clearAuth();
-        return null;
-      }
+  const payload = decodeToken(auth.token);
+  if (!payload) return null;
+  
+  const fiveMinutes = 5 * 60 * 1000;
+  const expTime = payload.exp * 1000;
+  const timeLeft = expTime - Date.now();
+  
+  if (timeLeft < fiveMinutes) {
+    try {
+      const refreshRes = await apiRequest('POST', '/auth/v1/token?grant_type=refresh_token', {
+        refresh_token: auth.refreshToken
+      });
+      
+      const newAuth = {
+        user: refreshRes.user,
+        token: refreshRes.access_token,
+        refreshToken: refreshRes.refresh_token
+      };
+      await setAuth(newAuth);
+      return newAuth;
+    } catch (e) {
+      console.error('Token refresh failed:', e);
+      await clearAuth();
+      return null;
     }
   }
   
