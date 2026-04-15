@@ -43,8 +43,11 @@ export default function DashboardPage() {
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle')
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
+  const [showThemeModal, setShowThemeModal] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(getStoredUser())
   const [aiSettings, setAiSettingsState] = useState<AiSettings>({ provider: 'disabled', ollamaUrl: 'http://localhost:11434', ollamaModel: 'llama3.2' })
@@ -52,6 +55,21 @@ export default function DashboardPage() {
   const [showAiSettings, setShowAiSettings] = useState(false)
   const [aiSummarizing, setAiSummarizing] = useState(false)
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
+
+  function formatSyncTime(timestamp: number | null): string {
+    if (!timestamp) return ''
+    const diff = Date.now() - timestamp
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'just now'
+    if (mins === 1) return '1m ago'
+    if (mins < 60) return `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours === 1) return '1h ago'
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days === 1) return '1d ago'
+    return `${days}d ago`
+  }
 
   const themeList = [
     { id: 'paper_dark', name: 'Paper Dark' },
@@ -66,14 +84,12 @@ export default function DashboardPage() {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuOpen && !(e.target as HTMLElement).closest('.hamburger-menu')) {
         setMenuOpen(false)
-      }
-      if (themeMenuOpen && !(e.target as HTMLElement).closest('[title="Theme"]') && !(e.target as HTMLElement).closest('.theme-dropdown')) {
         setThemeMenuOpen(false)
       }
     }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
-  }, [menuOpen, themeMenuOpen])
+  }, [menuOpen])
 
   useEffect(() => {
     const { data: { subscription: authSubscription } } = onAuthStateChange((user) => {
@@ -140,10 +156,14 @@ export default function DashboardPage() {
     const token = await getAuthToken()
     if (!token) return
 
+    setSyncStatus('syncing')
     try {
       await saveNote(note, token)
+      setSyncStatus('synced')
+      setLastSyncedAt(Date.now())
     } catch (e) {
       console.error('Failed to sync note:', e)
+      setSyncStatus('error')
     }
   }
 
@@ -152,10 +172,14 @@ export default function DashboardPage() {
     const token = await getAuthToken()
     if (!token) return
 
+    setSyncStatus('syncing')
     try {
       await cloudDeleteNote(id, token)
+      setSyncStatus('synced')
+      setLastSyncedAt(Date.now())
     } catch (e) {
       console.error('Failed to delete from cloud:', e)
+      setSyncStatus('error')
     }
   }
 
@@ -276,8 +300,25 @@ export default function DashboardPage() {
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <h1 className="text-2xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>Rwote</h1>
           <div className="flex items-center gap-2 relative">
-            {syncing && (
+            {syncStatus === 'syncing' && (
               <span className="text-xs animate-pulse" style={{ color: 'var(--text-tertiary)' }}>Syncing...</span>
+            )}
+            {syncStatus === 'synced' && lastSyncedAt && (
+              <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                </svg>
+                {formatSyncTime(lastSyncedAt)}
+              </span>
+            )}
+            {syncStatus === 'error' && (
+              <span className="text-xs flex items-center gap-1" style={{ color: '#ef4444' }} title="Sync failed, will retry">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </span>
             )}
             {aiSummarizing && (
               <span className="text-xs animate-pulse" style={{ color: '#3b82f6' }}>AI...</span>
@@ -305,50 +346,6 @@ export default function DashboardPage() {
             >
               <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
             </button>
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setThemeMenuOpen(!themeMenuOpen)
-                }}
-                className="dashboard-btn"
-                style={{ color: 'var(--text-primary)' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
-                }}
-                title="Theme"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="5"/>
-                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                </svg>
-              </button>
-              {themeMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg overflow-hidden z-50" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  {themeList.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => {
-                        setTheme(t.id)
-                        setThemeMenuOpen(false)
-                      }}
-                      className="w-full px-4 py-2.5 text-left text-sm flex items-center justify-between transition-colors"
-                      style={{
-                        backgroundColor: themeId === t.id ? 'var(--surface-alt)' : 'transparent',
-                        fontWeight: themeId === t.id ? 500 : 400,
-                        color: 'var(--text-primary)'
-                      }}
-                    >
-                      <span>{t.name}</span>
-                      {themeId === t.id && <span style={{ color: 'var(--text-secondary)' }}>✓</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -373,9 +370,11 @@ export default function DashboardPage() {
             <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 rounded-lg shadow-lg ${menuOpen ? 'block' : 'hidden'}`} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
               <div className="p-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
                 <Avatar user={user} size={36} />
-                <div>
-                  <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
-                  <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{user?.email}</div>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
+                  <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }} title={user?.email}>
+                    {user?.email}
+                  </div>
                 </div>
               </div>
               <button
@@ -413,6 +412,20 @@ export default function DashboardPage() {
                   <path d="M2 12l10 5 10-5"/>
                 </svg>
                 <span>AI Settings</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false)
+                  setShowThemeModal(true)
+                }}
+                className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="5"/>
+                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+                <span>Theme</span>
               </button>
               <button
                 onClick={() => {
@@ -551,6 +564,56 @@ export default function DashboardPage() {
           setAiEnabled(settings.provider !== 'disabled')
         }}
       />
+
+      {showThemeModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowThemeModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl shadow-xl overflow-hidden"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>Theme</h3>
+              <button
+                onClick={() => setShowThemeModal(false)}
+                className="p-1 rounded hover:bg-black/10"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-2 gap-3">
+                {themeList.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setTheme(t.id)
+                      setShowThemeModal(false)
+                    }}
+                    className="px-4 py-3 text-sm rounded-lg transition-colors text-left"
+                    style={{
+                      backgroundColor: themeId === t.id ? 'var(--surface-alt)' : 'transparent',
+                      fontWeight: themeId === t.id ? 500 : 400,
+                      color: 'var(--text-primary)',
+                      border: themeId === t.id ? '2px solid var(--accent)' : '1px solid var(--border)'
+                    }}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
