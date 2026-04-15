@@ -15,6 +15,7 @@ import { useTheme } from '@/components/theme-provider';
 import { useNotesStore, Note, getFilteredNotes } from '@/stores/notes-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
+import { PinIcon, TrashIcon, PlusIcon } from '@/components/icons';
 
 const DEFAULT_TAGS = ['general', 'arrays', 'strings', 'trees', 'graphs', 'dp', 'sorting', 'searching'];
 
@@ -122,7 +123,7 @@ export default function NotesScreen() {
           {item.title || 'Untitled'}
         </Text>
         {item.pinned && (
-          <Text style={{ ...styles.pinIcon, color: theme.colors.accent }}>📌</Text>
+          <PinIcon size={16} color={theme.colors.accent} fill={theme.colors.accent} />
         )}
       </View>
       <Text style={{ ...styles.cardContent, color: textSecondary }} numberOfLines={2}>
@@ -138,10 +139,10 @@ export default function NotesScreen() {
         </View>
         <View style={styles.actions}>
           <Pressable style={styles.actionBtn} onPress={() => handleTogglePin(item)}>
-            <Text style={{ color: textTertiary }}>{item.pinned ? '📌' : '📍'}</Text>
+            <PinIcon size={18} color={textTertiary} fill={item.pinned ? theme.colors.accent : 'none'} />
           </Pressable>
           <Pressable style={styles.actionBtn} onPress={() => handleDelete(item.id)}>
-            <Text style={{ color: textTertiary }}>🗑️</Text>
+            <TrashIcon size={18} color={textTertiary} />
           </Pressable>
         </View>
       </View>
@@ -217,7 +218,7 @@ export default function NotesScreen() {
         style={{ ...styles.fab, backgroundColor: accentBtn }}
         onPress={() => router.push('/tabs/(notes)/new')}
       >
-        <Text style={{ ...styles.fabText, color: theme.colors.bg }}>+</Text>
+        <PlusIcon size={24} color={theme.colors.bg} />
       </Pressable>
     </View>
   );
@@ -246,5 +247,4 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   emptySubtext: { fontSize: 14 },
   fab: { position: 'absolute', right: 20, bottom: 20, width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
-  fabText: { fontSize: 28, fontWeight: '400' },
 });

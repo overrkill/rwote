@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
-import { Text } from 'react-native';
+import { NotesIcon, SettingsIcon } from '@/components/icons';
 
 export default function TabsLayout() {
   const { theme } = useTheme();
@@ -24,14 +24,14 @@ export default function TabsLayout() {
         name="(notes)"
         options={{
           title: 'Notes',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>📝</Text>,
+          tabBarIcon: ({ color }) => <NotesIcon size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="(settings)"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>⚙️</Text>,
+          tabBarIcon: ({ color }) => <SettingsIcon size={24} color={color} />,
         }}
       />
     </Tabs>

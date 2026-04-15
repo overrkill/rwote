@@ -3,6 +3,7 @@
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useTheme, THEMES, Theme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
+import { CheckIcon } from '@/components/icons';
 
 export default function SettingsScreen() {
   const { theme, themeId, setThemeId } = useTheme();
@@ -50,7 +51,9 @@ export default function SettingsScreen() {
           {t.name}
         </Text>
         {isSelected && (
-          <Text style={{ ...styles.checkmark, color: t.colors.accent }}>✓</Text>
+          <View style={styles.checkmark}>
+            <CheckIcon size={18} color={t.colors.accent} />
+          </View>
         )}
       </Pressable>
     );
@@ -134,7 +137,7 @@ const styles = StyleSheet.create({
   previewBar: { height: 16, borderRadius: 4 },
   previewBarSmall: { height: 10, width: '70%' },
   themeName: { fontSize: 14, fontWeight: '500' },
-  checkmark: { position: 'absolute', top: 12, right: 12, fontSize: 18, fontWeight: 'bold' },
+  checkmark: { position: 'absolute', top: 12, right: 12 },
   signOutBtn: { borderRadius: 12, padding: 16, alignItems: 'center' },
   signOutText: { fontSize: 16, fontWeight: '500' },
 });
