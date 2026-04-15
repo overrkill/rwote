@@ -15,6 +15,7 @@ interface AuthState {
   initialized: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   initialize: () => void;
 }
@@ -65,6 +66,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         Alert.alert('Check your email', 'Please confirm your email to continue');
       } else {
         throw new Error(data.msg || 'Failed to sign up');
+      }
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  signInWithGoogle: async () => {
+    set({ isLoading: true });
+    try {
+      const data = await supabase.signInWithGoogle();
+      if (data.access_token) {
+        const userData = await supabase.getUser(data.access_token);
+        storage.set('accessToken', data.access_token);
+        storage.set('user', { id: userData.id, email: userData.email });
+        set({ accessToken: data.access_token, user: { id: userData.id, email: userData.email } });
+      } else {
+        throw new Error(data.msg || 'Failed to sign in with Google');
       }
     } finally {
       set({ isLoading: false });

@@ -5,11 +5,12 @@ import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
+import { GoogleIcon } from '@/components/icons';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-  const { signIn, isLoading } = useAuthStore();
+  const { signIn, signInWithGoogle, isLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -26,6 +27,15 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      router.replace('/tabs/(notes)');
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to sign in with Google');
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ ...styles.container, backgroundColor: theme.colors.bg }}
@@ -38,6 +48,23 @@ export default function LoginScreen() {
         </Text>
 
         <View style={styles.form}>
+          <Pressable
+            style={{ ...styles.googleButton, borderColor: theme.colors.border }}
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}
+          >
+            <GoogleIcon size={20} />
+            <Text style={{ ...styles.googleButtonText, color: theme.colors.textPrimary }}>
+              Continue with Google
+            </Text>
+          </Pressable>
+
+          <View style={styles.divider}>
+            <View style={{ ...styles.dividerLine, backgroundColor: theme.colors.border }} />
+            <Text style={{ ...styles.dividerText, color: theme.colors.textTertiary }}>or</Text>
+            <View style={{ ...styles.dividerLine, backgroundColor: theme.colors.border }} />
+          </View>
+
           <TextInput
             style={{
               ...styles.input,
@@ -97,6 +124,19 @@ const styles = StyleSheet.create({
   title: { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 32 },
   form: { gap: 16 },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+  },
+  googleButtonText: { fontSize: 16, fontWeight: '600' },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 14 },
   input: { borderWidth: 1, borderRadius: 12, padding: 16, fontSize: 16 },
   button: { borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
   buttonText: { fontSize: 16, fontWeight: '600' },

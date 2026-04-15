@@ -1,5 +1,14 @@
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
+
+GoogleSignin.configure({
+  webClientId: GOOGLE_WEB_CLIENT_ID,
+  iosClientId: GOOGLE_IOS_CLIENT_ID,
+});
 
 export const supabase = {
   url: SUPABASE_URL,
@@ -51,6 +60,39 @@ export const supabase = {
       },
     });
     return res.json();
+  },
+
+  async signInWithGoogle(): Promise<{ access_token?: string; msg?: string }> {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      
+      const idToken = (userInfo as any).idToken;
+      if (idToken) {
+        const res = await fetch(
+          `${SUPABASE_URL}/auth/v1/token?grant_type=id_token`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({
+              provider: 'google',
+              id_token: idToken,
+            }),
+          }
+        );
+        return res.json();
+      }
+      
+      return { msg: 'No ID token received from Google' };
+    } catch (error: any) {
+      if (error.code === 'SIGN_IN_CANCELLED') {
+        return { msg: 'Sign in was cancelled' };
+      }
+      return { msg: error.message || 'Google sign in failed' };
+    }
   },
 
   async fetchNotes(accessToken: string) {
