@@ -34,7 +34,7 @@ const DEFAULT_TAGS = [
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { theme, toggleTheme } = useTheme()
+  const { theme, themeId, setTheme } = useTheme()
   const [notes, setNotes] = useState<Note[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTags, setActiveTags] = useState<string[]>([])
@@ -45,60 +45,40 @@ export default function DashboardPage() {
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-<<<<<<< HEAD
   const [user, setUser] = useState<User | null>(getStoredUser())
-=======
   const [aiSettings, setAiSettingsState] = useState<AiSettings>({ provider: 'disabled', ollamaUrl: 'http://localhost:11434', ollamaModel: 'llama3.2' })
   const [aiEnabled, setAiEnabled] = useState(false)
   const [showAiSettings, setShowAiSettings] = useState(false)
   const [aiSummarizing, setAiSummarizing] = useState(false)
->>>>>>> 00a3a03 (Add AI summarization feature to web app)
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
+
+  const themeList = [
+    { id: 'paper_dark', name: 'Paper Dark' },
+    { id: 'tokyonight', name: 'Tokyo Night' },
+    { id: 'catppuccin', name: 'Catppuccin' },
+    { id: 'nord', name: 'Nord' },
+    { id: 'monokai', name: 'Monokai' },
+    { id: 'light', name: 'Light' },
+  ]
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuOpen && !(e.target as HTMLElement).closest('.hamburger-menu')) {
         setMenuOpen(false)
       }
+      if (themeMenuOpen && !(e.target as HTMLElement).closest('[title="Theme"]') && !(e.target as HTMLElement).closest('.theme-dropdown')) {
+        setThemeMenuOpen(false)
+      }
     }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
-  }, [menuOpen])
+  }, [menuOpen, themeMenuOpen])
 
   useEffect(() => {
-<<<<<<< HEAD
     const { data: { subscription: authSubscription } } = onAuthStateChange((user) => {
       setUser(user)
       if (!user) {
         router.push('/auth/login')
-=======
-    const auth = getLocalAuth()
-    if (!auth) {
-      router.push('/auth/login')
-      return
-    }
-
-    async function loadData(token: string) {
-      try {
-        setSyncing(true)
-        const sub = await getSubscriptionStatus(token)
-        setSubscription(sub)
-
-        const ai = getAiSettings()
-        setAiSettingsState(ai)
-        setAiEnabled(ai.provider !== 'disabled')
-
-        if (sub.can_sync) {
-          const { notes: cloudNotes, error } = await loadNotes(token)
-          
-          if (!error && cloudNotes) {
-            setNotes(cloudNotes)
-          }
-        } else {
-          setShowSubscriptionModal(true)
-        }
-      } catch (e) {
-        console.error('Failed to load data:', e)
->>>>>>> 00a3a03 (Add AI summarization feature to web app)
       }
     })
 
@@ -127,27 +107,33 @@ export default function DashboardPage() {
   }, [router])
 
   async function loadData(token: string) {
-    try {
-      setSyncing(true)
-      const sub = await getSubscriptionStatus(token)
-      setSubscription(sub)
+      try {
+        setLoading(true)
+        const sub = await getSubscriptionStatus(token)
+        setSubscription(sub)
 
-      if (sub.can_sync) {
-        const { notes: cloudNotes, error } = await loadNotes(token)
-        
-        if (!error && cloudNotes) {
-          setNotes(cloudNotes)
+        const ai = getAiSettings()
+        setAiSettingsState(ai)
+        setAiEnabled(ai.provider !== 'disabled')
+
+        if (sub.can_sync) {
+          const { notes: cloudNotes, error } = await loadNotes(token)
+          
+          if (!error && cloudNotes) {
+            setNotes(cloudNotes)
+            setLoading(false)
+          }
+        } else {
+          setShowSubscriptionModal(true)
+          setLoading(false)
         }
-      } else {
-        setShowSubscriptionModal(true)
+      } catch (e) {
+        console.error('Failed to load data:', e)
+      } finally{
+                  setLoading(false)
       }
-    } catch (e) {
-      console.error('Failed to load data:', e)
     }
-    setSyncing(false)
-    setLoading(false)
-  }
-
+    
   const syncToCloud = async (note: Note) => {
     if (!subscription?.can_sync) return
     const token = await getAuthToken()
@@ -173,13 +159,8 @@ export default function DashboardPage() {
   }
 
   const handleSaveNote = async (text: string, noteText: string, tag: string) => {
-<<<<<<< HEAD
     const token = await getAuthToken()
     if (!token || !subscription?.can_sync) {
-=======
-    const auth = getLocalAuth()
-    if (!auth || !subscription?.can_sync) {
->>>>>>> 00a3a03 (Add AI summarization feature to web app)
       setShowSubscriptionModal(true)
       return
     }
@@ -192,7 +173,7 @@ export default function DashboardPage() {
       try {
         let result
         if (aiSettings.provider === 'groq') {
-          result = await summarizeUsingCloud(text, auth.token)
+          result = await summarizeUsingCloud(text, token)
         } else {
           result = await summarizeUsingLocal(text, aiSettings.ollamaUrl, aiSettings.ollamaModel)
         }
@@ -311,13 +292,40 @@ export default function DashboardPage() {
             >
               ✨
             </button>
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            >
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setThemeMenuOpen(!themeMenuOpen)
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                title="Theme"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="5"/>
+                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+              </button>
+              {themeMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#242428] border border-[#d8d8d8] dark:border-[#3a3a40] rounded-lg shadow-lg overflow-hidden z-50">
+                  {themeList.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setTheme(t.id)
+                        setThemeMenuOpen(false)
+                      }}
+                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-[#2e2e34] transition-colors ${
+                        themeId === t.id ? 'bg-gray-100 dark:bg-[#2e2e34] font-medium' : ''
+                      } text-gray-900 dark:text-gray-100`}
+                    >
+                      <span>{t.name}</span>
+                      {themeId === t.id && <span className="text-gray-400">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               onClick={(e) => {
                 e.stopPropagation()

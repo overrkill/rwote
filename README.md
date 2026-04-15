@@ -41,6 +41,7 @@ rwote/
 - Subscription status display
 - Token refresh for API calls
 - Session storage for secure token management
+- Theme picker with 11 editor themes (Paper Dark, Tokyo Night, Catppuccin, Nord, Ayu, Monokai)
 
 **Web App:**
 - Landing page with hero, features, pricing, FAQ
@@ -54,6 +55,7 @@ rwote/
 - Grand Hotel font branding
 - Hamburger menu with export
 - Favicon and PWA icons
+- Theme picker with 6 editor themes (Paper Dark, Tokyo Night, Catppuccin, Nord, Monokai, Light)
 
 **Backend:**
 - Supabase Auth (email/password)
@@ -74,7 +76,8 @@ rwote/
 - [x] Deploy web app to Vercel (blocked: pnpm version issue)
 - [x] Fix Vercel build settings (use npm instead of pnpm)
 - [x] Google OAuth sign-in (extension + web app)
-- [ ] Test cloud sync between extension and web app
+- [x] Theme system with multiple editor themes (extension + web app)
+- [x] Test cloud sync between extension and web app
 - [ ] Add actual Stripe integration for payments
 
 **Medium Priority:**

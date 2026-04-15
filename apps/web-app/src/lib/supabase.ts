@@ -273,4 +273,3 @@ export async function summarizeUsingLocal(text: string, url: string, model: stri
   const data = await response.json()
   return parseSummarizeResponse(data.response)
 }
->>>>>>> 00a3a03 (Add AI summarization feature to web app)

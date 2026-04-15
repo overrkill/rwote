@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { signUp, signInWithGoogle, setStoredUser } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -13,8 +13,20 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const { theme, toggleTheme } = useTheme()
+  const { themeId, setTheme } = useTheme()
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowThemeMenu(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,6 +61,15 @@ export default function RegisterPage() {
     }
   }
 
+  const themeList = [
+    { id: 'paper_dark', name: 'Paper Dark' },
+    { id: 'tokyonight', name: 'Tokyo Night' },
+    { id: 'catppuccin', name: 'Catppuccin' },
+    { id: 'nord', name: 'Nord' },
+    { id: 'monokai', name: 'Monokai' },
+    { id: 'light', name: 'Light' },
+  ]
+
   return (
     <div className="min-h-screen flex flex-col bg-[#fafafa] dark:bg-[#0f0e0d]">
       {/* Header */}
@@ -57,13 +78,40 @@ export default function RegisterPage() {
           <Link href="/" className="text-2xl text-[#1a1a1a] dark:text-[#f5f2ec]" style={{ fontFamily: "'Grand Hotel', cursive" }}>
             Rwote
           </Link>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] transition-colors text-[#1a1a1a] dark:text-[#f5f2ec]"
-            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowThemeMenu(!showThemeMenu)
+              }}
+              className="p-2 rounded-lg hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] transition-colors text-[#1a1a1a] dark:text-[#f5f2ec]"
+              title="Theme"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="5"/>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+            </button>
+            {showThemeMenu && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#242428] border border-[#d8d8d8] dark:border-[#3a3a40] rounded-lg shadow-lg overflow-hidden z-50">
+                {themeList.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setTheme(t.id)
+                      setShowThemeMenu(false)
+                    }}
+                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-[#f0f0f0] dark:hover:bg-[#2e2e34] transition-colors ${
+                      themeId === t.id ? 'bg-[#f0f0f0] dark:bg-[#2e2e34] font-medium' : ''
+                    } text-[#1a1a1a] dark:text-[#f5f2ec]`}
+                  >
+                    <span>{t.name}</span>
+                    {themeId === t.id && <span className="text-[#a0a0a0]">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

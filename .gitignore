@@ -104,3 +104,4 @@ bun.lockb
 # pnpm files
 pnpm-debug.log
 pnpm-lock.yaml
+apps/web-app/next-env.d.ts
