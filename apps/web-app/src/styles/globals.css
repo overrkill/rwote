@@ -106,3 +106,21 @@
 .animation-delay-200 {
   animation-delay: 0.2s;
 }
+
+/* Dashboard header buttons */
+.dashboard-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+}
+
+.ai-btn {
+  padding: 4px 8px;
+  font-weight: 600;
+}

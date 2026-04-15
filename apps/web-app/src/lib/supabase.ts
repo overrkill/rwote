@@ -17,11 +17,14 @@ export async function getAuthToken(): Promise<string | null> {
 export async function getAuthUser(): Promise<User | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  return {
+  const authUser: User = {
     id: user.id,
     email: user.email || '',
     name: user.user_metadata?.name || user.user_metadata?.full_name,
+    avatar: user.user_metadata?.avatar || user.user_metadata?.picture,
   }
+  setStoredUser(authUser)
+  return authUser
 }
 
 export function getStoredUser(): User | null {
@@ -51,6 +54,7 @@ export function onAuthStateChange(callback: (user: User | null) => void) {
         id: session.user.id,
         email: session.user.email || '',
         name: session.user.user_metadata?.name || session.user.user_metadata?.full_name,
+        avatar: session.user.user_metadata?.avatar || session.user.user_metadata?.picture,
       }
       setStoredUser(user)
       callback(user)

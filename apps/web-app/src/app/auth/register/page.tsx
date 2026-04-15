@@ -46,6 +46,7 @@ export default function RegisterPage() {
         id: data.user.id,
         email: data.user.email || '',
         name: name,
+        avatar: data.user.user_metadata?.avatar || data.user.user_metadata?.picture,
       })
       router.push('/dashboard')
     }

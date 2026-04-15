@@ -41,6 +41,19 @@ export default function Header() {
     { id: 'light', name: 'Light' },
   ]
 
+  const headerBtn: React.CSSProperties = {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '8px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.12s',
+    color: 'var(--text-primary)',
+  }
+
   return (
     <header className="sticky top-0 z-50 backdrop-blur-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--bg) 80%, transparent)', borderBottom: '1px solid var(--border)' }}>
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -54,9 +67,15 @@ export default function Header() {
                 e.stopPropagation()
                 setShowThemeMenu(!showThemeMenu)
               }}
-              className="p-2 rounded-lg transition-colors"
-              style={{ color: 'var(--text-primary)' }}
+              className="header-btn"
+              style={headerBtn}
               title="Theme"
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'none'
+              }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="5"/>

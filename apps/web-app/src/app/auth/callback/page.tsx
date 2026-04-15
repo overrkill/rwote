@@ -23,6 +23,7 @@ export default function CallbackPage() {
           id: user.id,
           email: user.email || '',
           name: user.user_metadata?.name || user.user_metadata?.full_name,
+          avatar: user.user_metadata?.avatar || user.user_metadata?.picture,
         })
         router.push('/dashboard')
       } else {

@@ -18,6 +18,7 @@ import {
   summarizeUsingCloud,
   summarizeUsingLocal
 } from '@/lib/supabase'
+import Avatar from '@/components/ui/avatar'
 import type { Note, SubscriptionStatus, User, AiSettings } from '@/lib/types'
 import { NoteList, NoteForm } from '@/components/notes'
 import SearchBar from '@/components/notes/search-bar'
@@ -283,11 +284,26 @@ export default function DashboardPage() {
             )}
             <button
               onClick={() => setAiEnabled(!aiEnabled)}
-              className="p-2 rounded-lg transition-colors"
-              style={{ backgroundColor: aiEnabled ? 'rgba(34, 197, 94, 0.2)' : 'transparent', color: aiEnabled ? '#22c55e' : 'var(--text-secondary)' }}
+              className="dashboard-btn ai-btn"
+              style={{ 
+                backgroundColor: aiEnabled ? 'rgba(34, 197, 94, 0.2)' : 'transparent', 
+                color: aiEnabled ? '#22c55e' : 'var(--text-secondary)'
+              }}
+              onMouseEnter={(e) => {
+                if (!aiEnabled) {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!aiEnabled) {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
+                }
+              }}
               title={aiEnabled ? 'AI Summarization ON' : 'AI Summarization OFF'}
             >
-              ✨
+              <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
             </button>
             <div className="relative">
               <button
@@ -295,11 +311,17 @@ export default function DashboardPage() {
                   e.stopPropagation()
                   setThemeMenuOpen(!themeMenuOpen)
                 }}
-                className="p-2 rounded-lg transition-colors"
+                className="dashboard-btn"
                 style={{ color: 'var(--text-primary)' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
+                }}
                 title="Theme"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
                   <circle cx="12" cy="12" r="5"/>
                   <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
                 </svg>
@@ -332,19 +354,28 @@ export default function DashboardPage() {
                 e.stopPropagation()
                 setMenuOpen(!menuOpen)
               }}
-              className="p-2 rounded-lg transition-colors"
+              className="dashboard-btn"
               style={{ color: 'var(--text-primary)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
+              }}
               title="Menu"
             >
-              ☰
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
             </button>
             <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 rounded-lg shadow-lg ${menuOpen ? 'block' : 'hidden'}`} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user?.name || user?.email || 'User'}</div>
-                <div className="text-xs capitalize" style={{ color: 'var(--text-secondary)' }}>
-                  {subscription?.subscription_status === 'paid' && 'Pro Member'}
-                  {subscription?.subscription_status === 'trial' && `Trial (${subscription.days_left} days left)`}
-                  {subscription?.subscription_status === 'expired' && 'Expired'}
+              <div className="p-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                <Avatar user={user} size={36} />
+                <div>
+                  <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
+                  <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{user?.email}</div>
                 </div>
               </div>
               <button
@@ -355,7 +386,18 @@ export default function DashboardPage() {
                 className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
                 style={{ color: 'var(--text-primary)' }}
               >
-                🔄 <span>Subscription</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                </svg>
+                <span className="text-sm" style={{ 
+                  color: subscription?.subscription_status === 'paid' ? '#22c55e' : 
+                         subscription?.subscription_status === 'trial' ? '#f59e0b' : 
+                         subscription?.subscription_status === 'expired' ? '#ef4444' : 'var(--text-secondary)'
+                }}>
+                  {subscription?.subscription_status === 'paid' && 'Pro'}
+                  {subscription?.subscription_status === 'trial' && `Trial: ${subscription.days_left} days left`}
+                  {subscription?.subscription_status === 'expired' && 'Expired'}
+                </span>
               </button>
               <button
                 onClick={() => {
@@ -365,7 +407,12 @@ export default function DashboardPage() {
                 className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
                 style={{ color: 'var(--text-primary)' }}
               >
-                ✨ <span>AI Settings</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                  <path d="M2 17l10 5 10-5"/>
+                  <path d="M2 12l10 5 10-5"/>
+                </svg>
+                <span>AI Settings</span>
               </button>
               <button
                 onClick={() => {
@@ -382,7 +429,12 @@ export default function DashboardPage() {
                 className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
                 style={{ color: 'var(--text-primary)' }}
               >
-                📥 <span>Export Notes</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Export Notes</span>
               </button>
               <div style={{ borderTop: '1px solid var(--border)' }}>
                 <button
@@ -393,7 +445,12 @@ export default function DashboardPage() {
                   className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
                   style={{ color: 'var(--text-primary)' }}
                 >
-                  🚪 <span>Sign Out</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  <span>Sign Out</span>
                 </button>
               </div>
             </div>
