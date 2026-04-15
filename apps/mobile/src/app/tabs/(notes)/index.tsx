@@ -35,9 +35,9 @@ export default function NotesScreen() {
     setActiveTag,
   } = useNotesStore();
 
-  const filteredByTag = getFilteredNotes(notes, searchQuery, activeTag);
+  const filteredByTag = getFilteredNotes(notes || [], searchQuery || '', activeTag || 'all');
 
-  const { user, accessToken, initialize } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
 
   const loadNotes = useCallback(async () => {
     if (!accessToken) return;
@@ -48,10 +48,6 @@ export default function NotesScreen() {
       console.error('Failed to load notes:', error);
     }
   }, [accessToken, setNotes]);
-
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
 
   useEffect(() => {
     if (user && accessToken) {

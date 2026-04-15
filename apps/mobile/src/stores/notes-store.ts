@@ -70,16 +70,16 @@ export function getFilteredNotes(notes: Note[], searchQuery: string, activeTag: 
   }
   let filtered: Note[] = [...notes];
 
-  if (activeTag !== 'all') {
-    filtered = filtered.filter((n) => n.tags.includes(activeTag));
+  if (activeTag && activeTag !== 'all') {
+    filtered = filtered.filter((n) => n.tags && n.tags.includes(activeTag));
   }
 
-  if (searchQuery.trim()) {
+  if (searchQuery && searchQuery.trim()) {
     const query = searchQuery.toLowerCase();
     filtered = filtered.filter(
       (n) =>
-        n.title.toLowerCase().includes(query) ||
-        n.content.toLowerCase().includes(query)
+        (n.title && n.title.toLowerCase().includes(query)) ||
+        (n.content && n.content.toLowerCase().includes(query))
     );
   }
 
