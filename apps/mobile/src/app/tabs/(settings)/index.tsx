@@ -84,9 +84,11 @@ export default function SettingsScreen() {
         <Text style={{ ...styles.sectionTitle, color: theme.colors.textSecondary }}>
           Appearance
         </Text>
-        <View style={styles.themesGrid}>
-          {Object.values(THEMES).map(renderThemeOption)}
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themesContainer}>
+          <View style={styles.themesGrid}>
+            {Object.values(THEMES).map(renderThemeOption)}
+          </View>
+        </ScrollView>
       </View>
 
       <View style={styles.section}>
@@ -132,7 +134,8 @@ const styles = StyleSheet.create({
   label: { fontSize: 16 },
   value: { fontSize: 16 },
   themesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  themeOption: { width: '47%', borderRadius: 12, padding: 12, position: 'relative' },
+  themesContainer: { paddingRight: 16 },
+  themeOption: { width: 150, borderRadius: 12, padding: 12, position: 'relative' },
   themePreview: { height: 60, borderRadius: 8, overflow: 'hidden', marginBottom: 8, justifyContent: 'flex-end', padding: 8, gap: 6 },
   previewBar: { height: 16, borderRadius: 4 },
   previewBarSmall: { height: 10, width: '70%' },

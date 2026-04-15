@@ -17,8 +17,6 @@ import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { PinIcon, TrashIcon, PlusIcon } from '@/components/icons';
 
-const DEFAULT_TAGS = ['general', 'arrays', 'strings', 'trees', 'graphs', 'dp', 'sorting', 'searching'];
-
 export default function NotesScreen() {
   const { theme } = useTheme();
   const router = useRouter();
@@ -113,6 +111,11 @@ export default function NotesScreen() {
   const textTertiary = theme.colors.textTertiary;
   const accentBtn = theme.colors.accentBtn;
 
+  const uniqueTags = notes.length > 0
+    ? [...new Set(notes.flatMap((n) => n.tags || []))]
+    : [];
+  const filterTags = uniqueTags.length > 0 ? ['all', ...uniqueTags] : [];
+
   const renderNote = ({ item }: { item: Note }) => (
     <Pressable
       style={{
@@ -168,33 +171,35 @@ export default function NotesScreen() {
         />
       </View>
 
-      <View style={styles.filters}>
-        <FlatList
-          horizontal
-          data={['all', ...DEFAULT_TAGS]}
-          keyExtractor={(item) => item}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersList}
-          renderItem={({ item }) => (
-            <Pressable
-              style={{
-                ...styles.filterChip,
-                backgroundColor: activeTag === item ? accentBtn : cardBg,
-              }}
-              onPress={() => setActiveTag(item)}
-            >
-              <Text
+      {filterTags.length > 0 && (
+        <View style={styles.filters}>
+          <FlatList
+            horizontal
+            data={filterTags}
+            keyExtractor={(item) => item}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersList}
+            renderItem={({ item }) => (
+              <Pressable
                 style={{
-                  ...styles.filterText,
-                  color: activeTag === item ? theme.colors.bg : textSecondary,
+                  ...styles.filterChip,
+                  backgroundColor: activeTag === item ? accentBtn : cardBg,
                 }}
+                onPress={() => setActiveTag(item)}
               >
-                {item === 'all' ? 'All' : item.charAt(0).toUpperCase() + item.slice(1)}
-              </Text>
-            </Pressable>
-          )}
-        />
-      </View>
+                <Text
+                  style={{
+                    ...styles.filterText,
+                    color: activeTag === item ? theme.colors.bg : textSecondary,
+                  }}
+                >
+                  {item === 'all' ? 'All' : item.charAt(0).toUpperCase() + item.slice(1)}
+                </Text>
+              </Pressable>
+            )}
+          />
+        </View>
+      )}
 
       {filteredByTag.length === 0 ? (
         <View style={styles.empty}>
@@ -231,8 +236,8 @@ const styles = StyleSheet.create({
   searchInput: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 16 },
   filters: { height: 44, paddingBottom: 8 },
   filtersList: { paddingHorizontal: 16, gap: 8 },
-  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  filterText: { fontSize: 14, fontWeight: '500' },
+  filterChip: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  filterText: { fontSize: 14, fontWeight: '500', textAlignVertical: 'center' },
   list: { padding: 16, paddingBottom: 100 },
   card: { borderRadius: 12, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },

@@ -11,7 +11,16 @@ export default function SettingsLayout() {
         contentStyle: { backgroundColor: theme.colors.bg },
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Settings',
+          headerShown: true,
+          headerStyle: { backgroundColor: theme.colors.surface },
+          headerTintColor: theme.colors.textPrimary,
+          headerShadowVisible: false,
+        }}
+      />
     </Stack>
   );
 }

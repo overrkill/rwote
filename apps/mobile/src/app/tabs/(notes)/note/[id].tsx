@@ -154,12 +154,12 @@ export default function NoteDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 100 },
-  titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 12, borderBottomWidth: 1, marginBottom: 16 },
-  contentInput: { fontSize: 16, lineHeight: 24, minHeight: 200, marginBottom: 24 },
-  tagsSection: { marginTop: 16 },
-  tagsLabel: { fontSize: 14, fontWeight: '600', marginBottom: 12 },
+  content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
+  titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, borderBottomWidth: 1, marginBottom: 12 },
+  contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
+  tagsSection: { marginTop: 8 },
+  tagsLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tagChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  tagChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
   tagText: { fontSize: 14, fontWeight: '500' },
 });

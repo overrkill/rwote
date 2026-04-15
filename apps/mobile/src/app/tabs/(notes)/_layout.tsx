@@ -11,7 +11,16 @@ export default function NotesLayout() {
         contentStyle: { backgroundColor: theme.colors.bg },
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Notes',
+          headerShown: true,
+          headerStyle: { backgroundColor: theme.colors.surface },
+          headerTintColor: theme.colors.textPrimary,
+          headerShadowVisible: false,
+        }}
+      />
       <Stack.Screen
         name="new"
         options={{
@@ -20,6 +29,7 @@ export default function NotesLayout() {
           headerShown: true,
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.textPrimary,
+          headerShadowVisible: false,
         }}
       />
       <Stack.Screen
@@ -29,6 +39,7 @@ export default function NotesLayout() {
           headerShown: true,
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.textPrimary,
+          headerShadowVisible: false,
         }}
       />
     </Stack>
