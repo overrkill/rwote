@@ -2119,3 +2119,46 @@ body {
 .test-result.error {
   color: #d32f2f;
 }
+
+/* ── Theme Dropdown ─────────────────────────────── */
+.theme-dropdown {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+  min-width: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 200;
+  animation: fadeIn 0.12s ease;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 11px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background 0.12s;
+  text-align: left;
+}
+
+.theme-option:hover {
+  background: var(--surface-alt);
+}
+
+.theme-option.active {
+  background: var(--surface-alt);
+  font-weight: 500;
+}
+
+.theme-check {
+  color: var(--accent);
+}

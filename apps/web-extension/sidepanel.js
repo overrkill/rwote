@@ -1,5 +1,6 @@
 // sidepanel.js — UI Layer
 // No business logic - all operations go through background.js
+/* global applyTheme, getTheme */
 
 // ── Constants ────────────────────────────────────────
 const COLOR_POOL = [
@@ -172,11 +173,8 @@ async function refreshState() {
   onboarded = state.onboarded || false;
   
   // Apply theme
-  if (settings.theme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  } else {
-    document.documentElement.removeAttribute('data-theme');
-  }
+  const themeId = settings.theme || 'paper_dark';
+  applyTheme(getTheme(themeId));
   
   return state;
 }
@@ -723,24 +721,73 @@ document.addEventListener('click', (e) => {
 });
 
 // ── Theme ────────────────────────────────────────────
-function updateThemeLabel() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const sunSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-  const moonSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-  menuThemeEl.innerHTML = isDark ? `${sunSvg} <span>Light Mode</span>` : `${moonSvg} <span>Dark Mode</span>`;
+let themeDropdownEl = null;
+
+function showThemeDropdown() {
+  closeMenu();
+  
+  if (themeDropdownEl) {
+    themeDropdownEl.remove();
+    themeDropdownEl = null;
+    return;
+  }
+  
+  themeDropdownEl = document.createElement('div');
+  themeDropdownEl.className = 'theme-dropdown';
+  
+  const themes = [
+    { id: 'paper_dark', name: 'Paper Dark' },
+    { id: 'tokyonight', name: 'Tokyo Night' },
+    { id: 'catppuccin', name: 'Catppuccin' },
+    { id: 'nord', name: 'Nord' },
+    { id: 'ayu', name: 'Ayu Dark' },
+    { id: 'monokai', name: 'Monokai' },
+    { id: 'tokyonight_light', name: 'Tokyo Night Light' },
+    { id: 'catppuccin_light', name: 'Catppuccin Latte' },
+    { id: 'nord_light', name: 'Nord Frost' },
+    { id: 'ayu_light', name: 'Ayu Mirage' },
+    { id: 'monokai_light', name: 'Monokai Pro' },
+  ];
+  
+  const currentTheme = settings.theme || 'paper_dark';
+  
+  themeDropdownEl.innerHTML = themes.map(t => `
+    <button class="theme-option${t.id === currentTheme ? ' active' : ''}" data-theme="${t.id}">
+      ${t.name}
+      ${t.id === currentTheme ? '<span class="theme-check">✓</span>' : ''}
+    </button>
+  `).join('');
+  
+  themeDropdownEl.querySelectorAll('.theme-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const themeId = btn.dataset.theme;
+      applyTheme(getTheme(themeId));
+      settings.theme = themeId;
+      sendMessage({ type: 'UPDATE_SETTINGS', settings });
+      themeDropdownEl.remove();
+      themeDropdownEl = null;
+      showToast('Theme applied');
+    });
+  });
+  
+  const rect = menuThemeEl.getBoundingClientRect();
+  themeDropdownEl.style.position = 'absolute';
+  themeDropdownEl.style.top = `${rect.bottom + 4}px`;
+  themeDropdownEl.style.right = '10px';
+  themeDropdownEl.style.zIndex = '200';
+  
+  document.body.appendChild(themeDropdownEl);
+  
+  setTimeout(() => {
+    document.addEventListener('click', handleThemeDropdownOutside, { once: true });
+  }, 0);
 }
 
-function toggleTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if (isDark) {
-    document.documentElement.removeAttribute('data-theme');
-    settings.theme = 'light';
-  } else {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    settings.theme = 'dark';
+function handleThemeDropdownOutside(e) {
+  if (themeDropdownEl && !themeDropdownEl.contains(e.target) && e.target !== menuThemeEl) {
+    themeDropdownEl.remove();
+    themeDropdownEl = null;
   }
-  sendMessage({ type: 'UPDATE_SETTINGS', settings });
-  updateThemeLabel();
 }
 
 // ── User Profile ─────────────────────────────────────
@@ -823,7 +870,7 @@ document.addEventListener('click', (e) => {
 });
 
 menuStatsEl.addEventListener('click', () => { closeMenu(); showStatsModal(); });
-menuThemeEl.addEventListener('click', () => { closeMenu(); toggleTheme(); });
+menuThemeEl.addEventListener('click', () => { closeMenu(); showThemeDropdown(); });
 
 // ── Export/Import ────────────────────────────────────
 function exportNotes() {
@@ -1475,7 +1522,6 @@ chrome.runtime.onMessage.addListener((message) => {
 // ── Init ─────────────────────────────────────────────
 async function init() {
   await refreshState();
-  updateThemeLabel();
   renderAll();
   
   // Check for pending selection from context menu
