@@ -22,16 +22,15 @@ interface NotesState {
   undoDelete: () => void;
   setSearchQuery: (query: string) => void;
   setActiveTag: (tag: string) => void;
-  filteredNotes: () => Note[];
 }
 
-export const useNotesStore = create<NotesState>((set, get) => ({
+export const useNotesStore = create<NotesState>((set) => ({
   notes: [],
   searchQuery: '',
   activeTag: 'all',
   deletedNote: null,
 
-  setNotes: (notes) => set({ notes }),
+  setNotes: (notes) => set({ notes: Array.isArray(notes) ? notes : [] }),
 
   addNote: (note) => set((state) => ({ notes: [note, ...state.notes] })),
 
@@ -63,27 +62,32 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
 
   setActiveTag: (tag) => set({ activeTag: tag }),
-
-  filteredNotes: () => {
-    const { notes, searchQuery, activeTag } = get();
-    let filtered = [...notes];
-
-    if (activeTag !== 'all') {
-      filtered = filtered.filter((n) => n.tags.includes(activeTag));
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (n) =>
-          n.title.toLowerCase().includes(query) ||
-          n.content.toLowerCase().includes(query)
-      );
-    }
-
-    const pinned = filtered.filter((n) => n.pinned);
-    const unpinned = filtered.filter((n) => !n.pinned);
-
-    return [...pinned, ...unpinned];
-  },
 }));
+
+export function getFilteredNotes(notes: Note[], searchQuery: string, activeTag: string): Note[] {
+  if (!Array.isArray(notes)) {
+    return [];
+  }
+  let filtered: Note[] = [...notes];
+
+  if (activeTag !== 'all') {
+    filtered = filtered.filter((n) => n.tags.includes(activeTag));
+  }
+
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    filtered = filtered.filter(
+      (n) =>
+        n.title.toLowerCase().includes(query) ||
+        n.content.toLowerCase().includes(query)
+    );
+  }
+
+  const pinned = filtered.filter((n) => n.pinned);
+  const unpinned = filtered.filter((n) => !n.pinned);
+
+  const result: Note[] = [];
+  for (const n of pinned) result.push(n);
+  for (const n of unpinned) result.push(n);
+  return result;
+}

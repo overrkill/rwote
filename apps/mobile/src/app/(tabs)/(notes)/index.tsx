@@ -12,7 +12,7 @@ import {
 import { useState, useCallback, useEffect } from 'react';
 import { Link, useRouter } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
-import { useNotesStore, Note } from '@/stores/notes-store';
+import { useNotesStore, Note, getFilteredNotes } from '@/stores/notes-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 
@@ -27,13 +27,15 @@ export default function NotesScreen() {
   const {
     notes,
     activeTag,
+    searchQuery,
     setNotes,
     updateNote,
     deleteNote,
     setSearchQuery,
     setActiveTag,
-    filteredNotes,
   } = useNotesStore();
+
+  const filteredByTag = getFilteredNotes(notes, searchQuery, activeTag);
 
   const { user, accessToken, initialize } = useAuthStore();
 
@@ -89,11 +91,6 @@ export default function NotesScreen() {
       }
     }
   };
-
-  const filtered = filteredNotes();
-  const filteredByTag = activeTag === 'all'
-    ? filtered
-    : filtered.filter((n) => n.tags.includes(activeTag));
 
   const cardBg = theme.colors.surface;
   const textPrimary = theme.colors.textPrimary;
