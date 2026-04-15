@@ -115,16 +115,18 @@ export default function NotesScreen() {
 
   const renderNote = ({ item }: { item: Note }) => (
     <Pressable
-      style={{ ...styles.card, backgroundColor: cardBg }}
+      style={{
+        ...styles.card,
+        backgroundColor: cardBg,
+        borderColor: item.pinned ? theme.colors.accent : theme.colors.border,
+        borderWidth: item.pinned ? 1.5 : 1,
+      }}
       onPress={() => router.push(`/tabs/(notes)/note/${item.id}`)}
     >
       <View style={styles.cardHeader}>
         <Text style={{ ...styles.cardTitle, color: textPrimary }} numberOfLines={1}>
           {item.title || 'Untitled'}
         </Text>
-        {item.pinned && (
-          <PinIcon size={16} color={theme.colors.accent} fill={theme.colors.accent} />
-        )}
       </View>
       <Text style={{ ...styles.cardContent, color: textSecondary }} numberOfLines={2}>
         {item.content || ''}
@@ -139,7 +141,7 @@ export default function NotesScreen() {
         </View>
         <View style={styles.actions}>
           <Pressable style={styles.actionBtn} onPress={() => handleTogglePin(item)}>
-            <PinIcon size={18} color={textTertiary} fill={item.pinned ? theme.colors.accent : 'none'} />
+            <PinIcon size={18} color={item.pinned ? theme.colors.accent : textTertiary} fill={item.pinned ? theme.colors.accent : 'none'} />
           </Pressable>
           <Pressable style={styles.actionBtn} onPress={() => handleDelete(item.id)}>
             <TrashIcon size={18} color={textTertiary} />

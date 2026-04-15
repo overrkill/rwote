@@ -6,9 +6,10 @@ interface IconProps {
   fill?: string;
 }
 
-export function PinIcon({ size = 20, color = 'currentColor', fill = 'none' }: IconProps) {
+export function PinIcon({ size = 20, color = 'currentColor', fill }: IconProps) {
+  const isPinned = fill && fill !== 'none';
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={isPinned ? color : 'none'} stroke={color} strokeWidth={isPinned ? 0 : 1.75} strokeLinecap="round" strokeLinejoin="round">
       <Path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
     </Svg>
   );
