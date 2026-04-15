@@ -8,13 +8,26 @@ const STORAGE_KEYS = {
   NOTES: 'rwote_v1',
   TAGS: 'rwote_tags_v1',
   AUTH: 'rwote_auth_v1',
+  AUTH_REFRESH: 'rwote_auth_refresh_v1',
   SETTINGS: 'rwote_settings_v1',
   ONBOARD: 'rwote_onboard_v1',
   MODE: 'rwote_mode_v1',
-  PENDING_SELECTION: 'pendingSelection'
+  PENDING_SELECTION: 'pendingSelection',
+  LAST_SYNCED: 'rwote_last_sync_v1',
+  OPERATION_QUEUE: 'rwote_op_queue_v1'
 };
 
+const SYNC_INTERVAL_MINUTES = 2;
+const MAX_RETRY_ATTEMPTS = 3;
+const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // Refresh if < 5 min left
+
 const DEFAULT_TAGS = ['note', 'general', 'research', 'uncategorized'];
+
+// ── Token Validity Cache ──────────────────────────────
+// Caches token expiry to avoid decoding JWT on every operation
+let cachedTokenExpiry = null;
+let lastRefreshAttempt = 0;
+const REFRESH_COOLDOWN_MS = 30 * 1000; // Don't retry refresh for 30s after failure
 
 const DEFAULT_SETTINGS = {
   theme: 'dark',
@@ -53,6 +66,113 @@ const storage = {
   }
 };
 
+// ── Operation Queue ──────────────────────────────────
+// Queue operations for background sync with retry logic
+async function getQueue() {
+  const res = await storage.get(STORAGE_KEYS.OPERATION_QUEUE);
+  return res[STORAGE_KEYS.OPERATION_QUEUE] || [];
+}
+
+async function saveQueue(queue) {
+  await storage.set({ [STORAGE_KEYS.OPERATION_QUEUE]: queue });
+}
+
+async function addToQueue(operation) {
+  const queue = await getQueue();
+  const op = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    ...operation,
+    attempts: 0,
+    createdAt: Date.now()
+  };
+  queue.push(op);
+  await saveQueue(queue);
+  return op;
+}
+
+async function removeFromQueue(opId) {
+  const queue = await getQueue();
+  const filtered = queue.filter(op => op.id !== opId);
+  await saveQueue(filtered);
+}
+
+async function updateQueueItem(opId, updates) {
+  const queue = await getQueue();
+  const idx = queue.findIndex(op => op.id === opId);
+  if (idx !== -1) {
+    queue[idx] = { ...queue[idx], ...updates };
+    await saveQueue(queue);
+  }
+}
+
+async function processQueue() {
+  const mode = await getMode();
+  if (mode !== 'cloud') return;
+
+  const auth = await ensureValidToken();
+  if (!auth?.token) {
+    console.log('Auth invalid or expired, queue will retry later');
+    return; // Don't process, don't logout - retry in next periodic sync
+  }
+
+  const queue = await getQueue();
+  if (queue.length === 0) return;
+
+  console.log(`Processing ${queue.length} queued operations`);
+
+  const failedOps = [];
+
+  for (const op of queue) {
+    try {
+      let success = false;
+
+      switch (op.type) {
+        case 'sync_note':
+          await syncNoteToCloud(op.note, auth.token);
+          success = true;
+          break;
+        case 'delete_note':
+          await cloudDeleteNote(op.noteId, auth.token);
+          success = true;
+          break;
+      }
+
+      if (success) {
+        await removeFromQueue(op.id);
+        console.log(`Queue op ${op.id} completed`);
+      }
+    } catch (e) {
+      const newAttempts = op.attempts + 1;
+      console.error(`Queue op ${op.id} failed (attempt ${newAttempts}):`, e.message);
+
+      if (newAttempts >= MAX_RETRY_ATTEMPTS) {
+        await removeFromQueue(op.id);
+        failedOps.push({ ...op, error: e.message });
+        console.log(`Queue op ${op.id} permanently failed after ${MAX_RETRY_ATTEMPTS} attempts`);
+      } else {
+        await updateQueueItem(op.id, { attempts: newAttempts });
+        failedOps.push(op);
+      }
+    }
+  }
+
+  // Notify sidepanel of permanently failed operations
+  if (failedOps.length > 0) {
+    broadcastQueueFailures(failedOps);
+  }
+}
+
+async function broadcastQueueFailures(failedOps) {
+  chrome.runtime.sendMessage({
+    type: 'SYNC_FAILED',
+    operations: failedOps.map(op => ({
+      type: op.type,
+      noteId: op.note?.id || op.noteId,
+      error: op.error
+    }))
+  }).catch(() => {});
+}
+
 // ── API Helpers ──────────────────────────────────────
 async function apiRequest(method, endpoint, body = null, token = null) {
   const headers = {
@@ -85,17 +205,65 @@ async function callEdgeFunction(functionName, body, token) {
 }
 
 // ── Auth Module ──────────────────────────────────────
+// Access token in session (ephemeral), refresh token in local (persistent)
 async function getAuth() {
-  const res = await storage.sessionGet(STORAGE_KEYS.AUTH);
-  return res[STORAGE_KEYS.AUTH] || null;
+  const sessionRes = await storage.sessionGet(STORAGE_KEYS.AUTH);
+  const localRes = await storage.get(STORAGE_KEYS.AUTH_REFRESH);
+  
+  const sessionAuth = sessionRes[STORAGE_KEYS.AUTH];
+  const refreshToken = localRes[STORAGE_KEYS.AUTH_REFRESH];
+  
+  if (!sessionAuth && !refreshToken) return null;
+  
+  return {
+    user: sessionAuth?.user || null,
+    token: sessionAuth?.token || null,
+    refreshToken: refreshToken || sessionAuth?.refreshToken || null
+  };
 }
 
 async function setAuth(auth) {
-  await storage.sessionSet({ [STORAGE_KEYS.AUTH]: auth });
+  // Store access token in session (ephemeral - cleared on browser close)
+  await storage.sessionSet({ [STORAGE_KEYS.AUTH]: {
+    user: auth.user,
+    token: auth.token
+  }});
+  
+  // Store refresh token in local (persistent - survives browser close)
+  if (auth.refreshToken) {
+    await storage.set({ [STORAGE_KEYS.AUTH_REFRESH]: auth.refreshToken });
+  }
 }
 
 async function clearAuth() {
   await storage.sessionRemove(STORAGE_KEYS.AUTH);
+  await storage.remove(STORAGE_KEYS.AUTH_REFRESH);
+}
+
+// Restore auth from refresh token on startup
+async function restoreAuthFromRefreshToken() {
+  const auth = await getAuth();
+  if (!auth?.refreshToken) return null;
+  
+  try {
+    const refreshRes = await apiRequest('POST', '/auth/v1/token?grant_type=refresh_token', {
+      refresh_token: auth.refreshToken
+    });
+    
+    const newAuth = {
+      user: refreshRes.user,
+      token: refreshRes.access_token,
+      refreshToken: refreshRes.refresh_token
+    };
+    
+    await setAuth(newAuth);
+    console.log('Auth restored from refresh token');
+    return newAuth;
+  } catch (e) {
+    console.error('Failed to restore auth:', e);
+    await clearAuth();
+    return null;
+  }
 }
 
 async function decodeToken(token) {
@@ -197,38 +365,79 @@ async function handleSignInWithGoogle() {
   });
 }
 
-async function ensureValidToken() {
+async function ensureValidToken(skipCache = false) {
   const auth = await getAuth();
-  if (!auth || !auth.token || !auth.refreshToken) return null;
+  if (!auth?.refreshToken) return null;
   
-  const payload = decodeToken(auth.token);
-  if (!payload) return null;
-  
-  const fiveMinutes = 5 * 60 * 1000;
-  const expTime = payload.exp * 1000;
-  const timeLeft = expTime - Date.now();
-  
-  if (timeLeft < fiveMinutes) {
-    try {
-      const refreshRes = await apiRequest('POST', '/auth/v1/token?grant_type=refresh_token', {
-        refresh_token: auth.refreshToken
-      });
-      
-      const newAuth = {
-        user: refreshRes.user,
-        token: refreshRes.access_token,
-        refreshToken: refreshRes.refresh_token
-      };
-      await setAuth(newAuth);
-      return newAuth;
-    } catch (e) {
-      console.error('Token refresh failed:', e);
-      await clearAuth();
-      return null;
-    }
+  // Fast path: use cached expiry if valid
+  if (!skipCache && cachedTokenExpiry && Date.now() < cachedTokenExpiry - TOKEN_REFRESH_BUFFER_MS) {
+    return auth;
   }
   
-  return auth;
+  // Cooldown after refresh failure - don't hammer the endpoint
+  if (!skipCache && lastRefreshAttempt && Date.now() - lastRefreshAttempt < REFRESH_COOLDOWN_MS) {
+    return null; // Don't retry refresh yet
+  }
+  
+  // Decode and check token
+  const payload = decodeToken(auth.token);
+  const expTime = payload?.exp ? payload.exp * 1000 : 0;
+  const timeLeft = expTime - Date.now();
+  
+  // Token is still valid with buffer
+  if (timeLeft > TOKEN_REFRESH_BUFFER_MS) {
+    cachedTokenExpiry = expTime;
+    lastRefreshAttempt = 0; // Clear cooldown on valid token
+    return auth;
+  }
+  
+  // Need to refresh - mark attempt
+  lastRefreshAttempt = Date.now();
+  
+  try {
+    const refreshRes = await apiRequest('POST', '/auth/v1/token?grant_type=refresh_token', {
+      refresh_token: auth.refreshToken
+    });
+    
+    const newAuth = {
+      user: refreshRes.user,
+      token: refreshRes.access_token,
+      refreshToken: refreshRes.refresh_token
+    };
+    await setAuth(newAuth);
+    
+    // Cache new expiry and clear cooldown
+    const newPayload = decodeToken(newAuth.token);
+    cachedTokenExpiry = newPayload?.exp ? newPayload.exp * 1000 : null;
+    lastRefreshAttempt = 0;
+    
+    console.log('Token refreshed successfully');
+    return newAuth;
+  } catch (e) {
+    console.error('Token refresh failed:', e.message);
+    
+    // Network error? Don't logout - keep refresh token for next attempt
+    if (isNetworkError(e)) {
+      console.log('Network error during refresh, will retry later');
+      return null;
+    }
+    
+    // Real auth failure (token revoked, expired, etc.) - logout
+    if (e.message.includes('refresh_token') || e.message.includes('invalid') || e.message.includes('expired')) {
+      console.log('Auth token revoked, clearing session');
+      await clearAuth();
+      broadcastAuthUpdate();
+    }
+    
+    return null;
+  }
+}
+
+function isNetworkError(e) {
+  return e.message.includes('Failed to fetch') ||
+         e.message.includes('NetworkError') ||
+         e.message.includes('net::') ||
+         e.message.includes('Network request failed');
 }
 
 async function handleSignUp(email, password, name = '') {
@@ -323,10 +532,6 @@ async function getMode() {
   return res[STORAGE_KEYS.MODE] || 'local';
 }
 
-async function setMode(mode) {
-  await storage.set({ [STORAGE_KEYS.MODE]: mode });
-}
-
 async function getOnboarded() {
   const res = await storage.get(STORAGE_KEYS.ONBOARD);
   return res[STORAGE_KEYS.ONBOARD] || false;
@@ -373,12 +578,9 @@ async function addNote(text, noteText = '') {
   notes.unshift(newNote);
   await setNotes(notes);
   
-  // Cloud sync if in cloud mode
+  // Queue cloud sync if in cloud mode (non-blocking)
   if (mode === 'cloud') {
-    const auth = await ensureValidToken();
-    if (auth?.token) {
-      await syncNoteToCloud(newNote, auth.token);
-    }
+    addToQueue({ type: 'sync_note', note: newNote }).catch(console.error);
   }
   
   broadcastStateUpdate();
@@ -415,11 +617,9 @@ async function updateNote(id, text, noteText = '') {
   note.updated_at = Date.now();
   await setNotes(notes);
   
+  // Queue cloud sync if in cloud mode (non-blocking)
   if (mode === 'cloud') {
-    const auth = await ensureValidToken();
-    if (auth?.token) {
-      await syncNoteToCloud(note, auth.token);
-    }
+    addToQueue({ type: 'sync_note', note }).catch(console.error);
   }
   
   broadcastStateUpdate();
@@ -433,11 +633,9 @@ async function deleteNote(id) {
   const filtered = notes.filter(n => n.id !== id);
   await setNotes(filtered);
   
+  // Queue cloud delete if in cloud mode (non-blocking)
   if (mode === 'cloud') {
-    const auth = await ensureValidToken();
-    if (auth?.token) {
-      await cloudDeleteNote(id, auth.token);
-    }
+    addToQueue({ type: 'delete_note', noteId: id }).catch(console.error);
   }
   
   broadcastStateUpdate();
@@ -455,11 +653,9 @@ async function togglePin(id) {
   note.updated_at = Date.now();
   await setNotes(notes);
   
+  // Queue cloud sync if in cloud mode (non-blocking)
   if (mode === 'cloud') {
-    const auth = await ensureValidToken();
-    if (auth?.token) {
-      await syncNoteToCloud(note, auth.token);
-    }
+    addToQueue({ type: 'sync_note', note }).catch(console.error);
   }
   
   broadcastStateUpdate();
@@ -668,27 +864,109 @@ async function updateAiSettings(provider, ollamaUrl, ollamaModel) {
   return { ok: true };
 }
 
+// ── Periodic Sync ─────────────────────────────────
+async function getLastSynced() {
+  const res = await storage.get(STORAGE_KEYS.LAST_SYNCED);
+  return res[STORAGE_KEYS.LAST_SYNCED] || null;
+}
+
+async function setLastSynced(timestamp) {
+  await storage.set({ [STORAGE_KEYS.LAST_SYNCED]: timestamp });
+}
+
+async function performPeriodicSync() {
+  const mode = await getMode();
+  if (mode !== 'cloud') return;
+  
+  const auth = await ensureValidToken();
+  if (!auth?.token) return;
+  
+  try {
+    // First, process any queued operations
+    await processQueue();
+    
+    // Then do a full sync from cloud
+    const result = await loadNotesFromCloud();
+    if (result.ok) {
+      await setLastSynced(Date.now());
+      broadcastStateUpdate();
+    }
+  } catch (e) {
+    console.error('Periodic sync failed:', e);
+  }
+}
+
+function setupPeriodicSync() {
+  // Create alarm for periodic sync
+  chrome.alarms.create('periodicSync', { 
+    periodInMinutes: SYNC_INTERVAL_MINUTES,
+    delayInMinutes: 1 // Start after 1 minute
+  });
+  
+  // Listen for alarm
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'periodicSync') {
+      performPeriodicSync();
+    }
+  });
+}
+
+function clearPeriodicSync() {
+  chrome.alarms.clear('periodicSync');
+}
+
+// Update mode to handle sync setup
+async function setMode(mode) {
+  await storage.set({ [STORAGE_KEYS.MODE]: mode });
+  if (mode === 'cloud') {
+    setupPeriodicSync();
+    await performPeriodicSync(); // Immediate sync on cloud mode enable
+  } else {
+    clearPeriodicSync();
+  }
+}
+
+// ── Startup ─────────────────────────────────────────
+async function initializeExtension() {
+  // Try to restore auth from refresh token
+  const mode = await getMode();
+  
+  if (mode === 'cloud') {
+    setupPeriodicSync();
+    
+    // Try to restore auth and do initial sync
+    const restoredAuth = await restoreAuthFromRefreshToken();
+    if (restoredAuth) {
+      await performPeriodicSync();
+    }
+  }
+}
+
 // ── Broadcast Updates ────────────────────────────────
 async function broadcastStateUpdate() {
   const notes = await getNotes();
   const tagsData = await getTags();
+  const lastSynced = await getLastSynced();
   
   chrome.runtime.sendMessage({
     type: 'STATE_UPDATED',
     notes,
     tags: tagsData.tags,
-    tagColors: tagsData.colors
+    tagColors: tagsData.colors,
+    lastSyncedAt: lastSynced
   }).catch(() => {});
 }
 
 async function broadcastAuthUpdate() {
   const auth = await getAuth();
   const subscription = auth ? await getSubscriptionStatus() : null;
+  const lastSynced = await getLastSynced();
   
   chrome.runtime.sendMessage({
     type: 'AUTH_UPDATED',
     user: auth?.user || null,
-    subscription: subscription?.ok ? subscription : null
+    subscription: subscription?.ok ? subscription : null,
+    lastSyncedAt: lastSynced
   }).catch(() => {});
 }
 
@@ -709,6 +987,7 @@ async function handleMessage(message) {
       const mode = await getMode();
       const onboarded = await getOnboarded();
       const subscription = auth ? await getSubscriptionStatus() : null;
+      const lastSynced = await getLastSynced();
       
       return {
         ok: true,
@@ -719,7 +998,8 @@ async function handleMessage(message) {
         user: auth?.user || null,
         mode,
         onboarded,
-        subscription
+        subscription,
+        lastSyncedAt: lastSynced
       };
     }
 
@@ -901,3 +1181,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.sidePanel.open({ tabId: tab.id });
   }
 });
+
+// ── Initialize on Startup ──────────────────────────────
+initializeExtension();

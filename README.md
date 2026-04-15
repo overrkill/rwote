@@ -85,6 +85,7 @@ rwote/
 - [ ] Extension store compliance review
 - [ ] Add more DSA tag suggestions
 - [ ] Improve onboarding flow
+- [ ] Sync conflict resolution (open issue: when same note is edited on multiple devices, "last write wins" - could detect conflicts and notify user)
 
 **Low Priority:**
 - [ ] Email/password reset flow

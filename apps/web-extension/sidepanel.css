@@ -160,6 +160,14 @@ body {
   color: var(--text-secondary);
 }
 
+.sync-status {
+  font-size: 0.75em;
+  color: var(--text-tertiary);
+  padding: 2px 6px;
+  background: var(--surface-alt);
+  border-radius: 4px;
+}
+
 .header-right {
   display: flex;
   align-items: center;

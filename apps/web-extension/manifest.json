@@ -10,7 +10,8 @@
     "activeTab",
     "scripting",
     "tabs",
-    "identity"
+    "identity",
+    "alarms"
   ],
   "host_permissions": [
     "https://claude.ai/*",

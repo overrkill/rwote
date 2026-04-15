@@ -53,6 +53,8 @@ let settings = {};
 let mode = 'local';
 let onboarded = false;
 let aiModeActive = false;
+let lastSyncedAt = null;
+let syncStatus = ''; // '', 'syncing', 'synced', 'error'
 
 // ── DOM References ───────────────────────────────────
 const appEl = document.getElementById('app');
@@ -116,6 +118,7 @@ const filterDropdownEl = document.getElementById('filter-dropdown');
 const filterChipsEl = document.getElementById('filter-chips');
 const tagAutocompleteEl = document.getElementById('tag-autocomplete');
 const aiToggleEl = document.getElementById('ai-toggle');
+const syncStatusEl = document.getElementById('sync-status');
 const settingsModalEl = document.getElementById('settings-modal');
 const settingsCloseEl = document.getElementById('settings-close');
 const menuSettingsEl = document.getElementById('menu-settings');
@@ -171,12 +174,61 @@ async function refreshState() {
   settings = state.settings || {};
   mode = state.mode || 'local';
   onboarded = state.onboarded || false;
+  lastSyncedAt = state.lastSyncedAt;
   
   // Apply theme
   const themeId = settings.theme || 'paper_dark';
   applyTheme(getTheme(themeId));
   
+  updateSyncStatus();
+  
   return state;
+}
+
+function updateSyncStatus() {
+  if (mode !== 'cloud' || !user) {
+    syncStatus = '';
+    if (syncStatusEl) syncStatusEl.textContent = '';
+    return;
+  }
+  
+  let text = '';
+  if (lastSyncedAt) {
+    const diff = Date.now() - lastSyncedAt;
+    const mins = Math.floor(diff / 60000);
+    
+    if (mins < 1) {
+      text = 'synced';
+    } else if (mins < 60) {
+      text = `${mins}m ago`;
+    } else {
+      const hours = Math.floor(mins / 60);
+      text = hours === 1 ? '1h ago' : `${hours}h ago`;
+    }
+  } else {
+    text = 'syncing…';
+  }
+  
+  syncStatus = text;
+  if (syncStatusEl) syncStatusEl.textContent = text;
+}
+
+function formatSyncTime(timestamp) {
+  if (!timestamp) return '';
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  
+  if (mins < 1) return 'just now';
+  if (mins === 1) return '1m ago';
+  if (mins < 60) return `${mins}m ago`;
+  
+  const hours = Math.floor(mins / 60);
+  if (hours === 1) return '1h ago';
+  if (hours < 24) return `${hours}h ago`;
+  
+  const days = Math.floor(hours / 24);
+  if (days === 1) return '1d ago';
+  return `${days}d ago`;
 }
 
 // ── Toast ───────────────────────────────────────────
@@ -369,9 +421,69 @@ function getFiltered() {
 }
 
 // ── Render Notes ─────────────────────────────────────
+let cardEventListenersAttached = false;
+
 function tagBadgeStyle(slug) {
   const c = colorOf(slug);
   return `style="background:${c.bg};color:${c.text}"`;
+}
+
+function noteCardHTML(n, realIndex) {
+  const isMatch = chatMatchIds.has(n.id);
+  return `
+  <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
+    <div class="card-body">
+      <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
+      <div class="card-text">${processNoteText(n.text, searchQuery)}</div>
+      ${n.note ? `<div class="card-note">${processNoteText(n.note, searchQuery)}</div>` : ''}
+      <div class="card-meta"><span class="card-date">${n.date}</span></div>
+    </div>
+    <div class="card-actions">
+      <button class="card-btn pin${n.pinned ? ' active' : ''}" data-id="${n.id}" title="${n.pinned ? 'Unpin' : 'Pin'}">
+        ${n.pinned ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C9.24 2 7 4.24 7 7c0 1.71.87 3.2 2.18 4.06L12 17l2.82-5.94C16.13 10.2 17 8.71 17 7c0-2.76-2.24-5-5-5zm0 7.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>'}
+      </button>
+      <button class="card-btn edit" data-id="${n.id}" title="Edit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="card-btn copy" data-id="${n.id}" title="Copy">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <button class="card-btn del" data-id="${n.id}" title="Delete">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+function attachCardEventListeners() {
+  if (cardEventListenersAttached) return;
+  
+  notesEl.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.card-btn');
+    if (!btn) return;
+    
+    const id = String(btn.dataset.id);
+    
+    if (btn.classList.contains('del')) {
+      const res = await sendMessage({ type: 'DELETE_NOTE', id });
+      if (res.ok) await refreshState();
+      renderNotes();
+    } else if (btn.classList.contains('copy')) {
+      const n = notes.find(x => x.id === id);
+      if (!n) return;
+      const cleanText = stripTags(n.text);
+      navigator.clipboard.writeText(n.note ? `${cleanText}\n\n${n.note}` : cleanText)
+        .then(() => showToast('Copied'));
+    } else if (btn.classList.contains('pin')) {
+      const res = await sendMessage({ type: 'TOGGLE_PIN', id });
+      if (res.ok) await refreshState();
+      renderNotes();
+    } else if (btn.classList.contains('edit')) {
+      showEditModal(id);
+    }
+  });
+  
+  cardEventListenersAttached = true;
 }
 
 function renderNotes() {
@@ -398,63 +510,72 @@ function renderNotes() {
     return Number(b.id) - Number(a.id);
   });
 
-  notesEl.innerHTML = sorted.map((n, idx) => {
-    const isMatch = chatMatchIds.has(n.id);
-    const realIndex = filtered.indexOf(n);
-    return `
-    <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
-      <div class="card-body">
-        <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
-        <div class="card-text">${processNoteText(n.text, searchQuery)}</div>
-        ${n.note ? `<div class="card-note">${processNoteText(n.note, searchQuery)}</div>` : ''}
-        <div class="card-meta"><span class="card-date">${n.date}</span></div>
-      </div>
-      <div class="card-actions">
-        <button class="card-btn pin${n.pinned ? ' active' : ''}" data-id="${n.id}" title="${n.pinned ? 'Unpin' : 'Pin'}">
-          ${n.pinned ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C9.24 2 7 4.24 7 7c0 1.71.87 3.2 2.18 4.06L12 17l2.82-5.94C16.13 10.2 17 8.71 17 7c0-2.76-2.24-5-5-5zm0 7.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>'}
-        </button>
-        <button class="card-btn edit" data-id="${n.id}" title="Edit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-        <button class="card-btn copy" data-id="${n.id}" title="Copy">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        <button class="card-btn del" data-id="${n.id}" title="Delete">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
-      </div>
-    </div>`;
-  }).join('');
+  attachCardEventListeners();
 
-  notesEl.querySelectorAll('.card-btn.del').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const res = await sendMessage({ type: 'DELETE_NOTE', id: String(btn.dataset.id) });
-      if (res.ok) await refreshState();
-      renderAll();
-    });
+  const existingCards = new Map();
+  notesEl.querySelectorAll('.card').forEach(card => {
+    existingCards.set(card.dataset.id, card);
   });
+
+  const sortedIds = new Set(sorted.map(n => n.id));
   
-  notesEl.querySelectorAll('.card-btn.copy').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const n = notes.find(x => x.id === btn.dataset.id);
-      if (!n) return;
-      const cleanText = stripTags(n.text);
-      navigator.clipboard.writeText(n.note ? `${cleanText}\n\n${n.note}` : cleanText)
-        .then(() => showToast('Copied'));
-    });
+  for (const [id, card] of existingCards) {
+    if (!sortedIds.has(id)) {
+      card.remove();
+    }
+  }
+
+  const fragment = document.createDocumentFragment();
+  sorted.forEach((n, idx) => {
+    const realIndex = filtered.indexOf(n);
+    const existingCard = existingCards.get(n.id);
+    
+    if (existingCard) {
+      const isMatch = chatMatchIds.has(n.id);
+      existingCard.className = `card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}`;
+      existingCard.dataset.index = realIndex;
+      
+      const tagEl = existingCard.querySelector('.card-tag');
+      if (tagEl) {
+        const c = colorOf(n.tag);
+        tagEl.style.background = c.bg;
+        tagEl.style.color = c.text;
+        tagEl.textContent = labelOf(n.tag);
+      }
+      
+      const textEl = existingCard.querySelector('.card-text');
+      if (textEl) textEl.innerHTML = processNoteText(n.text, searchQuery);
+      
+      const noteEl = existingCard.querySelector('.card-note');
+      const expectedNoteHTML = n.note ? processNoteText(n.note, searchQuery) : '';
+      if (noteEl) {
+        noteEl.innerHTML = expectedNoteHTML;
+      } else if (n.note) {
+        const newNoteEl = document.createElement('div');
+        newNoteEl.className = 'card-note';
+        newNoteEl.innerHTML = expectedNoteHTML;
+        textEl?.after(newNoteEl);
+      }
+      
+      const dateEl = existingCard.querySelector('.card-date');
+      if (dateEl) dateEl.textContent = n.date;
+      
+      const pinBtn = existingCard.querySelector('.card-btn.pin');
+      if (pinBtn) {
+        pinBtn.className = `card-btn pin${n.pinned ? ' active' : ''}`;
+        pinBtn.title = n.pinned ? 'Unpin' : 'Pin';
+        pinBtn.innerHTML = n.pinned 
+          ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>'
+          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C9.24 2 7 4.24 7 7c0 1.71.87 3.2 2.18 4.06L12 17l2.82-5.94C16.13 10.2 17 8.71 17 7c0-2.76-2.24-5-5-5zm0 7.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>';
+      }
+    } else {
+      const temp = document.createElement('div');
+      temp.innerHTML = noteCardHTML(n, realIndex);
+      fragment.appendChild(temp.firstElementChild);
+    }
   });
-  
-  notesEl.querySelectorAll('.card-btn.pin').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const res = await sendMessage({ type: 'TOGGLE_PIN', id: String(btn.dataset.id) });
-      if (res.ok) await refreshState();
-      renderAll();
-    });
-  });
-  
-  notesEl.querySelectorAll('.card-btn.edit').forEach(btn => {
-    btn.addEventListener('click', () => showEditModal(String(btn.dataset.id)));
-  });
+
+  notesEl.appendChild(fragment);
 }
 
 function renderAll() {
@@ -1504,11 +1625,15 @@ chrome.runtime.onMessage.addListener((message) => {
     notes = message.notes || notes;
     allTags = message.tags || allTags;
     tagColors = message.tagColors || tagColors;
-    renderAll();
+    lastSyncedAt = message.lastSyncedAt;
+    updateSyncStatus();
+    renderNotes();
   }
   if (message.type === 'AUTH_UPDATED') {
     user = message.user;
     subscription = message.subscription;
+    lastSyncedAt = message.lastSyncedAt;
+    updateSyncStatus();
     updateUserProfileUI();
   }
   if (message.type === 'CHAT_TEXT') {
@@ -1516,6 +1641,15 @@ chrome.runtime.onMessage.addListener((message) => {
     updateChatMatches();
     updateChatBanner();
     renderNotes();
+  }
+  if (message.type === 'SYNC_FAILED') {
+    message.operations?.forEach(op => {
+      if (op.type === 'delete_note') {
+        showToast('Sync failed: note may not be deleted on server');
+      } else {
+        showToast('Sync failed: changes may not be saved');
+      }
+    });
   }
 });
 
@@ -1540,6 +1674,13 @@ async function init() {
   }
   
   loaderEl.classList.add('hidden');
+  
+  // Periodic sync status update (every minute)
+  setInterval(() => {
+    if (mode === 'cloud' && user) {
+      updateSyncStatus();
+    }
+  }, 60000);
 }
 
 // Start
