@@ -14,7 +14,8 @@ A Chrome extension and web app for capturing and organizing insights from learni
 rwote/
 ├── apps/
 │   ├── web-extension/     # Chrome extension (Manifest V3)
-│   └── web-app/          # Next.js web app with Tailwind CSS
+│   ├── web-app/          # Next.js web app with Tailwind CSS
+│   └── mobile/           # React Native mobile app (Expo SDK 55)
 ├── supabase/
 │   └── functions/        # Edge Functions API
 ├── .gitignore
@@ -56,6 +57,17 @@ rwote/
 - Hamburger menu with export
 - Favicon and PWA icons
 - Theme picker with 6 editor themes (Paper Dark, Tokyo Night, Catppuccin, Nord, Monokai, Light)
+
+**Mobile App (React Native/Expo):**
+- Expo SDK 55 with React Native 0.83, React 19.2
+- Expo Router with file-based routing
+- NativeTabs navigation (Notes, Settings)
+- Auth screens (login, register)
+- Notes list with FlatList, search, tag filtering
+- Note editor with tag selection
+- Theme picker with all 12 themes
+- Sign out functionality
+- Supabase REST API integration
 
 **Backend:**
 - Supabase Auth (email/password)

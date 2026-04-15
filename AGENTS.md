@@ -22,6 +22,7 @@ At the start of every conversation, load the following skills using the `skill` 
 - If GPG signing fails, **stop retrying immediately**
 - Wait for the user to restart the GPG agent before attempting again
 - Do not disable GPG signing without explicit user permission
+- **Commit messages MUST use ultra caveman mode** - short, rock talk (e.g., "fix bug", "add feature"). No exceptions.
 
 ### TODO Verification
 - **Before starting new development**, present TODO items for user verification
