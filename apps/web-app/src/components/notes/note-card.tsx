@@ -39,9 +39,9 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
       className="rounded-lg p-3.5 flex gap-3 items-start transition-all"
       style={{ 
         backgroundColor: 'var(--surface)',
-        border: note.pinned ? '1px solid var(--accent)' : '1px solid var(--border)',
-        borderLeft: note.pinned ? '4px solid var(--accent-btn)' : '1px solid var(--border)',
-        boxShadow: 'var(--shadow-sm)'
+        border: '1px solid var(--border)',
+        boxShadow: note.pinned ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+        borderColor: note.pinned ? 'var(--accent)' : 'var(--border)',
       }}
     >
       <div className="flex-1 min-w-0">
@@ -66,21 +66,13 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
           style={{
             ...btnBase,
             background: hoveredBtn === 'pin' ? 'var(--surface-alt)' : 'none',
-            color: hoveredBtn === 'pin' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+            color: note.pinned ? 'var(--accent)' : (hoveredBtn === 'pin' ? 'var(--text-primary)' : 'var(--text-tertiary)'),
           }}
           title={note.pinned ? 'Unpin' : 'Pin'}
         >
-          {note.pinned ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-          )}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={note.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
         </button>
         <button
           onClick={() => {

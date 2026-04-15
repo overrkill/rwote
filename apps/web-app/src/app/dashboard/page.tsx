@@ -74,10 +74,15 @@ export default function DashboardPage() {
   const themeList = [
     { id: 'paper_dark', name: 'Paper Dark' },
     { id: 'tokyonight', name: 'Tokyo Night' },
+    { id: 'tokyonight_light', name: 'Tokyo Night Light' },
     { id: 'catppuccin', name: 'Catppuccin' },
+    { id: 'catppuccin_light', name: 'Catppuccin Latte' },
     { id: 'nord', name: 'Nord' },
+    { id: 'nord_light', name: 'Nord Frost' },
+    { id: 'ayu', name: 'Ayu Dark' },
+    { id: 'ayu_light', name: 'Ayu Mirage' },
     { id: 'monokai', name: 'Monokai' },
-    { id: 'light', name: 'Light' },
+    { id: 'monokai_light', name: 'Monokai Pro' },
   ]
 
   useEffect(() => {
@@ -589,7 +594,7 @@ export default function DashboardPage() {
                 </svg>
               </button>
             </div>
-            <div className="p-4">
+            <div className="p-4 max-h-80 overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 {themeList.map((t) => (
                   <button
