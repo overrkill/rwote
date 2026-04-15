@@ -7,22 +7,11 @@ export default function SettingsLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: theme.colors.surface,
-        },
-        headerTintColor: theme.colors.textPrimary,
-        headerShadowVisible: false,
-        contentStyle: {
-          backgroundColor: theme.colors.bg,
-        },
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.bg },
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: 'Settings',
-        }}
-      />
+      <Stack.Screen name="index" />
     </Stack>
   );
 }

@@ -1,21 +1,39 @@
-import { Stack } from 'expo-router/stack';
+import { Tabs } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
+import { Text } from 'react-native';
 
 export default function TabsLayout() {
   const { theme } = useTheme();
 
   return (
-    <Stack
+    <Tabs
       screenOptions={{
         headerShown: true,
         headerStyle: { backgroundColor: theme.colors.surface },
         headerTintColor: theme.colors.textPrimary,
         headerShadowVisible: false,
-        contentStyle: { backgroundColor: theme.colors.bg },
+        tabBarStyle: {
+          backgroundColor: theme.colors.surface,
+          borderTopColor: theme.colors.border,
+        },
+        tabBarActiveTintColor: theme.colors.accent,
+        tabBarInactiveTintColor: theme.colors.textTertiary,
       }}
     >
-      <Stack.Screen name="(notes)" options={{ title: 'Notes' }} />
-      <Stack.Screen name="(settings)" options={{ title: 'Settings' }} />
-    </Stack>
+      <Tabs.Screen
+        name="(notes)"
+        options={{
+          title: 'Notes',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>📝</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="(settings)"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>⚙️</Text>,
+        }}
+      />
+    </Tabs>
   );
 }

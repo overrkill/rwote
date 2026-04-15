@@ -10,7 +10,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
 import { useNotesStore, Note, getFilteredNotes } from '@/stores/notes-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -201,11 +201,9 @@ export default function NotesScreen() {
         />
       )}
 
-      <Link href="/(tabs)/(notes)/new" asChild>
-        <Pressable style={{ ...styles.fab, backgroundColor: fabBg }}>
-          <Text style={{ ...styles.fabText, color: fabText }}>+</Text>
-        </Pressable>
-      </Link>
+      <Pressable style={{ ...styles.fab, backgroundColor: fabBg }} onPress={() => router.push('/(tabs)/(notes)/new')}>
+        <Text style={{ ...styles.fabText, color: fabText }}>+</Text>
+      </Pressable>
     </View>
   );
 }
