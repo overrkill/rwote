@@ -37,23 +37,41 @@ export default function NotesScreen() {
 
   const filteredByTag = getFilteredNotes(notes || [], searchQuery || '', activeTag || 'all');
 
-  const { user, accessToken } = useAuthStore();
+  const { user, accessToken, initialize } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, []);
 
   const loadNotes = useCallback(async () => {
-    if (!accessToken) return;
+    const currentToken = useAuthStore.getState().accessToken;
+    console.log('loadNotes called, token:', currentToken ? 'exists' : 'null');
+    if (!currentToken) return;
     try {
-      const data = await supabase.fetchNotes(accessToken);
-      setNotes(data || []);
+      const data = await supabase.fetchNotes(currentToken);
+      console.log('fetchNotes result:', JSON.stringify(data));
+      // Map API response to our Note interface
+      const mappedNotes = (data || []).map((item: any) => ({
+        id: item.local_id || item.id,
+        title: item.text || 'Untitled',
+        content: item.note || '',
+        tags: item.tag ? [item.tag] : [],
+        pinned: item.pinned || false,
+        created_at: item.date || item.created_at || new Date().toISOString(),
+        updated_at: item.updated_at || new Date().toISOString(),
+      }));
+      setNotes(mappedNotes);
     } catch (error) {
       console.error('Failed to load notes:', error);
     }
-  }, [accessToken, setNotes]);
+  }, [setNotes]);
 
   useEffect(() => {
+    console.log('useEffect triggered, user:', !!user, 'accessToken:', !!accessToken);
     if (user && accessToken) {
       loadNotes();
     }
-  }, [user, accessToken, loadNotes]);
+  }, [user, accessToken]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
