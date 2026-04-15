@@ -101,18 +101,18 @@ export default function NotesScreen() {
     >
       <View style={styles.cardHeader}>
         <Text style={{ ...styles.cardTitle, color: textPrimary }} numberOfLines={1}>
-          {item.title}
+          {item.title || 'Untitled'}
         </Text>
         {item.pinned && (
           <Text style={{ ...styles.pinIcon, color: theme.colors.accent }}>📌</Text>
         )}
       </View>
       <Text style={{ ...styles.cardContent, color: textSecondary }} numberOfLines={2}>
-        {item.content}
+        {item.content || ''}
       </Text>
       <View style={styles.cardFooter}>
         <View style={styles.tags}>
-          {item.tags.slice(0, 2).map((tag) => (
+          {(item.tags || []).slice(0, 2).map((tag: string) => (
             <View key={tag} style={{ ...styles.tag, backgroundColor: theme.colors.bg }}>
               <Text style={{ ...styles.tagText, color: textTertiary }}>{tag}</Text>
             </View>
