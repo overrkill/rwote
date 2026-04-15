@@ -1,8 +1,9 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import 'expo-sqlite/localStorage/install';
-import { storage } from '@/lib/storage';
+import * as SecureStore from 'expo-secure-store';
+
+const CACHE: Record<string, string> = {};
 
 export interface ThemeColors {
   bg: string;
@@ -45,13 +46,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeId, setThemeIdState] = useState('paper_dark');
 
   useEffect(() => {
-    const stored = storage.get<string>('theme_id', 'paper_dark');
-    setThemeIdState(stored);
+    SecureStore.getItemAsync('theme_id').then((value) => {
+      if (value) {
+        setThemeIdState(value);
+      }
+    }).catch(() => {});
   }, []);
 
-  const setThemeId = (newId: string) => {
+  const setThemeId = async (newId: string) => {
     setThemeIdState(newId);
-    storage.set('theme_id', newId);
+    CACHE['theme_id'] = newId;
+    await SecureStore.setItemAsync('theme_id', newId);
   };
 
   const theme = THEMES[themeId] || THEMES.paper_dark;

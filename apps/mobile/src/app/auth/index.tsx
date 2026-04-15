@@ -2,22 +2,16 @@
 
 import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
   const router = useRouter();
-  const { signIn, isLoading, user } = useAuthStore();
+  const { signIn, isLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  useEffect(() => {
-    if (user) {
-      router.replace('/(tabs)/(notes)');
-    }
-  }, [user, router]);
 
   const handleSignIn = async () => {
     if (!email.trim() || !password.trim()) {
@@ -26,6 +20,7 @@ export default function LoginScreen() {
     }
     try {
       await signIn(email, password);
+      router.replace('/tabs/(notes)');
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to sign in');
     }
@@ -87,7 +82,7 @@ export default function LoginScreen() {
           <Text style={{ ...styles.footerText, color: theme.colors.textSecondary }}>
             Don&apos;t have an account?{' '}
           </Text>
-          <Link href="/(auth)/register">
+          <Link href="/auth/register">
             <Text style={{ ...styles.link, color: theme.colors.accent }}>Sign Up</Text>
           </Link>
         </View>

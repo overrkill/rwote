@@ -99,7 +99,7 @@ export default function RegisterScreen() {
           <Text style={{ ...styles.footerText, color: theme.colors.textSecondary }}>
             Already have an account?{' '}
           </Text>
-          <Link href="/(auth)">
+          <Link href="/auth">
             <Text style={{ ...styles.link, color: theme.colors.accent }}>Sign In</Text>
           </Link>
         </View>

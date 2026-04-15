@@ -1,27 +1,22 @@
-import 'expo-sqlite/localStorage/install';
-
-type Listener = () => void;
-const listeners = new Map<string, Set<Listener>>();
+const storageCache: Record<string, string> = {};
 
 export const storage = {
   get<T>(key: string, defaultValue: T): T {
-    const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : defaultValue;
+    if (storageCache[key] !== undefined) {
+      try {
+        return JSON.parse(storageCache[key]);
+      } catch {
+        return defaultValue;
+      }
+    }
+    return defaultValue;
   },
 
   set<T>(key: string, value: T): void {
-    localStorage.setItem(key, JSON.stringify(value));
-    listeners.get(key)?.forEach((fn) => fn());
-  },
-
-  subscribe(key: string, listener: Listener): () => void {
-    if (!listeners.has(key)) listeners.set(key, new Set());
-    listeners.get(key)!.add(listener);
-    return () => listeners.get(key)?.delete(listener);
+    storageCache[key] = JSON.stringify(value);
   },
 
   remove(key: string): void {
-    localStorage.removeItem(key);
-    listeners.get(key)?.forEach((fn) => fn());
+    delete storageCache[key];
   },
 };

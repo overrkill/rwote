@@ -97,13 +97,11 @@ export default function NotesScreen() {
   const textSecondary = theme.colors.textSecondary;
   const textTertiary = theme.colors.textTertiary;
   const accentBtn = theme.colors.accentBtn;
-  const fabBg = theme.colors.accentBtn;
-  const fabText = theme.colors.bg;
 
   const renderNote = ({ item }: { item: Note }) => (
     <Pressable
       style={{ ...styles.card, backgroundColor: cardBg }}
-      onPress={() => router.push(`/(tabs)/(notes)/note/${item.id}`)}
+      onPress={() => router.push(`/tabs/(notes)/note/${item.id}`)}
     >
       <View style={styles.cardHeader}>
         <Text style={{ ...styles.cardTitle, color: textPrimary }} numberOfLines={1}>
@@ -137,7 +135,7 @@ export default function NotesScreen() {
   );
 
   return (
-    <View style={{ ...styles.container, backgroundColor: theme.colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <View style={styles.header}>
         <TextInput
           style={{
@@ -201,22 +199,24 @@ export default function NotesScreen() {
         />
       )}
 
-      <Pressable style={{ ...styles.fab, backgroundColor: fabBg }} onPress={() => router.push('/(tabs)/(notes)/new')}>
-        <Text style={{ ...styles.fabText, color: fabText }}>+</Text>
+      <Pressable
+        style={{ ...styles.fab, backgroundColor: accentBtn }}
+        onPress={() => router.push('/tabs/(notes)/new')}
+      >
+        <Text style={{ ...styles.fabText, color: theme.colors.bg }}>+</Text>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { padding: 16, paddingBottom: 8 },
+  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   searchInput: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 16 },
-  filters: { paddingBottom: 8 },
+  filters: { height: 44, paddingBottom: 8 },
   filtersList: { paddingHorizontal: 16, gap: 8 },
   filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   filterText: { fontSize: 14, fontWeight: '500' },
-  list: { padding: 16, paddingTop: 8 },
+  list: { padding: 16, paddingBottom: 100 },
   card: { borderRadius: 12, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   cardTitle: { fontSize: 16, fontWeight: '600', flex: 1 },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 12 },
   actions: { flexDirection: 'row', gap: 12 },
   actionBtn: { padding: 4 },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 80 },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   emptySubtext: { fontSize: 14 },
   fab: { position: 'absolute', right: 20, bottom: 20, width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },

@@ -1,19 +1,36 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { View, ActivityIndicator, useColorScheme } from 'react-native';
+import { Stack } from 'expo-router';
 import { useAuthStore } from '@/stores/auth-store';
 import { ThemeProvider } from '@/components/theme-provider';
-import AuthNavigator from './(auth)/_layout';
-import TabsNavigator from './(tabs)/_layout';
+
+function AuthStack() {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="auth" />
+    </Stack>
+  );
+}
+
+function MainStack() {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="tabs" />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [ready, setReady] = useState(false);
-  const { initialize, user } = useAuthStore();
+  const initRef = useRef(false);
+  const { user } = useAuthStore();
 
   useEffect(() => {
-    initialize();
+    if (initRef.current) return;
+    initRef.current = true;
     setReady(true);
-  }, [initialize]);
+  }, []);
 
   if (!ready) {
     const bg = colorScheme === 'dark' ? '#1a1a1e' : '#ffffff';
@@ -27,7 +44,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      {user ? <TabsNavigator /> : <AuthNavigator />}
+      {user ? <MainStack /> : <AuthStack />}
     </ThemeProvider>
   );
 }
