@@ -45,11 +45,12 @@ export default function TagFilter({ tags, activeTags, onChange }: TagFilterProps
     <div className="relative">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
-          activeTags.length > 0
-            ? 'bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-[#1a1a1a] dark:border-[#f5f2ec]'
-            : 'bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#555555] dark:text-[#a0a0a0] border-[#d8d8d8] dark:border-[#3a3a38] hover:border-[#a0a0a0] dark:hover:border-[#5a5a58]'
-        }`}
+        className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors"
+        style={{ 
+          backgroundColor: activeTags.length > 0 ? 'var(--accent-btn)' : 'var(--surface-alt)',
+          color: activeTags.length > 0 ? 'var(--bg)' : 'var(--text-secondary)',
+          borderColor: activeTags.length > 0 ? 'var(--accent-btn)' : 'var(--border)'
+        }}
       >
         <span>🏷️</span>
         <span>{activeTags.length > 0 ? `${activeTags.length} selected` : 'Filter'}</span>
@@ -61,13 +62,14 @@ export default function TagFilter({ tags, activeTags, onChange }: TagFilterProps
             className="fixed inset-0 z-10"
             onClick={() => setShowDropdown(false)}
           />
-          <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#1a1a19] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-lg shadow-lg z-20 min-w-[200px]">
-            <div className="p-2 border-b border-[#d8d8d8] dark:border-[#3a3a38] flex justify-between items-center">
-              <span className="text-sm font-medium text-[#1a1a1a] dark:text-[#f5f2ec]">Select tags</span>
+          <div className="absolute top-full left-0 mt-1 rounded-lg shadow-lg z-20 min-w-[200px]" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="p-2 flex justify-between items-center" style={{ borderBottom: '1px solid var(--border)' }}>
+              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Select tags</span>
               {activeTags.length > 0 && (
                 <button
                   onClick={clearAll}
-                  className="text-xs text-[#555555] dark:text-[#a0a0a0] hover:text-[#1a1a1a] dark:hover:text-[#f5f2ec]"
+                  className="text-xs"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Clear all
                 </button>
@@ -79,11 +81,12 @@ export default function TagFilter({ tags, activeTags, onChange }: TagFilterProps
                   <button
                     key={tag}
                     onClick={() => toggleTag(tag)}
-                    className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-                      activeTags.includes(tag)
-                        ? 'bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-[#1a1a1a] dark:border-[#f5f2ec]'
-                        : 'bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#555555] dark:text-[#a0a0a0] border-[#d8d8d8] dark:border-[#3a3a38] hover:border-[#a0a0a0] dark:hover:border-[#5a5a58]'
-                    }`}
+                    className="text-xs px-2 py-1 rounded-full border transition-colors"
+                    style={{ 
+                      backgroundColor: activeTags.includes(tag) ? 'var(--accent-btn)' : 'var(--surface-alt)',
+                      color: activeTags.includes(tag) ? 'var(--bg)' : 'var(--text-secondary)',
+                      borderColor: activeTags.includes(tag) ? 'var(--accent-btn)' : 'var(--border)'
+                    }}
                   >
                     {TAG_LABELS[tag] || tag}
                   </button>

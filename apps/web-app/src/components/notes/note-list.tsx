@@ -52,13 +52,13 @@ export default function NoteList({
   if (filteredNotes.length === 0) {
     if (notes.length === 0) {
       return (
-        <div className="text-center py-10 text-[#555555] dark:text-[#a0a0a0]">
+        <div className="text-center py-10" style={{ color: 'var(--text-secondary)' }}>
           No notes yet. Start by adding one above.
         </div>
       )
     }
     return (
-      <div className="text-center py-10 text-[#555555] dark:text-[#a0a0a0]">
+      <div className="text-center py-10" style={{ color: 'var(--text-secondary)' }}>
         No notes match your search.
       </div>
     )

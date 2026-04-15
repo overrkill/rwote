@@ -71,11 +71,11 @@ export default function RegisterPage() {
   ]
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fafafa] dark:bg-[#0f0e0d]">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--surface)' }}>
       {/* Header */}
-      <header className="border-b border-[#d8d8d8] dark:border-[#3a3a38] px-4 py-4">
+      <header className="px-4 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link href="/" className="text-2xl text-[#1a1a1a] dark:text-[#f5f2ec]" style={{ fontFamily: "'Grand Hotel', cursive" }}>
+          <Link href="/" className="text-2xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>
             Rwote
           </Link>
           <div className="relative" ref={menuRef}>
@@ -84,7 +84,8 @@ export default function RegisterPage() {
                 e.stopPropagation()
                 setShowThemeMenu(!showThemeMenu)
               }}
-              className="p-2 rounded-lg hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] transition-colors text-[#1a1a1a] dark:text-[#f5f2ec]"
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-primary)' }}
               title="Theme"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -93,7 +94,7 @@ export default function RegisterPage() {
               </svg>
             </button>
             {showThemeMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#242428] border border-[#d8d8d8] dark:border-[#3a3a40] rounded-lg shadow-lg overflow-hidden z-50">
+              <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg overflow-hidden z-50" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
                 {themeList.map((t) => (
                   <button
                     key={t.id}
@@ -101,12 +102,15 @@ export default function RegisterPage() {
                       setTheme(t.id)
                       setShowThemeMenu(false)
                     }}
-                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-[#f0f0f0] dark:hover:bg-[#2e2e34] transition-colors ${
-                      themeId === t.id ? 'bg-[#f0f0f0] dark:bg-[#2e2e34] font-medium' : ''
-                    } text-[#1a1a1a] dark:text-[#f5f2ec]`}
+                    className="w-full px-4 py-2.5 text-left text-sm flex items-center justify-between transition-colors"
+                    style={{
+                      backgroundColor: themeId === t.id ? 'var(--surface-alt)' : 'transparent',
+                      fontWeight: themeId === t.id ? 500 : 400,
+                      color: 'var(--text-primary)'
+                    }}
                   >
                     <span>{t.name}</span>
-                    {themeId === t.id && <span className="text-[#a0a0a0]">✓</span>}
+                    {themeId === t.id && <span style={{ color: 'var(--text-secondary)' }}>✓</span>}
                   </button>
                 ))}
               </div>
@@ -117,15 +121,16 @@ export default function RegisterPage() {
 
       {/* Content */}
       <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md p-8 bg-white dark:bg-[#1a1a19] rounded-lg shadow-md border border-[#d8d8d8] dark:border-[#3a3a38]">
-          <h1 className="text-2xl font-bold mb-6 text-center text-[#1a1a1a] dark:text-[#f5f2ec]">Create Account</h1>
+        <div className="w-full max-w-md p-8 rounded-lg shadow-md" style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }}>
+          <h1 className="text-2xl font-bold mb-6 text-center" style={{ color: 'var(--text-primary)' }}>Create Account</h1>
           
           {/* Google Button */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md font-semibold cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-[#3a3a38] disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-md font-semibold cursor-pointer transition-all disabled:opacity-50"
+            style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -137,14 +142,14 @@ export default function RegisterPage() {
           </button>
           
           <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-[#d8d8d8] dark:bg-[#3a3a38]"></div>
-            <span className="text-sm text-[#555555] dark:text-[#a0a0a0]">or</span>
-            <div className="flex-1 h-px bg-[#d8d8d8] dark:bg-[#3a3a38]"></div>
+            <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }}></div>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>or</span>
+            <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }}></div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-[#555555] dark:text-[#a0a0a0] mb-1">
+              <label htmlFor="name" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Name
               </label>
               <input
@@ -152,13 +157,14 @@ export default function RegisterPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full px-3.5 py-3 text-base rounded-md outline-none transition-all"
+                style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                 placeholder="Your name"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[#555555] dark:text-[#a0a0a0] mb-1">
+              <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Email
               </label>
               <input
@@ -166,14 +172,15 @@ export default function RegisterPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full px-3.5 py-3 text-base rounded-md outline-none transition-all"
+                style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                 placeholder="you@example.com"
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#555555] dark:text-[#a0a0a0] mb-1">
+              <label htmlFor="password" className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                 Password
               </label>
               <input
@@ -181,7 +188,8 @@ export default function RegisterPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full px-3.5 py-3 text-base rounded-md outline-none transition-all"
+                style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                 placeholder="At least 6 characters"
                 minLength={6}
                 required
@@ -189,21 +197,22 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 text-center">{error}</p>
+              <p className="text-sm text-center" style={{ color: '#dc2626' }}>{error}</p>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-6 py-2.5 bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-none rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50"
+              className="w-full px-6 py-2.5 rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent-btn)', color: 'var(--bg)' }}
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-[#555555] dark:text-[#a0a0a0]">
+          <p className="mt-4 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
             Already have an account?{' '}
-            <a href="/auth/login" className="text-[#1a1a1a] dark:text-[#f5f2ec] underline">
+            <a href="/auth/login" style={{ color: 'var(--text-primary)' }}>
               Sign in
             </a>
           </p>

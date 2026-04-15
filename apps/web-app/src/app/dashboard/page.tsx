@@ -263,31 +263,28 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-bg-dark">
-        <div className="text-secondary-light dark:text-secondary-dark">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
+        <div style={{ color: 'var(--text-secondary)' }}>Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-bg-dark">
-      <header className="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark px-4 py-3 sticky top-0 z-30">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
+      <header className="px-4 py-3 sticky top-0 z-30" style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl text-primary-light dark:text-primary-dark" style={{ fontFamily: "'Grand Hotel', cursive" }}>Rwote</h1>
+          <h1 className="text-2xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>Rwote</h1>
           <div className="flex items-center gap-2 relative">
             {syncing && (
-              <span className="text-xs text-tertiary-light dark:text-tertiary-dark animate-pulse">Syncing...</span>
+              <span className="text-xs animate-pulse" style={{ color: 'var(--text-tertiary)' }}>Syncing...</span>
             )}
             {aiSummarizing && (
-              <span className="text-xs text-blue-600 dark:text-blue-400 animate-pulse">AI...</span>
+              <span className="text-xs animate-pulse" style={{ color: '#3b82f6' }}>AI...</span>
             )}
             <button
               onClick={() => setAiEnabled(!aiEnabled)}
-              className={`p-2 rounded-lg transition-colors ${
-                aiEnabled
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-secondary-light dark:text-secondary-dark'
-              }`}
+              className="p-2 rounded-lg transition-colors"
+              style={{ backgroundColor: aiEnabled ? 'rgba(34, 197, 94, 0.2)' : 'transparent', color: aiEnabled ? '#22c55e' : 'var(--text-secondary)' }}
               title={aiEnabled ? 'AI Summarization ON' : 'AI Summarization OFF'}
             >
               ✨
@@ -298,7 +295,8 @@ export default function DashboardPage() {
                   e.stopPropagation()
                   setThemeMenuOpen(!themeMenuOpen)
                 }}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-2 rounded-lg transition-colors"
+                style={{ color: 'var(--text-primary)' }}
                 title="Theme"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -307,7 +305,7 @@ export default function DashboardPage() {
                 </svg>
               </button>
               {themeMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#242428] border border-[#d8d8d8] dark:border-[#3a3a40] rounded-lg shadow-lg overflow-hidden z-50">
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg overflow-hidden z-50" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
                   {themeList.map((t) => (
                     <button
                       key={t.id}
@@ -315,12 +313,15 @@ export default function DashboardPage() {
                         setTheme(t.id)
                         setThemeMenuOpen(false)
                       }}
-                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-[#2e2e34] transition-colors ${
-                        themeId === t.id ? 'bg-gray-100 dark:bg-[#2e2e34] font-medium' : ''
-                      } text-gray-900 dark:text-gray-100`}
+                      className="w-full px-4 py-2.5 text-left text-sm flex items-center justify-between transition-colors"
+                      style={{
+                        backgroundColor: themeId === t.id ? 'var(--surface-alt)' : 'transparent',
+                        fontWeight: themeId === t.id ? 500 : 400,
+                        color: 'var(--text-primary)'
+                      }}
                     >
                       <span>{t.name}</span>
-                      {themeId === t.id && <span className="text-gray-400">✓</span>}
+                      {themeId === t.id && <span style={{ color: 'var(--text-secondary)' }}>✓</span>}
                     </button>
                   ))}
                 </div>
@@ -331,15 +332,16 @@ export default function DashboardPage() {
                 e.stopPropagation()
                 setMenuOpen(!menuOpen)
               }}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-primary)' }}
               title="Menu"
             >
               ☰
             </button>
-            <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#2a2a28] rounded-lg shadow-lg border border-border-light dark:border-border-dark ${menuOpen ? 'block' : 'hidden'}`}>
-              <div className="p-3 border-b border-border-light dark:border-border-dark">
-                <div className="text-sm font-medium text-primary-light dark:text-primary-dark">{user?.name || user?.email || 'User'}</div>
-                <div className="text-xs text-secondary-light dark:text-secondary-dark capitalize">
+            <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 rounded-lg shadow-lg ${menuOpen ? 'block' : 'hidden'}`} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="p-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user?.name || user?.email || 'User'}</div>
+                <div className="text-xs capitalize" style={{ color: 'var(--text-secondary)' }}>
                   {subscription?.subscription_status === 'paid' && 'Pro Member'}
                   {subscription?.subscription_status === 'trial' && `Trial (${subscription.days_left} days left)`}
                   {subscription?.subscription_status === 'expired' && 'Expired'}
@@ -350,7 +352,8 @@ export default function DashboardPage() {
                   setShowSubscriptionModal(true)
                   setMenuOpen(false)
                 }}
-                className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
+                className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
+                style={{ color: 'var(--text-primary)' }}
               >
                 🔄 <span>Subscription</span>
               </button>
@@ -359,7 +362,8 @@ export default function DashboardPage() {
                   setShowAiSettings(true)
                   setMenuOpen(false)
                 }}
-                className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
+                className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
+                style={{ color: 'var(--text-primary)' }}
               >
                 ✨ <span>AI Settings</span>
               </button>
@@ -375,17 +379,19 @@ export default function DashboardPage() {
                   a.click()
                   URL.revokeObjectURL(url)
                 }}
-                className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
+                className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
+                style={{ color: 'var(--text-primary)' }}
               >
                 📥 <span>Export Notes</span>
               </button>
-              <div className="border-t border-border-light dark:border-border-dark">
+              <div style={{ borderTop: '1px solid var(--border)' }}>
                 <button
                   onClick={() => {
                     handleSignOut()
                     setMenuOpen(false)
                   }}
-                  className="w-full px-4 py-3 text-left text-sm text-primary-light dark:text-primary-dark hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-3"
+                  className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
+                  style={{ color: 'var(--text-primary)' }}
                 >
                   🚪 <span>Sign Out</span>
                 </button>
@@ -396,14 +402,15 @@ export default function DashboardPage() {
       </header>
 
       {subscription?.subscription_status === 'trial' && subscription.days_left !== undefined && subscription.days_left > 0 && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
+        <div className="px-4 py-2" style={{ backgroundColor: '#fef3c7', borderBottom: '1px solid #fcd34d' }}>
           <div className="max-w-2xl mx-auto flex items-center justify-between">
-            <p className="text-sm text-amber-800">
+            <p className="text-sm" style={{ color: '#92400e' }}>
               ⏳ Trial period — {subscription.days_left} day{subscription.days_left !== 1 ? 's' : ''} remaining
             </p>
             <button
               onClick={() => setShowSubscriptionModal(true)}
-              className="text-xs px-3 py-1 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors"
+              className="text-xs px-3 py-1 rounded-full transition-colors"
+              style={{ backgroundColor: '#f59e0b', color: 'white' }}
             >
               Upgrade Now
             </button>
@@ -446,10 +453,10 @@ export default function DashboardPage() {
         )}
 
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-secondary-light dark:text-secondary-dark">
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {notes.length} {notes.length === 1 ? 'note' : 'notes'}
             {subscription?.can_sync && (
-              <span className="ml-2 text-tertiary-light dark:text-tertiary-dark">• Synced</span>
+              <span className="ml-2" style={{ color: 'var(--text-tertiary)' }}>• Synced</span>
             )}
           </p>
         </div>

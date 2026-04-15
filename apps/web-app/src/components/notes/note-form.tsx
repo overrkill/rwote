@@ -62,12 +62,13 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
   }
 
   return (
-    <div className="bg-[#fafafa] dark:bg-[#1a1a19] rounded-lg p-4 border border-[#d8d8d8] dark:border-[#3a3a38]">
+    <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
       <textarea
         value={text}
         onChange={(e) => handleTextChange(e.target.value)}
         placeholder="Write your note... use #tag for tags"
-        className="w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all mb-3 min-h-[80px] resize-none placeholder-gray-400 dark:placeholder-gray-500"
+        className="w-full px-3.5 py-3 text-base rounded-md outline-none transition-all mb-3 min-h-[80px] resize-none"
+        style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
         rows={3}
       />
 
@@ -75,12 +76,13 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
         value={extraNote}
         onChange={(e) => setExtraNote(e.target.value)}
         placeholder="Extra context (optional)..."
-        className="w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all mb-3 resize-none placeholder-gray-400 dark:placeholder-gray-500"
+        className="w-full px-3.5 py-3 text-base rounded-md outline-none transition-all mb-3 resize-none"
+        style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
         rows={2}
       />
 
       <div className="flex items-center gap-3 mb-3">
-        <span className="text-sm text-[#555555] dark:text-[#a0a0a0]">Tag:</span>
+        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Tag:</span>
         <div className="relative">
           <button
             type="button"
@@ -90,12 +92,13 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
             {tag}
           </button>
           {showTagPicker && (
-            <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[#1a1a19] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-lg shadow-lg z-10 min-w-[150px]">
-              <div className="p-2 border-b border-[#d8d8d8] dark:border-[#3a3a38]">
+            <div className="absolute top-full left-0 mt-1 rounded-lg shadow-lg z-10 min-w-[150px]" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="p-2" style={{ borderBottom: '1px solid var(--border)' }}>
                 <input
                   type="text"
                   placeholder="Search tags..."
-                  className="w-full px-2 py-1 text-sm border border-[#d8d8d8] dark:border-[#3a3a38] rounded bg-white dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec]"
+                  className="w-full px-2 py-1 text-sm rounded"
+                  style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                   onChange={(e) => handleTagSearch(e.target.value)}
                   autoFocus
                 />
@@ -109,7 +112,8 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
                       setTag(t)
                       setShowTagPicker(false)
                     }}
-                    className={`block w-full text-left px-3 py-2 text-sm hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] ${tag === t ? 'bg-[#f0f0f0] dark:bg-[#2a2a28] font-medium' : ''} text-[#1a1a1a] dark:text-[#f5f2ec]`}
+                    className="block w-full text-left px-3 py-2 text-sm"
+                    style={{ color: 'var(--text-primary)' }}
                   >
                     {t}
                   </button>
@@ -124,12 +128,17 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
         <button
           onClick={handleSave}
           disabled={!text.trim()}
-          className="px-6 py-2.5 bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-none rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2.5 rounded-md font-semibold cursor-pointer transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ backgroundColor: 'var(--accent-btn)', color: 'var(--bg)' }}
         >
           Save
         </button>
         {onCancel && (
-          <button onClick={onCancel} className="px-6 py-2.5 bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md font-normal cursor-pointer transition-all hover:border-[#a0a0a0] dark:hover:border-[#5a5a58]">
+          <button 
+            onClick={onCancel} 
+            className="px-6 py-2.5 rounded-md font-normal cursor-pointer transition-all"
+            style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+          >
             Cancel
           </button>
         )}

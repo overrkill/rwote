@@ -18,25 +18,34 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
   }
 
   return (
-    <div className={`bg-white dark:bg-[#1a1a19] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-lg p-3.5 flex gap-3 items-start shadow-sm transition-all hover:shadow-md hover:border-[#a0a0a0] dark:hover:border-[#5a5a58] ${note.pinned ? 'border-l-4 border-l-[#1a1a1a] dark:border-l-[#f5f2ec]' : ''}`}>
+    <div 
+      className="rounded-lg p-3.5 flex gap-3 items-start transition-all"
+      style={{ 
+        backgroundColor: 'var(--surface)',
+        border: note.pinned ? '1px solid var(--accent)' : '1px solid var(--border)',
+        borderLeft: note.pinned ? '4px solid var(--accent-btn)' : '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)'
+      }}
+    >
       <div className="flex-1 min-w-0">
         <span className={`tag-${note.tag} text-xs font-semibold px-2.5 py-0.5 rounded-xl uppercase tracking-wide inline-block mb-2`}>
           {note.tag}
         </span>
-        <p className="text-[#1a1a1a] dark:text-[#f5f2ec] leading-relaxed whitespace-pre-wrap">
+        <p className="leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>
           {note.text}
         </p>
         {note.note && (
-          <p className="text-sm text-[#555555] dark:text-[#a0a0a0] mt-2">
+          <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
             {note.note}
           </p>
         )}
-        <p className="text-xs text-[#888888] dark:text-[#6a6a68] mt-2">{note.date}</p>
+        <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>{note.date}</p>
       </div>
       <div className="flex gap-1 shrink-0">
         <button
           onClick={() => onTogglePin?.(note.id)}
-          className="p-1.5 text-sm hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] rounded transition-colors"
+          className="p-1.5 text-sm rounded transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
           title={note.pinned ? 'Unpin' : 'Pin'}
         >
           {note.pinned ? '📌' : '📍'}
@@ -46,21 +55,24 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
             handleCopy()
             onCopy?.(note)
           }}
-          className="p-1.5 text-sm hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] rounded transition-colors"
+          className="p-1.5 text-sm rounded transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
           title="Copy"
         >
           📋
         </button>
         <button
           onClick={() => onEdit?.(note)}
-          className="p-1.5 text-sm hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] rounded transition-colors"
+          className="p-1.5 text-sm rounded transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
           title="Edit"
         >
           ✏️
         </button>
         <button
           onClick={() => onDelete?.(note.id)}
-          className="p-1.5 text-sm hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] rounded transition-colors"
+          className="p-1.5 text-sm rounded transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
           title="Delete"
         >
           ✕

@@ -3,12 +3,11 @@
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { getStoredUser, onAuthStateChange } from '@/lib/supabase'
-import { useAppTheme } from '@/components/providers/theme-provider'
-import { THEMES } from '@/lib/themes'
+import { useTheme } from '@/components/providers/theme-provider'
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const { theme, themeId, setTheme } = useAppTheme()
+  const { themeId, setTheme } = useTheme()
   const [showThemeMenu, setShowThemeMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -43,9 +42,9 @@ export default function Header() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#1a1a19]/80 backdrop-blur-sm border-b border-[#d8d8d8] dark:border-[#3a3a38]">
+    <header className="sticky top-0 z-50 backdrop-blur-sm" style={{ backgroundColor: 'color-mix(in srgb, var(--bg) 80%, transparent)', borderBottom: '1px solid var(--border)' }}>
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/" className="text-3xl text-[#1a1a1a] dark:text-[#f5f2ec]" style={{ fontFamily: "'Grand Hotel', cursive" }}>
+        <Link href="/" className="text-3xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>
           Rwote
         </Link>
         <nav className="flex items-center gap-2 relative">
@@ -55,7 +54,8 @@ export default function Header() {
                 e.stopPropagation()
                 setShowThemeMenu(!showThemeMenu)
               }}
-              className="p-2 rounded-lg hover:bg-[#f0f0f0] dark:hover:bg-[#2a2a28] transition-colors text-[#1a1a1a] dark:text-[#f5f2ec]"
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-primary)' }}
               title="Theme"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -64,7 +64,7 @@ export default function Header() {
               </svg>
             </button>
             {showThemeMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#242428] border border-[#d8d8d8] dark:border-[#3a3a40] rounded-lg shadow-lg overflow-hidden z-50">
+              <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg overflow-hidden z-50" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
                 {themeList.map((t) => (
                   <button
                     key={t.id}
@@ -72,27 +72,30 @@ export default function Header() {
                       setTheme(t.id)
                       setShowThemeMenu(false)
                     }}
-                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:bg-[#f0f0f0] dark:hover:bg-[#2e2e34] transition-colors ${
-                      themeId === t.id ? 'bg-[#f0f0f0] dark:bg-[#2e2e34] font-medium' : ''
-                    } text-[#1a1a1a] dark:text-[#f5f2ec]`}
+                    className="w-full px-4 py-2.5 text-left text-sm flex items-center justify-between hover:opacity-80 transition-colors"
+                    style={{
+                      backgroundColor: themeId === t.id ? 'var(--surface-alt)' : 'transparent',
+                      fontWeight: themeId === t.id ? 500 : 400,
+                      color: 'var(--text-primary)'
+                    }}
                   >
                     <span>{t.name}</span>
-                    {themeId === t.id && <span className="text-[#a0a0a0]">✓</span>}
+                    {themeId === t.id && <span style={{ color: 'var(--text-secondary)' }}>✓</span>}
                   </button>
                 ))}
               </div>
             )}
           </div>
           {isLoggedIn ? (
-            <Link href="/dashboard" className="px-4 py-2 bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-none rounded-full font-semibold text-sm">
+            <Link href="/dashboard" className="px-4 py-2 rounded-full font-semibold text-sm transition-opacity hover:opacity-85" style={{ backgroundColor: 'var(--accent-btn)', color: 'var(--bg)' }}>
               Open App
             </Link>
           ) : (
             <>
-              <Link href="/auth/login" className="text-sm text-[#555555] dark:text-[#a0a0a0] hover:text-[#1a1a1a] dark:hover:text-[#f5f2ec] transition-colors">
+              <Link href="/auth/login" className="text-sm transition-colors" style={{ color: 'var(--text-secondary)' }}>
                 Sign In
               </Link>
-              <Link href="/auth/register" className="px-4 py-2 bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-none rounded-full font-semibold text-sm">
+              <Link href="/auth/register" className="px-4 py-2 rounded-full font-semibold text-sm transition-opacity hover:opacity-85" style={{ backgroundColor: 'var(--accent-btn)', color: 'var(--bg)' }}>
                 Get Started
               </Link>
             </>

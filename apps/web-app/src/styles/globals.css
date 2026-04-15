@@ -10,7 +10,34 @@
   }
 
   :root {
+    --bg: #ffffff;
+    --surface: #fafafa;
+    --surface-alt: #f0f0f0;
+    --border: #d8d8d8;
+    --border-focus: #a0a0a0;
+    --text-primary: #1a1a1a;
+    --text-secondary: #555555;
+    --text-tertiary: #888888;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 2px 6px rgba(0,0,0,0.1);
+    --accent: #a0a0a0;
+    --accent-btn: #1a1a1a;
     --font-size-base: 14px;
+  }
+
+  .dark {
+    --bg: #1a1a1e;
+    --surface: #242428;
+    --surface-alt: #2e2e34;
+    --border: #3a3a40;
+    --border-focus: #505058;
+    --text-primary: #f5f2ec;
+    --text-secondary: #a0a0a0;
+    --text-tertiary: #686868;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.25);
+    --shadow-md: 0 2px 6px rgba(0,0,0,0.35);
+    --accent: #a0a0a0;
+    --accent-btn: #f5f2ec;
   }
 
   html {
@@ -20,7 +47,8 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
     font-size: var(--font-size-base);
-    @apply bg-white dark:bg-[#0f0e0d] text-[#1a1a1a] dark:text-[#f5f2ec];
+    background-color: var(--bg);
+    color: var(--text-primary);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -29,23 +57,39 @@
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-2.5 bg-[#1a1a1a] dark:bg-[#f5f2ec] text-white dark:text-[#0f0e0d] border-none rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85;
+    @apply px-6 py-2.5 rounded-md font-semibold cursor-pointer transition-opacity hover:opacity-85;
+    background-color: var(--accent-btn);
+    color: var(--bg);
   }
 
   .btn-secondary {
-    @apply px-6 py-2.5 bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md font-normal cursor-pointer transition-all hover:border-[#a0a0a0] dark:hover:border-[#5a5a58];
+    @apply px-6 py-2.5 rounded-md font-normal cursor-pointer transition-all;
+    background-color: var(--surface-alt);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
   }
 
   .input-field {
-    @apply w-full px-3.5 py-3 text-base bg-[#f0f0f0] dark:bg-[#2a2a28] text-[#1a1a1a] dark:text-[#f5f2ec] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-md outline-none transition-all;
+    @apply w-full px-3.5 py-3 text-base rounded-md outline-none transition-all;
+    background-color: var(--surface-alt);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
   }
 
   .input-field:focus {
-    @apply border-[#a0a0a0] dark:border-[#5a5a58];
+    border-color: var(--border-focus);
   }
 
   .card {
-    @apply bg-white dark:bg-[#1a1a19] border border-[#d8d8d8] dark:border-[#3a3a38] rounded-lg p-3.5 flex gap-3 items-start shadow-sm transition-all hover:shadow-md hover:border-[#a0a0a0] dark:hover:border-[#5a5a58];
+    @apply rounded-lg p-3.5 flex gap-3 items-start transition-all hover:shadow-md;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card:hover {
+    border-color: var(--border-focus);
+    box-shadow: var(--shadow-md);
   }
 }
 
