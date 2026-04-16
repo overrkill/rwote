@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Refund Policy" description="How we handle refunds">
+  <Header />
+  <main class="max-w-3xl mx-auto px-4 py-16">
+    <h1 class="text-3xl font-bold text-primary mb-8">Refund Policy</h1>
+    <div class="prose prose-stone max-w-none space-y-6 text-secondary">
+      <h2 class="text-xl font-semibold text-primary">7-Day Free Trial</h2>
+      <p>New Pro subscribers get a 7-day free trial. You won't be charged until the trial ends. Cancel anytime during the trial to avoid charges.</p>
+
+      <h2 class="text-xl font-semibold text-primary">Monthly Subscriptions</h2>
+      <p>Monthly subscribers can request a refund within 7 days of purchase. Contact us with your account email and we'll process your request.</p>
+
+      <h2 class="text-xl font-semibold text-primary">Lifetime Purchases</h2>
+      <p>Lifetime purchases can be refunded within 30 days if you're not satisfied. After 30 days, no refunds are available.</p>
+
+      <h2 class="text-xl font-semibold text-primary">How to Request a Refund</h2>
+      <p>Email <a href="mailto:support@rwote.com" class="text-accent hover:underline">support@rwote.com</a> with:</p>
+      <ul class="list-disc pl-6 space-y-2">
+        <li>Your account email</li>
+        <li>Date of purchase</li>
+        <li>Reason for refund</li>
+      </ul>
+      <p>Refunds are typically processed within 5-10 business days.</p>
+
+      <h2 class="text-xl font-semibold text-primary">Exceptions</h2>
+      <p>We don't offer refunds for:</p>
+      <ul class="list-disc pl-6 space-y-2">
+        <li>Monthly subscriptions after 7 days</li>
+        <li>Lifetime purchases after 30 days</li>
+        <li>Abuse of the refund policy</li>
+      </ul>
+
+      <h2 class="text-xl font-semibold text-primary">Questions?</h2>
+      <p>Contact us at <a href="mailto:support@rwote.com" class="text-accent hover:underline">support@rwote.com</a></p>
+    </div>
+  </main>
+  <Footer />
+</Layout>

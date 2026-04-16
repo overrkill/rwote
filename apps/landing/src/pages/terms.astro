@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Terms of Service" description="Terms for using Rwote">
+  <Header />
+  <main class="max-w-3xl mx-auto px-4 py-16">
+    <h1 class="text-3xl font-bold text-primary mb-8">Terms of Service</h1>
+    <div class="prose prose-stone max-w-none space-y-6 text-secondary">
+      <p>Last updated: April 16, 2026</p>
+      
+      <h2 class="text-xl font-semibold text-primary">Acceptance of Terms</h2>
+      <p>By using Rwote, you agree to these terms. If you don't agree, please don't use the service.</p>
+
+      <h2 class="text-xl font-semibold text-primary">Description of Service</h2>
+      <p>Rwote provides a note-taking service for capturing and organizing insights. We reserve the right to modify or discontinue the service at any time.</p>
+
+      <h2 class="text-xl font-semibold text-primary">User Responsibilities</h2>
+      <p>You agree to:</p>
+      <ul class="list-disc pl-6 space-y-2">
+        <li>Use the service legally</li>
+        <li>Not attempt to breach security</li>
+        <li>Not spam or abuse the service</li>
+        <li>Keep your account credentials secure</li>
+      </ul>
+
+      <h2 class="text-xl font-semibold text-primary">Subscriptions</h2>
+      <p>Paid subscriptions are billed monthly or as a one-time lifetime purchase. See our pricing page for current rates.</p>
+
+      <h2 class="text-xl font-semibold text-primary">Limitation of Liability</h2>
+      <p>Rwote is provided "as is." We are not liable for any data loss or service interruptions. Back up important notes regularly.</p>
+
+      <h2 class="text-xl font-semibold text-primary">Changes to Terms</h2>
+      <p>We may update these terms periodically. Continued use constitutes acceptance of new terms.</p>
+
+      <h2 class="text-xl font-semibold text-primary">Contact</h2>
+      <p>Questions? Email us at <a href="mailto:legal@rwote.com" class="text-accent hover:underline">legal@rwote.com</a></p>
+    </div>
+  </main>
+  <Footer />
+</Layout>
