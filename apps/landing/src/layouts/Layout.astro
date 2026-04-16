@@ -10,7 +10,7 @@ const { title, description = 'Capture insights from your learning sessions. Orga
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -21,8 +21,12 @@ const { title, description = 'Capture insights from your learning sessions. Orga
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script is:inline>
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    </script>
   </head>
-  <body class="bg-bg text-primary antialiased">
+  <body class="bg-[#0f0e0d] dark:bg-[#0f0e0d] text-[#faf9f7] dark:text-[#faf9f7] antialiased transition-colors duration-300">
     <slot />
   </body>
 </html>

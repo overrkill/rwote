@@ -1,33 +1,43 @@
 ---
 const features = [
   {
-    emoji: '⚡',
+    icon: '⚡',
     title: 'Capture anywhere',
     description: 'Use the Chrome extension to save insights while browsing. Or use the web app anywhere.',
+    gradient: 'from-yellow-500 to-orange-500',
   },
   {
-    emoji: '🏷️',
+    icon: '🏷️',
     title: 'Organize with tags',
     description: 'Tag your notes by topic. Filter and search to find what you need instantly.',
+    gradient: 'from-blue-500 to-purple-500',
   },
   {
-    emoji: '☁️',
+    icon: '☁️',
     title: 'Sync across devices',
     description: 'Access your notes on any device with cloud sync. Never lose an insight.',
+    gradient: 'from-green-500 to-teal-500',
   },
 ];
 ---
-<section class="py-16 bg-surface">
+<section class="py-24 bg-surfaceAlt-dark dark:bg-[#0f0e0d]">
   <div class="max-w-6xl mx-auto px-4">
-    <h2 class="text-2xl md:text-3xl font-bold text-center mb-12 text-primary">
-      Everything you need to learn better
-    </h2>
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold mb-4 text-primary-dark dark:text-[#faf9f7]">
+        Everything you need to learn better
+      </h2>
+      <p class="text-secondary-dark dark:text-[#9a9590] max-w-2xl mx-auto">
+        Simple tools that fit into your workflow. Capture insights without breaking your flow.
+      </p>
+    </div>
     <div class="grid md:grid-cols-3 gap-8">
-      {features.map((feature) => (
-        <div class="text-center p-6">
-          <div class="text-4xl mb-4">{feature.emoji}</div>
-          <h3 class="text-lg font-semibold mb-2 text-primary">{feature.title}</h3>
-          <p class="text-sm text-secondary">{feature.description}</p>
+      {features.map((feature, i) => (
+        <div class="group relative p-8 rounded-2xl bg-surface-dark dark:bg-[#1a1917] border border-border-dark dark:border-[#2d2b28] hover:border-accent/50 transition-all duration-300 hover:-translate-y-1">
+          <div class={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform`}>
+            {feature.icon}
+          </div>
+          <h3 class="text-xl font-semibold mb-3 text-primary-dark dark:text-[#faf9f7]">{feature.title}</h3>
+          <p class="text-secondary-dark dark:text-[#9a9590]">{feature.description}</p>
         </div>
       ))}
     </div>

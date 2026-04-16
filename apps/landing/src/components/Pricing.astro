@@ -1,69 +1,77 @@
 ---
 ---
-<section id="pricing" class="py-16 bg-surface">
+<section id="pricing" class="py-24 bg-surfaceAlt-dark dark:bg-[#0f0e0d]">
   <div class="max-w-4xl mx-auto px-4">
-    <h2 class="text-2xl md:text-3xl font-bold text-center mb-4 text-primary">
-      Simple pricing
-    </h2>
-    <p class="text-center mb-12 text-secondary">
-      Start free. Upgrade when you need cloud sync.
-    </p>
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-bold mb-4 text-primary-dark dark:text-[#faf9f7]">
+        Simple pricing
+      </h2>
+      <p class="text-secondary-dark dark:text-[#9a9590]">
+        Start free. Upgrade when you need cloud sync.
+      </p>
+    </div>
     <div class="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-      <div class="rounded-xl p-8 bg-bg border border-border">
-        <h3 class="text-xl font-semibold mb-2 text-primary">Free</h3>
-        <p class="text-3xl font-bold mb-4 text-primary">$0</p>
-        <p class="text-sm mb-6 text-secondary">Forever free</p>
+      <div class="rounded-2xl p-8 bg-surface-dark dark:bg-[#1a1917] border border-border-dark dark:border-[#2d2b28] hover:border-accent/50 transition-colors">
+        <h3 class="text-xl font-semibold mb-2 text-primary-dark dark:text-[#faf9f7]">Free</h3>
+        <div class="flex items-baseline gap-1 mb-2">
+          <span class="text-4xl font-bold text-primary-dark dark:text-[#faf9f7]">$0</span>
+        </div>
+        <p class="text-sm mb-6 text-secondary-dark dark:text-[#9a9590]">Forever free</p>
         <ul class="space-y-3 mb-8">
-          <li class="flex items-center gap-2 text-sm text-primary">
-            <span class="text-green-500">✓</span>
+          <li class="flex items-center gap-3 text-sm text-primary-dark dark:text-[#faf9f7]">
+            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Unlimited notes
           </li>
-          <li class="flex items-center gap-2 text-sm text-primary">
-            <span class="text-green-500">✓</span>
+          <li class="flex items-center gap-3 text-sm text-primary-dark dark:text-[#faf9f7]">
+            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Browser extension
           </li>
-          <li class="flex items-center gap-2 text-sm text-primary">
-            <span class="text-green-500">✓</span>
+          <li class="flex items-center gap-3 text-sm text-primary-dark dark:text-[#faf9f7]">
+            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Select to add
           </li>
-          <li class="flex items-center gap-2 text-sm text-secondary">
-            <span>−</span>
+          <li class="flex items-center gap-3 text-sm text-secondary-dark dark:text-[#9a9590]">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
             Local storage only
           </li>
         </ul>
-        <a href="/auth/register" class="block w-full px-6 py-2.5 rounded-full text-center bg-surfaceAlt text-primary border border-border hover:bg-surface transition-all">
-          Get Extension
+        <a href="/auth/register" class="block w-full px-6 py-3 rounded-full text-center bg-surfaceAlt-dark dark:bg-[#252422] text-primary-dark dark:text-[#faf9f7] border border-border-dark dark:border-[#2d2b28] hover:bg-[#e8e5e0] dark:hover:bg-[#2d2b28] transition-colors">
+          Get Started
         </a>
       </div>
 
-      <div class="rounded-xl p-8 relative bg-bg border-2 border-accent">
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-xs px-3 py-1 rounded-full bg-accent text-white">
-          Pro
+      <div class="relative rounded-2xl p-8 bg-surface-dark dark:bg-[#1a1917] border-2 border-accent shadow-lg shadow-accent/10">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-accent text-white text-xs font-semibold">
+          Most Popular
         </div>
-        <h3 class="text-xl font-semibold mb-2 text-primary">Pro</h3>
-        <p class="text-3xl font-bold mb-4 text-primary">$5<span class="text-base font-normal text-secondary">/mo</span></p>
-        <p class="text-sm mb-6 text-secondary">or $30 lifetime</p>
+        <h3 class="text-xl font-semibold mb-2 text-primary-dark dark:text-[#faf9f7]">Pro</h3>
+        <div class="flex items-baseline gap-1 mb-2">
+          <span class="text-4xl font-bold text-primary-dark dark:text-[#faf9f7]">$5</span>
+          <span class="text-secondary-dark dark:text-[#9a9590]">/mo</span>
+        </div>
+        <p class="text-sm mb-6 text-secondary-dark dark:text-[#9a9590]">or $40 lifetime</p>
         <ul class="space-y-3 mb-8">
-          <li class="flex items-center gap-2 text-sm text-primary">
-            <span class="text-green-500">✓</span>
+          <li class="flex items-center gap-3 text-sm text-primary-dark dark:text-[#faf9f7]">
+            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Everything in Free
           </li>
-          <li class="flex items-center gap-2 text-sm text-primary">
-            <span class="text-green-500">✓</span>
+          <li class="flex items-center gap-3 text-sm text-primary-dark dark:text-[#faf9f7]">
+            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Cloud sync
           </li>
-          <li class="flex items-center gap-2 text-sm text-primary">
-            <span class="text-green-500">✓</span>
+          <li class="flex items-center gap-3 text-sm text-primary-dark dark:text-[#faf9f7]">
+            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Access on any device
           </li>
-          <li class="flex items-center gap-2 text-sm text-primary">
-            <span class="text-green-500">✓</span>
+          <li class="flex items-center gap-3 text-sm text-primary-dark dark:text-[#faf9f7]">
+            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             Automatic backup
           </li>
         </ul>
         <a href="/auth/register" class="block w-full px-8 py-3 rounded-full font-semibold text-center bg-accent text-white hover:opacity-85 transition-opacity">
-          Try 7 Days free trial
+          Start Free Trial
         </a>
+        <p class="text-xs text-center mt-3 text-secondary-dark dark:text-[#9a9590]">7-day free trial. No credit card required.</p>
       </div>
     </div>
   </div>
