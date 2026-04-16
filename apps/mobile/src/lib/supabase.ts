@@ -1,14 +1,17 @@
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import GoogleSignInModule from '../../modules/google-sign-in';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
 
-GoogleSignin.configure({
-  webClientId: GOOGLE_WEB_CLIENT_ID,
-  iosClientId: GOOGLE_IOS_CLIENT_ID,
-});
+let isConfigured = false;
+
+async function ensureConfigured() {
+  if (!isConfigured && GOOGLE_WEB_CLIENT_ID) {
+    await GoogleSignInModule.configure(GOOGLE_WEB_CLIENT_ID);
+    isConfigured = true;
+  }
+}
 
 export const supabase = {
   url: SUPABASE_URL,
@@ -64,11 +67,10 @@ export const supabase = {
 
   async signInWithGoogle(): Promise<{ access_token?: string; msg?: string }> {
     try {
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
+      await ensureConfigured();
+      const result = await GoogleSignInModule.signIn();
       
-      const idToken = (userInfo as any).idToken;
-      if (idToken) {
+      if (result.idToken) {
         const res = await fetch(
           `${SUPABASE_URL}/auth/v1/token?grant_type=id_token`,
           {
@@ -79,7 +81,7 @@ export const supabase = {
             },
             body: JSON.stringify({
               provider: 'google',
-              id_token: idToken,
+              id_token: result.idToken,
             }),
           }
         );
@@ -88,7 +90,7 @@ export const supabase = {
       
       return { msg: 'No ID token received from Google' };
     } catch (error: any) {
-      if (error.code === 'SIGN_IN_CANCELLED') {
+      if (error.code === 'E_SIGN_IN_CANCELLED') {
         return { msg: 'Sign in was cancelled' };
       }
       return { msg: error.message || 'Google sign in failed' };
