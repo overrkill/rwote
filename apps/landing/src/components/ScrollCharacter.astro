@@ -1,0 +1,389 @@
+---
+---
+<!-- Scrollable spacer to enable native scrolling -->
+<div id="scroll-spacer" style="height: 400vh;"></div>
+
+<!-- Fixed UI Layer -->
+<div id="scroll-scene" class="fixed inset-0 bg-bg dark:bg-[#0f0e0d] z-0 overflow-hidden">
+  <!-- Header -->
+  <header class="fixed top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2">
+      <span class="font-display text-2xl font-bold text-primary dark:text-[#faf9f7]">Rwote</span>
+    </a>
+    <a href="https://app.rwote.com" class="text-sm text-secondary dark:text-[#9a9590] hover:text-accent transition-colors">
+      Sign in
+    </a>
+  </header>
+  
+  <!-- Static Background Scene -->
+  <div class="absolute inset-0">
+    <!-- Subtle gradient -->
+    <div class="absolute inset-0 bg-gradient-to-b from-bg via-surfaceAlt to-bg dark:from-[#0f0e0d] dark:via-[#1a1917] dark:to-[#0f0e0d]"></div>
+    
+    <!-- Decorative elements - static -->
+    <div class="absolute top-20 left-10 w-32 h-32 rounded-full bg-accent/5 blur-3xl"></div>
+    <div class="absolute bottom-40 right-20 w-48 h-48 rounded-full bg-accent/10 blur-3xl"></div>
+  </div>
+</div>
+
+<!-- Bubble Messages -->
+<div id="bubbles" class="fixed inset-0 pointer-events-none z-30">
+  <div class="absolute" style="top: 40%; right: 20%; transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="bubble opacity-0 transform translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.1">
+      <p class="text-primary dark:text-[#faf9f7] font-medium">Sick of bloated note-taking apps?</p>
+    </div>
+  </div>
+  
+  <div class="absolute" style="top: 25%; right: 15%; transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="bubble opacity-0 transform translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.2">
+      <p class="text-primary dark:text-[#faf9f7] font-medium">Try <span class="text-accent font-display text-xl">Rwote</span></p>
+    </div>
+  </div>
+  
+  <div class="absolute" style="top: 15%; right: 10%; transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="bubble opacity-0 transform translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.3">
+      <p class="text-primary dark:text-[#faf9f7] font-medium">Simple yet effective</p>
+    </div>
+  </div>
+  
+  <div class="absolute" style="top: 25%; left: 15%; transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="bubble opacity-0 transform -translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.5">
+      <p class="text-primary dark:text-[#faf9f7] font-medium">Capture anywhere without the distractions of theming and optimizing setup</p>
+    </div>
+  </div>
+  
+  <div class="absolute" style="top: 15%; left: 20%; transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="bubble opacity-0 transform -translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.6">
+      <p class="text-primary dark:text-[#faf9f7] font-medium">Sync across all your devices</p>
+    </div>
+  </div>
+  
+  <div class="absolute" style="top: 25%; left: 25%; transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="bubble opacity-0 transform -translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.7">
+      <p class="text-primary dark:text-[#faf9f7] font-medium">Organize with tags</p>
+    </div>
+  </div>
+  
+  <div class="absolute" style="top: 35%; right: 20%; transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="bubble opacity-0 transform translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.8">
+      <p class="text-primary dark:text-[#faf9f7] font-medium">Start capturing now</p>
+    </div>
+  </div>
+  
+  <div class="absolute" style="top: 50%; left: 50%; transform -translate-x-1/2; transition: opacity 0.5s ease, transform 0.5s ease;">
+    <div class="bubble opacity-0 transform translate-y-4 bg-accent rounded-2xl px-8 py-4 shadow-lg" data-threshold="1">
+      <p class="text-white font-semibold">Get Started</p>
+    </div>
+  </div>
+</div>
+
+<!-- Progress indicator -->
+<div class="fixed left-8 bottom-8 z-40 flex items-center gap-3">
+  <div class="w-32 h-1 bg-border dark:bg-[#2d2b28] rounded-full overflow-hidden">
+    <div id="progress-bar" class="h-full bg-accent rounded-full transition-all duration-150" style="width: 0%;"></div>
+  </div>
+  <span id="progress-text" class="text-xs text-secondary dark:text-[#9a9590]">0%</span>
+</div>
+
+<!-- Get Started Button (appears at end) -->
+<div id="get-started-btn" class="fixed bottom-8 right-8 z-40 opacity-0 transform translate-y-4 transition-all duration-500 pointer-events-auto">
+  <a href="https://app.rwote.com" class="inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold bg-accent text-white hover:opacity-85 transition-opacity shadow-lg shadow-accent/25">
+    Get Started
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+    </svg>
+  </a>
+</div>
+
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 right-0 z-40 px-6 py-3 flex items-center justify-between text-xs text-secondary/50 dark:text-[#9a9590]/50">
+  <span class="font-display">Rwote</span>
+  <div class="flex items-center gap-4">
+    <a href="/privacy" class="hover:text-accent transition-colors">Privacy</a>
+    <a href="/terms" class="hover:text-accent transition-colors">Terms</a>
+  </div>
+</footer>
+
+<!-- Character -->
+<div id="scroll-character" class="fixed bottom-24 z-50 pointer-events-none" style="left: 8px;">
+  <div class="relative" style="height: 80px; width: 60px;">
+    <!-- Notepad Body -->
+    <svg class="absolute" width="50" height="65" viewBox="0 0 50 65" style="left: 5px; top: 0;">
+      <!-- Main body -->
+      <rect x="2" y="2" width="46" height="58" rx="4" fill="#ffffff" stroke="#8B4513" stroke-width="3"/>
+      
+      <!-- Blue lines -->
+      <line x1="10" y1="20" x2="40" y2="20" stroke="#87CEEB" stroke-width="2" stroke-linecap="round"/>
+      <line x1="10" y1="30" x2="40" y2="30" stroke="#87CEEB" stroke-width="2" stroke-linecap="round"/>
+      <line x1="10" y1="40" x2="35" y2="40" stroke="#87CEEB" stroke-width="2" stroke-linecap="round"/>
+      
+      <!-- Spiral binding holes -->
+      <circle cx="8" cy="12" r="2" fill="#8B4513"/>
+      <circle cx="8" cy="24" r="2" fill="#8B4513"/>
+      <circle cx="8" cy="36" r="2" fill="#8B4513"/>
+      <circle cx="8" cy="48" r="2" fill="#8B4513"/>
+    </svg>
+    
+    <!-- Left Arm -->
+    <div class="arm arm-left">
+      <svg width="20" height="12" viewBox="0 0 20 12" style="position: absolute; left: -5px; top: 25px;">
+        <path d="M20 6 Q10 6 5 6" stroke="#000000" stroke-width="4" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    
+    <!-- Right Arm -->
+    <div class="arm arm-right">
+      <svg width="20" height="12" viewBox="0 0 20 12" style="position: absolute; right: -5px; top: 25px;">
+        <path d="M0 6 Q10 6 15 6" stroke="#000000" stroke-width="4" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    
+    <!-- Left Leg -->
+    <div class="leg leg-left">
+      <svg width="12" height="25" viewBox="0 0 12 25" style="position: absolute; left: 12px; bottom: -15px;">
+        <path d="M6 0 L6 20" stroke="#000000" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="6" cy="23" rx="6" ry="3" fill="#000000"/>
+      </svg>
+    </div>
+    
+    <!-- Right Leg -->
+    <div class="leg leg-right">
+      <svg width="12" height="25" viewBox="0 0 12 25" style="position: absolute; right: 12px; bottom: -15px;">
+        <path d="M6 0 L6 20" stroke="#000000" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="6" cy="23" rx="6" ry="3" fill="#000000"/>
+      </svg>
+    </div>
+    
+    <!-- Googly Eyes -->
+    <div class="absolute" style="left: 12px; top: 8px;">
+      <div class="eye eye-left">
+        <div class="eye-white"></div>
+        <div class="pupil"></div>
+      </div>
+      <div class="eye eye-right">
+        <div class="eye-white"></div>
+        <div class="pupil"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Bubble animations */
+  .bubble.visible {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+  
+  /* Character idle state */
+  #scroll-character {
+    transition: left 0.3s ease-out;
+  }
+  
+  #scroll-character.idle .leg-left {
+    transform: rotate(-15deg);
+    transform-origin: top center;
+  }
+  
+  #scroll-character.idle .leg-right {
+    transform: rotate(15deg);
+    transform-origin: top center;
+  }
+  
+  #scroll-character.idle .arm-left {
+    transform: rotate(25deg);
+    transform-origin: left center;
+  }
+  
+  #scroll-character.idle .arm-right {
+    transform: rotate(-25deg);
+    transform-origin: right center;
+  }
+  
+  /* Walking animation */
+  #scroll-character.walking .leg-left {
+    animation: walkLeft 0.3s ease-in-out infinite;
+  }
+  
+  #scroll-character.walking .leg-right {
+    animation: walkRight 0.3s ease-in-out infinite;
+  }
+  
+  #scroll-character.walking .arm-left {
+    animation: swingArmLeft 0.3s ease-in-out infinite;
+  }
+  
+  #scroll-character.walking .arm-right {
+    animation: swingArmRight 0.3s ease-in-out infinite;
+  }
+  
+  @keyframes walkLeft {
+    0%, 100% { transform: rotate(-25deg); transform-origin: top center; }
+    50% { transform: rotate(25deg); transform-origin: top center; }
+  }
+  
+  @keyframes walkRight {
+    0%, 100% { transform: rotate(25deg); transform-origin: top center; }
+    50% { transform: rotate(-25deg); transform-origin: top center; }
+  }
+  
+  @keyframes swingArmLeft {
+    0%, 100% { transform: rotate(35deg); transform-origin: left center; }
+    50% { transform: rotate(-35deg); transform-origin: left center; }
+  }
+  
+  @keyframes swingArmRight {
+    0%, 100% { transform: rotate(-35deg); transform-origin: right center; }
+    50% { transform: rotate(35deg); transform-origin: right center; }
+  }
+  
+  /* Jump animation */
+  #scroll-character.jumping {
+    animation: jump 0.6s ease-in-out infinite;
+  }
+  
+  @keyframes jump {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-30px); }
+  }
+  
+  /* Googly eyes */
+  .eye {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    display: inline-block;
+    margin-right: 8px;
+  }
+  
+  .eye-white {
+    width: 12px;
+    height: 12px;
+    background: #ffffff;
+    border: 2px solid #000;
+    border-radius: 50%;
+    position: absolute;
+  }
+  
+  .pupil {
+    width: 6px;
+    height: 6px;
+    background: #000;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    animation: lookAround 3s ease-in-out infinite;
+  }
+  
+  @keyframes lookAround {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(2px, 0); }
+    50% { transform: translate(0, 1px); }
+    75% { transform: translate(-2px, 0); }
+  }
+</style>
+
+<script>
+  const character = document.getElementById('scroll-character');
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  const getStartedBtn = document.getElementById('get-started-btn');
+  const bubbles = document.querySelectorAll('.bubble');
+  
+  if (!character || !progressBar || !progressText || !getStartedBtn) {
+    console.error('Required elements not found');
+  }
+  
+  let currentProgress = 0;
+  let targetProgress = 0;
+  
+  character?.classList.add('idle');
+  
+  function updateProgress(progress: number) {
+    progress = Math.max(0, Math.min(1, progress));
+    currentProgress = progress;
+    
+    if (progressBar) progressBar.style.width = `${progress * 100}%`;
+    if (progressText) progressText.textContent = `${Math.round(progress * 100)}%`;
+    
+    const startLeft = 8;
+    const endLeft = window.innerWidth - 80;
+    const charLeft = startLeft + (progress * (endLeft - startLeft));
+    if (character) character.style.left = `${charLeft}px`;
+    
+    bubbles.forEach((bubble) => {
+      const threshold = parseFloat(bubble.getAttribute('data-threshold') || '0');
+      if (progress >= threshold) {
+        bubble.classList.add('visible');
+      } else {
+        bubble.classList.remove('visible');
+      }
+    });
+    
+    if (progress > 0.02 && progress < 0.95) {
+      character?.classList.remove('idle', 'jumping');
+      character?.classList.add('walking');
+    } else if (progress >= 0.95) {
+      character?.classList.remove('walking');
+      character?.classList.add('jumping');
+      if (progress > 0.98 && getStartedBtn) {
+        getStartedBtn.style.opacity = '1';
+        getStartedBtn.style.transform = 'translateY(0)';
+      }
+    } else {
+      character?.classList.remove('walking', 'jumping');
+      character?.classList.add('idle');
+    }
+  }
+  
+  // Native scroll handling
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const maxScroll = document.body.scrollHeight - window.innerHeight;
+    targetProgress = maxScroll > 0 ? scrollTop / maxScroll : 0;
+    updateProgress(targetProgress);
+  });
+  
+  // Fine-grained wheel control for smoother experience
+  window.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    targetProgress = Math.max(0, Math.min(1, targetProgress + e.deltaY * 0.001));
+    updateProgress(targetProgress);
+    
+    // Also scroll the page
+    window.scrollBy(0, e.deltaY * 0.5);
+  }, { passive: false });
+  
+  // Touch support
+  let touchStartY = 0;
+  window.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+  });
+  
+  window.addEventListener('touchmove', (e) => {
+    const touchY = e.touches[0].clientY;
+    const deltaY = touchStartY - touchY;
+    touchStartY = touchY;
+    window.scrollBy(0, deltaY);
+  });
+  
+  // Keyboard support
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+      e.preventDefault();
+      window.scrollBy(0, 100);
+    } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault();
+      window.scrollBy(0, -100);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      window.scrollTo(0, 0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+  });
+  
+  updateProgress(0);
+</script>
