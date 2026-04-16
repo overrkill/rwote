@@ -17,7 +17,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
 
-const AVAILABLE_TAGS = ['general', 'arrays', 'strings', 'trees', 'graphs', 'dp', 'sorting', 'searching'];
+const AVAILABLE_TAGS = ['general','thought','uncategorized'];
 
 export default function NewNoteScreen() {
   const { theme } = useTheme();
