@@ -1,6 +1,6 @@
 'use client';
 
-import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
@@ -39,84 +39,87 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ ...styles.container, backgroundColor: theme.colors.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.content}>
-        <Text style={{ ...styles.title, color: theme.colors.textPrimary }}>Rwote</Text>
-        <Text style={{ ...styles.subtitle, color: theme.colors.textSecondary }}>
-          Sign in to your account
-        </Text>
+    <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior="padding"
+        keyboardVerticalOffset={0}
+      >
+        <View style={styles.content}>
+          <Text style={{ ...styles.title, color: theme.colors.textPrimary }}>Rwote</Text>
+          <Text style={{ ...styles.subtitle, color: theme.colors.textSecondary }}>
+            Sign in to your account
+          </Text>
 
-        <View style={styles.form}>
-          <Pressable
-            style={{ ...styles.googleButton, borderColor: theme.colors.border }}
-            onPress={handleGoogleSignIn}
-            disabled={isLoading}
-          >
-            <GoogleIcon size={20} />
-            <Text style={{ ...styles.googleButtonText, color: theme.colors.textPrimary }}>
-              Continue with Google
-            </Text>
-          </Pressable>
+          <View style={styles.form}>
+            <Pressable
+              style={{ ...styles.googleButton, borderColor: theme.colors.border }}
+              onPress={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <GoogleIcon size={20} />
+              <Text style={{ ...styles.googleButtonText, color: theme.colors.textPrimary }}>
+                Continue with Google
+              </Text>
+            </Pressable>
 
-          <View style={styles.divider}>
-            <View style={{ ...styles.dividerLine, backgroundColor: theme.colors.border }} />
-            <Text style={{ ...styles.dividerText, color: theme.colors.textTertiary }}>or</Text>
-            <View style={{ ...styles.dividerLine, backgroundColor: theme.colors.border }} />
+            <View style={styles.divider}>
+              <View style={{ ...styles.dividerLine, backgroundColor: theme.colors.border }} />
+              <Text style={{ ...styles.dividerText, color: theme.colors.textTertiary }}>or</Text>
+              <View style={{ ...styles.dividerLine, backgroundColor: theme.colors.border }} />
+            </View>
+
+            <TextInput
+              style={{
+                ...styles.input,
+                backgroundColor: theme.colors.surface,
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.border,
+              }}
+              placeholder="Email"
+              placeholderTextColor={theme.colors.textTertiary}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+
+            <TextInput
+              style={{
+                ...styles.input,
+                backgroundColor: theme.colors.surface,
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.border,
+              }}
+              placeholder="Password"
+              placeholderTextColor={theme.colors.textTertiary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+
+            <Pressable
+              style={{ ...styles.button, backgroundColor: theme.colors.accentBtn, opacity: isLoading ? 0.6 : 1 }}
+              onPress={handleSignIn}
+              disabled={isLoading}
+            >
+              <Text style={{ ...styles.buttonText, color: theme.colors.bg }}>
+                {isLoading ? 'Signing in...' : 'Sign In'}
+              </Text>
+            </Pressable>
           </View>
 
-          <TextInput
-            style={{
-              ...styles.input,
-              backgroundColor: theme.colors.surface,
-              color: theme.colors.textPrimary,
-              borderColor: theme.colors.border,
-            }}
-            placeholder="Email"
-            placeholderTextColor={theme.colors.textTertiary}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          <TextInput
-            style={{
-              ...styles.input,
-              backgroundColor: theme.colors.surface,
-              color: theme.colors.textPrimary,
-              borderColor: theme.colors.border,
-            }}
-            placeholder="Password"
-            placeholderTextColor={theme.colors.textTertiary}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <Pressable
-            style={{ ...styles.button, backgroundColor: theme.colors.accentBtn, opacity: isLoading ? 0.6 : 1 }}
-            onPress={handleSignIn}
-            disabled={isLoading}
-          >
-            <Text style={{ ...styles.buttonText, color: theme.colors.bg }}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
+          <View style={styles.footer}>
+            <Text style={{ ...styles.footerText, color: theme.colors.textSecondary }}>
+              Don&apos;t have an account?{' '}
             </Text>
-          </Pressable>
+            <Link href="/auth/register">
+              <Text style={{ ...styles.link, color: theme.colors.accent }}>Sign Up</Text>
+            </Link>
+          </View>
         </View>
-
-        <View style={styles.footer}>
-          <Text style={{ ...styles.footerText, color: theme.colors.textSecondary }}>
-            Don&apos;t have an account?{' '}
-          </Text>
-          <Link href="/auth/register">
-            <Text style={{ ...styles.link, color: theme.colors.accent }}>Sign Up</Text>
-          </Link>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 

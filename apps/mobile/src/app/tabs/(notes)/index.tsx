@@ -9,6 +9,11 @@ import {
   RefreshControl,
   TextInput,
 } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  Layout,
+} from 'react-native-reanimated';
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
@@ -125,41 +130,48 @@ export default function NotesScreen() {
   const filterTags = uniqueTags.length > 0 ? ['all', ...uniqueTags] : [];
 
   const renderNote = ({ item }: { item: Note }) => (
-    <Pressable
-      style={{
-        ...styles.card,
-        backgroundColor: cardBg,
-        borderColor: item.pinned ? theme.colors.accent : theme.colors.border,
-        borderWidth: item.pinned ? 1.5 : 1,
-      }}
-      onPress={() => router.push(`/tabs/(notes)/note/${item.id}`)}
+    <Animated.View
+      entering={FadeIn.duration(100)}
+      exiting={FadeOut.duration(100)}
+      layout={Layout.springify().damping(50).stiffness(400)}
+      style={{ marginBottom: 12 }}
     >
-      <View style={styles.cardHeader}>
-        <Text style={{ ...styles.cardTitle, color: textPrimary }} numberOfLines={1}>
-          {item.title || 'Untitled'}
+      <Pressable
+        style={{
+          ...styles.card,
+          backgroundColor: cardBg,
+          borderColor: item.pinned ? theme.colors.accent : theme.colors.border,
+          borderWidth: item.pinned ? 1.5 : 1,
+        }}
+        onPress={() => router.push(`/tabs/(notes)/note/${item.id}`)}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={{ ...styles.cardTitle, color: textPrimary }} numberOfLines={1}>
+            {item.title || 'Untitled'}
+          </Text>
+        </View>
+        <Text style={{ ...styles.cardContent, color: textSecondary }} numberOfLines={2}>
+          {item.content || ''}
         </Text>
-      </View>
-      <Text style={{ ...styles.cardContent, color: textSecondary }} numberOfLines={2}>
-        {item.content || ''}
-      </Text>
-      <View style={styles.cardFooter}>
-        <View style={styles.tags}>
-          {(item.tags || []).slice(0, 2).map((tag: string) => (
-            <View key={tag} style={{ ...styles.tag, backgroundColor: theme.colors.bg }}>
-              <Text style={{ ...styles.tagText, color: textTertiary }}>{tag}</Text>
-            </View>
-          ))}
+        <View style={styles.cardFooter}>
+          <View style={styles.tags}>
+            {(item.tags || []).slice(0, 2).map((tag: string) => (
+              <View key={tag} style={{ ...styles.tag, backgroundColor: theme.colors.bg }}>
+                <Text style={{ ...styles.tagText, color: textTertiary }}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.actions}>
+            <Pressable style={styles.actionBtn} onPress={() => handleTogglePin(item)}>
+              <PinIcon size={18} color={item.pinned ? theme.colors.accent : textTertiary} fill={item.pinned ? theme.colors.accent : 'none'} />
+            </Pressable>
+            <Pressable style={styles.actionBtn} onPress={() => handleDelete(item.id)}>
+              <TrashIcon size={18} color={textTertiary} />
+            </Pressable>
+          </View>
         </View>
-        <View style={styles.actions}>
-          <Pressable style={styles.actionBtn} onPress={() => handleTogglePin(item)}>
-            <PinIcon size={18} color={item.pinned ? theme.colors.accent : textTertiary} fill={item.pinned ? theme.colors.accent : 'none'} />
-          </Pressable>
-          <Pressable style={styles.actionBtn} onPress={() => handleDelete(item.id)}>
-            <TrashIcon size={18} color={textTertiary} />
-          </Pressable>
-        </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 
   return (

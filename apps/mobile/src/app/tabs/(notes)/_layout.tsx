@@ -25,11 +25,11 @@ export default function NotesLayout() {
         name="new"
         options={{
           title: 'New Note',
-          presentation: 'modal',
           headerShown: true,
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.textPrimary,
           headerShadowVisible: false,
+          animation: 'slide_from_bottom',
         }}
       />
       <Stack.Screen
@@ -40,6 +40,7 @@ export default function NotesLayout() {
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.textPrimary,
           headerShadowVisible: false,
+          animation: 'slide_from_bottom',
         }}
       />
     </Stack>
