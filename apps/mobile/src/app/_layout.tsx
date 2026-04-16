@@ -24,11 +24,12 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [ready, setReady] = useState(false);
   const initRef = useRef(false);
-  const { user } = useAuthStore();
+  const { user, initialize } = useAuthStore();
 
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
+    initialize();
     setReady(true);
   }, []);
 
