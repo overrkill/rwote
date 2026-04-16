@@ -1,0 +1,63 @@
+---
+---
+<section class="py-20 md:py-28">
+  <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+    <div class="animate-fadeUp">
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-primary">
+        Capture insights from your learning
+      </h1>
+      <p class="text-lg md:text-xl mb-10 max-w-xl text-secondary">
+        A simple tool for capturing and organizing insights while you learn. 
+        Works as a Chrome extension and web app.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4">
+        <a href="/auth/register" class="px-8 py-3 rounded-full font-semibold bg-accent text-white text-center hover:opacity-85 transition-opacity">
+          Get Started Free
+        </a>
+        <a href="#how-it-works" class="px-8 py-3 rounded-full font-normal bg-surfaceAlt text-primary text-center border border-border hover:bg-surface transition-all">
+          How It Works
+        </a>
+      </div>
+    </div>
+    <div class="animate-fadeUp animation-delay-200 hidden md:block">
+      <div class="flex justify-center items-center">
+        <div class="w-full max-w-[340px] bg-white rounded-xl shadow-[0_30px_80px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] overflow-hidden rotate-[1.5deg] hover:rotate-0 hover:scale-105 transition-transform duration-300 ease-out">
+          <div class="bg-[#f0ede8] p-3 flex items-center gap-2 border-b border-[#e5e2dc]">
+            <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-[#febc2e]"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-[#28c840]"></div>
+          </div>
+          <div class="p-4 font-sans">
+            <div class="flex justify-between items-center mb-4">
+              <span class="text-lg text-[#1a1a1a] font-display">Rwote</span>
+              <span class="text-[#8a8278] font-mono text-[0.7rem]">2 notes</span>
+            </div>
+            <div class="bg-[#f5f5f5] rounded-full p-2 px-4 text-xs text-[#aaa] mb-3">Search notes...</div>
+            <div class="bg-[#f5f5f5] rounded-full p-2 px-4 text-xs text-[#bbb] mb-4">Filter by tag...</div>
+            <div class="border border-[#eee] rounded-lg p-3 mb-3">
+              <span class="inline-block bg-[#e8f0fe] text-[#3b5bdb] text-[10px] px-2 py-0.5 rounded-full mb-2 font-medium">SAAS</span>
+              <div class="text-sm font-medium text-[#0f0e0d]">build saas</div>
+            </div>
+            <div class="border border-[#eee] rounded-lg p-3 mb-3">
+              <span class="inline-block bg-[#fff0f0] text-[#c8402a] text-[10px] px-2 py-0.5 rounded-full mb-2 font-medium">DSA</span>
+              <div class="text-sm font-medium text-[#0f0e0d]">Solve problem</div>
+            </div>
+            <div class="border-t border-[#eee] pt-4 mt-4">
+              <div class="bg-[#f9f9f9] rounded-md p-2 px-3 text-xs text-[#bbb] mb-2">Write your note...</div>
+              <div class="bg-[#0f0e0d] text-white rounded-md p-2 text-xs font-medium text-center">Save</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fadeUp { animation: fadeUp 0.5s ease-out forwards; }
+  .animation-delay-200 { animation-delay: 200ms; }
+</style>
