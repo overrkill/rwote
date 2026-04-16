@@ -5,31 +5,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: '#2d2926',
-          dark: '#faf9f7',
-        },
-        secondary: {
-          DEFAULT: '#6b6560',
-          dark: '#9a9590',
-        },
+        primary: '#2d2926',
+        'primary-dark': '#faf9f7',
+        secondary: '#6b6560',
+        'secondary-dark': '#9a9590',
         accent: '#e85d04',
-        surface: {
-          DEFAULT: '#ffffff',
-          dark: '#1a1917',
-        },
-        surfaceAlt: {
-          DEFAULT: '#f5f3f0',
-          dark: '#252422',
-        },
-        bg: {
-          DEFAULT: '#faf9f7',
-          dark: '#0f0e0d',
-        },
-        border: {
-          DEFAULT: '#e8e5e0',
-          dark: '#2d2b28',
-        },
+        surface: '#ffffff',
+        'surface-dark': '#1a1917',
+        surfaceAlt: '#f5f3f0',
+        'surfaceAlt-dark': '#252422',
+        bg: '#faf9f7',
+        'bg-dark': '#0f0e0d',
+        border: '#e8e5e0',
+        'border-dark': '#2d2b28',
+        'browser-bg': '#2d2b28',
+        'browser-bg-dark': '#2d2b28',
+        'browser-bar': '#2d2b28',
       },
       fontFamily: {
         display: ["'Grand Hotel', cursive"],
@@ -40,6 +31,10 @@ export default {
         'fade-up': 'fadeUp 0.6s ease-out forwards',
         'float': 'float 3s ease-in-out infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
+      },
+      boxShadow: {
+        'mockup': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        'mockup-sm': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
       },
       keyframes: {
         fadeUp: {
