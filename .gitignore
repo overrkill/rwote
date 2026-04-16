@@ -85,6 +85,9 @@ __tests__/
 *.seed
 *.pid.lock
 
+# Agent skills
+.agents/
+
 # Debug
 .nyc_output/
 .node_repl_history
