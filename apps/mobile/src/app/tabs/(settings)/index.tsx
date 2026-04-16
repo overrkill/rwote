@@ -2,8 +2,10 @@
 
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert, TextInput } from 'react-native';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { useTheme, THEMES, Theme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
+import { useNotesStore } from '@/stores/notes-store';
 import { CheckIcon } from '@/components/icons';
 import { storage } from '@/lib/storage';
 
@@ -11,7 +13,9 @@ type AIMode = 'off' | 'local' | 'cloud';
 
 export default function SettingsScreen() {
   const { theme, themeId, setThemeId } = useTheme();
+  const router = useRouter();
   const { user, signOut, isLoading } = useAuthStore();
+  const { setNotes } = useNotesStore();
   const [aiMode, setAiMode] = useState<AIMode>('off');
   const [localUrl, setLocalUrl] = useState('');
   const [localModel, setLocalModel] = useState('');
@@ -52,6 +56,8 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               await signOut();
+              setNotes([]);
+              router.replace('/auth');
             } catch {
               Alert.alert('Error', 'Failed to sign out');
             }

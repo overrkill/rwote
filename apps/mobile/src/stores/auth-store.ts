@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Alert } from 'react-native';
 import { storage } from '@/lib/storage';
 import { supabase } from '@/lib/supabase';
+import GoogleSignIn from '../../modules/google-sign-in';
 
 interface User {
   id: string;
@@ -91,8 +92,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     const { accessToken } = get();
-    if (accessToken) {
-      await supabase.signOut(accessToken);
+    try {
+      if (accessToken) {
+        await supabase.signOut(accessToken);
+      }
+    } catch {
+      // Ignore API errors, still clear local state
+    }
+    try {
+      await GoogleSignIn.signOut();
+    } catch {
+      // Ignore Google sign-out errors
     }
     storage.remove('accessToken');
     storage.remove('user');
