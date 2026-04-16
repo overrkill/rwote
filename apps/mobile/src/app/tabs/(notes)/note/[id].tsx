@@ -53,6 +53,7 @@ export default function NoteDetailScreen() {
 
     setSaving(true);
     try {
+      const note = notes.find((n) => n.id === id);
       const updates = {
         title: title.trim(),
         content: content.trim(),
@@ -62,8 +63,16 @@ export default function NoteDetailScreen() {
 
       updateNote(id!, updates);
 
-      if (accessToken) {
-        await supabase.updateNote(accessToken, id!, updates);
+      if (accessToken && note) {
+        await supabase.saveNote(accessToken, {
+          id: note.id,
+          text: title.trim(),
+          note: content.trim(),
+          tag: selectedTags[0] || 'general',
+          date: note.created_at,
+          pinned: note.pinned,
+          updated_at: new Date().toISOString(),
+        });
       }
 
       router.back();

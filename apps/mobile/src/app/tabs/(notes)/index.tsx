@@ -44,13 +44,12 @@ export default function NotesScreen() {
 
   const loadNotes = useCallback(async () => {
     const currentToken = useAuthStore.getState().accessToken;
-    console.log('loadNotes called, token:', currentToken ? 'exists' : 'null');
     if (!currentToken) return;
     try {
       const data = await supabase.fetchNotes(currentToken);
-      console.log('fetchNotes result:', JSON.stringify(data));
-      // Map API response to our Note interface
-      const mappedNotes = (data || []).map((item: any) => ({
+      // Map API response from edge function: { notes: [...] }
+      const notesData = data?.notes || [];
+      const mappedNotes = notesData.map((item: any) => ({
         id: item.local_id || item.id,
         title: item.text || 'Untitled',
         content: item.note || '',
@@ -66,7 +65,6 @@ export default function NotesScreen() {
   }, [setNotes]);
 
   useEffect(() => {
-    console.log('useEffect triggered, user:', !!user, 'accessToken:', !!accessToken);
     if (user && accessToken) {
       loadNotes();
     }
@@ -98,7 +96,15 @@ export default function NotesScreen() {
     updateNote(note.id, { pinned: !note.pinned });
     if (accessToken) {
       try {
-        await supabase.updateNote(accessToken, note.id, { pinned: !note.pinned });
+        await supabase.saveNote(accessToken, {
+          id: note.id,
+          text: note.title,
+          note: note.content,
+          tag: note.tags?.[0] || 'general',
+          date: note.created_at,
+          pinned: !note.pinned,
+          updated_at: new Date().toISOString(),
+        });
       } catch (error) {
         console.error('Failed to update note:', error);
       }

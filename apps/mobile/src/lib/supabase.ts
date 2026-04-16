@@ -13,6 +13,18 @@ async function ensureConfigured() {
   }
 }
 
+async function callEdgeFunction(endpoint: string, accessToken: string, body?: object) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${endpoint}`, {
+    method: body ? 'POST' : 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res.json();
+}
+
 export const supabase = {
   url: SUPABASE_URL,
   anonKey: SUPABASE_ANON_KEY,
@@ -98,51 +110,29 @@ export const supabase = {
   },
 
   async fetchNotes(accessToken: string) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/notes?select=*&order=created_at.desc`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        apikey: SUPABASE_ANON_KEY,
-      },
-    });
-    return res.json();
+    return callEdgeFunction('load-notes', accessToken);
   },
 
-  async createNote(accessToken: string, note: { title: string; content: string; tags: string[] }) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/notes`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        apikey: SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(note),
-    });
-    return res.json();
+  async saveNote(accessToken: string, note: {
+    id?: string;
+    text: string;
+    note?: string;
+    tag?: string;
+    date: string;
+    pinned?: boolean;
+    updated_at?: string;
+  }) {
+    return callEdgeFunction('save-note', accessToken, { note });
   },
 
-  async updateNote(accessToken: string, id: string, updates: Partial<{ title: string; content: string; tags: string[]; pinned: boolean }>) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/notes?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        apikey: SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(updates),
-    });
-    return res.json();
+  async deleteNote(accessToken: string, local_id: string) {
+    return callEdgeFunction('delete-note', accessToken, { local_id });
   },
 
-  async deleteNote(accessToken: string, id: string) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/notes?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        apikey: SUPABASE_ANON_KEY,
-      },
+  async syncNotes(accessToken: string, localNotes: any[], last_synced_at?: string) {
+    return callEdgeFunction('sync', accessToken, {
+      notes: localNotes,
+      last_synced_at,
     });
-    return res.json();
   },
 };

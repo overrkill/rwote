@@ -50,15 +50,6 @@ export default function NewNoteScreen() {
         pinned: false,
       };
 
-      if (accessToken) {
-        const data = await supabase.createNote(accessToken, noteData);
-        if (data && data[0]) {
-          addNote(data[0]);
-          router.back();
-          return;
-        }
-      }
-
       const tempNote = {
         id: `temp_${Date.now()}`,
         ...noteData,
@@ -66,6 +57,18 @@ export default function NewNoteScreen() {
         updated_at: new Date().toISOString(),
       };
       addNote(tempNote);
+
+      if (accessToken) {
+        await supabase.saveNote(accessToken, {
+          text: title.trim(),
+          note: content.trim(),
+          tag: selectedTags[0] || 'general',
+          date: new Date().toISOString(),
+          pinned: false,
+          updated_at: new Date().toISOString(),
+        });
+      }
+
       router.back();
     } catch {
       Alert.alert('Error', 'Failed to save note');
