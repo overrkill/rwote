@@ -3,6 +3,7 @@ import { View, ActivityIndicator, useColorScheme } from 'react-native';
 import { Stack } from 'expo-router';
 import { useAuthStore } from '@/stores/auth-store';
 import { ThemeProvider } from '@/components/theme-provider';
+import { ToastProvider } from '@/components/toast-context';
 
 function AuthStack() {
   return (
@@ -45,7 +46,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      {user ? <MainStack /> : <AuthStack />}
+      <ToastProvider>
+        {user ? <MainStack /> : <AuthStack />}
+      </ToastProvider>
     </ThemeProvider>
   );
 }

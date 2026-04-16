@@ -15,12 +15,14 @@ import { useTheme } from '@/components/theme-provider';
 import { useNotesStore } from '@/stores/notes-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/toast-context';
 
 const AVAILABLE_TAGS = ['general', 'arrays', 'strings', 'trees', 'graphs', 'dp', 'sorting', 'searching'];
 
 export default function NoteDetailScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+  const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -77,7 +79,7 @@ export default function NoteDetailScreen() {
 
       router.back();
     } catch {
-      Alert.alert('Error', 'Failed to save note');
+      toast.error('Failed to save note');
     } finally {
       setSaving(false);
     }

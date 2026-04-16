@@ -8,12 +8,14 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useNotesStore } from '@/stores/notes-store';
 import { CheckIcon } from '@/components/icons';
 import { storage } from '@/lib/storage';
+import { useToast } from '@/components/toast-context';
 
 type AIMode = 'off' | 'local' | 'cloud';
 
 export default function SettingsScreen() {
   const { theme, themeId, setThemeId } = useTheme();
   const router = useRouter();
+  const toast = useToast();
   const { user, signOut, isLoading } = useAuthStore();
   const { setNotes } = useNotesStore();
   const [aiMode, setAiMode] = useState<AIMode>('off');
@@ -59,7 +61,7 @@ export default function SettingsScreen() {
               setNotes([]);
               router.replace('/auth');
             } catch {
-              Alert.alert('Error', 'Failed to sign out');
+              toast.error('Failed to sign out');
             }
           },
         },

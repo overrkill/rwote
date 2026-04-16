@@ -1,13 +1,15 @@
 'use client';
 
-import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
+import { useToast } from '@/components/toast-context';
 
 export default function RegisterScreen() {
   const { theme } = useTheme();
+  const toast = useToast();
   const { signUp, isLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,17 +17,17 @@ export default function RegisterScreen() {
 
   const handleSignUp = async () => {
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      toast.error('Password must be at least 6 characters');
       return;
     }
     try {
       await signUp(email, password);
     } catch {
-      Alert.alert('Error', 'Failed to create account');
+      toast.error('Failed to create account');
     }
   };
 

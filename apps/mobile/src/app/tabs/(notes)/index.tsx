@@ -16,10 +16,12 @@ import { useNotesStore, Note, getFilteredNotes } from '@/stores/notes-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { PinIcon, TrashIcon, PlusIcon } from '@/components/icons';
+import { useToast } from '@/components/toast-context';
 
 export default function NotesScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+  const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
 
@@ -59,8 +61,8 @@ export default function NotesScreen() {
         updated_at: item.updated_at || new Date().toISOString(),
       }));
       setNotes(mappedNotes);
-    } catch (error) {
-      console.error('Failed to load notes:', error);
+    } catch {
+      toast.error('Failed to load notes');
     }
   }, [setNotes]);
 
@@ -86,8 +88,8 @@ export default function NotesScreen() {
     if (accessToken) {
       try {
         await supabase.deleteNote(accessToken, id);
-      } catch (error) {
-        console.error('Failed to delete note:', error);
+      } catch {
+        toast.error('Failed to delete note');
       }
     }
   };
@@ -105,8 +107,8 @@ export default function NotesScreen() {
           pinned: !note.pinned,
           updated_at: new Date().toISOString(),
         });
-      } catch (error) {
-        console.error('Failed to update note:', error);
+      } catch {
+        toast.error('Failed to update note');
       }
     }
   };

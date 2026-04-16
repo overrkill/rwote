@@ -6,10 +6,12 @@ import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
 import { GoogleIcon } from '@/components/icons';
+import { useToast } from '@/components/toast-context';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
   const router = useRouter();
+  const toast = useToast();
   const { signIn, signInWithGoogle, isLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +25,7 @@ export default function LoginScreen() {
       await signIn(email, password);
       router.replace('/tabs/(notes)');
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to sign in');
+      toast.error(err.message || 'Failed to sign in');
     }
   };
 
@@ -32,7 +34,7 @@ export default function LoginScreen() {
       await signInWithGoogle();
       router.replace('/tabs/(notes)');
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to sign in with Google');
+      toast.error(err.message || 'Failed to sign in with Google');
     }
   };
 
