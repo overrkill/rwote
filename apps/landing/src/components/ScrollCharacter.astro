@@ -1,7 +1,7 @@
 ---
 ---
 <!-- Scrollable spacer to enable native scrolling -->
-<div id="scroll-spacer" style="height: 400vh;"></div>
+<div id="scroll-spacer" style="height: 400px;"></div>
 
 <!-- Fixed UI Layer -->
 <div id="scroll-scene" class="fixed inset-0 bg-bg dark:bg-[#0f0e0d] z-0 overflow-hidden">
@@ -28,52 +28,36 @@
 
 <!-- Bubble Messages -->
 <div id="bubbles" class="fixed inset-0 pointer-events-none z-30">
-  <div class="absolute" style="top: 40%; right: 20%; transition: opacity 0.5s ease, transform 0.5s ease;">
-    <div class="bubble opacity-0 transform translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.1">
-      <p class="text-primary dark:text-[#faf9f7] font-medium">Sick of bloated note-taking apps?</p>
-    </div>
+  <div class="bubble absolute opacity-0 transition-all duration-500 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.1" data-left="10%" data-top="12%">
+    <p class="text-primary dark:text-[#faf9f7] font-medium">Sick of bloated note-taking apps?</p>
   </div>
   
-  <div class="absolute" style="top: 25%; right: 15%; transition: opacity 0.5s ease, transform 0.5s ease;">
-    <div class="bubble opacity-0 transform translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.2">
-      <p class="text-primary dark:text-[#faf9f7] font-medium">Try <span class="text-accent font-display text-xl">Rwote</span></p>
-    </div>
+  <div class="bubble absolute opacity-0 transition-all duration-500 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.2" data-left="20%" data-top="18%">
+    <p class="text-primary dark:text-[#faf9f7] font-medium">Try <span class="text-accent font-display text-xl">Rwote</span></p>
   </div>
   
-  <div class="absolute" style="top: 15%; right: 10%; transition: opacity 0.5s ease, transform 0.5s ease;">
-    <div class="bubble opacity-0 transform translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.3">
-      <p class="text-primary dark:text-[#faf9f7] font-medium">Simple yet effective</p>
-    </div>
+  <div class="bubble absolute opacity-0 transition-all duration-500 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.3" data-left="30%" data-top="10%">
+    <p class="text-primary dark:text-[#faf9f7] font-medium">Simple yet effective</p>
   </div>
   
-  <div class="absolute" style="top: 25%; left: 15%; transition: opacity 0.5s ease, transform 0.5s ease;">
-    <div class="bubble opacity-0 transform -translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.5">
-      <p class="text-primary dark:text-[#faf9f7] font-medium">Capture anywhere without the distractions of theming and optimizing setup</p>
-    </div>
+  <div class="bubble absolute opacity-0 transition-all duration-500 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.5" data-left="40%" data-top="16%">
+    <p class="text-primary dark:text-[#faf9f7] font-medium">Capture anywhere without the distractions</p>
   </div>
   
-  <div class="absolute" style="top: 15%; left: 20%; transition: opacity 0.5s ease, transform 0.5s ease;">
-    <div class="bubble opacity-0 transform -translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.6">
-      <p class="text-primary dark:text-[#faf9f7] font-medium">Sync across all your devices</p>
-    </div>
+  <div class="bubble absolute opacity-0 transition-all duration-500 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.6" data-left="50%" data-top="8%">
+    <p class="text-primary dark:text-[#faf9f7] font-medium">Sync across all your devices</p>
   </div>
   
-  <div class="absolute" style="top: 25%; left: 25%; transition: opacity 0.5s ease, transform 0.5s ease;">
-    <div class="bubble opacity-0 transform -translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.7">
-      <p class="text-primary dark:text-[#faf9f7] font-medium">Organize with tags</p>
-    </div>
+  <div class="bubble absolute opacity-0 transition-all duration-500 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.7" data-left="60%" data-top="14%">
+    <p class="text-primary dark:text-[#faf9f7] font-medium">Organize with tags</p>
   </div>
   
-  <div class="absolute" style="top: 35%; right: 20%; transition: opacity 0.5s ease, transform 0.5s ease;">
-    <div class="bubble opacity-0 transform translate-x-4 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.8">
-      <p class="text-primary dark:text-[#faf9f7] font-medium">Start capturing now</p>
-    </div>
+  <div class="bubble absolute opacity-0 transition-all duration-500 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] rounded-2xl px-6 py-4 shadow-lg max-w-xs" data-threshold="0.8" data-left="70%" data-top="20%">
+    <p class="text-primary dark:text-[#faf9f7] font-medium">Start capturing now</p>
   </div>
   
-  <div class="absolute" style="top: 50%; left: 50%; transform -translate-x-1/2; transition: opacity 0.5s ease, transform 0.5s ease;">
-    <div class="bubble opacity-0 transform translate-y-4 bg-accent rounded-2xl px-8 py-4 shadow-lg" data-threshold="1">
-      <p class="text-white font-semibold">Get Started</p>
-    </div>
+  <div class="bubble absolute opacity-0 transition-all duration-500 bg-accent rounded-2xl px-8 py-4 shadow-lg" data-threshold="1" data-left="85%" data-top="12%">
+    <p class="text-white font-semibold">Get Started</p>
   </div>
 </div>
 
@@ -105,10 +89,26 @@
 </footer>
 
 <!-- Character -->
-<div id="scroll-character" class="fixed bottom-24 z-50 pointer-events-none" style="left: 8px;">
-  <div class="relative" style="height: 80px; width: 60px;">
+<div id="scroll-character" class="fixed z-50 pointer-events-none" style="left: 8px; top: 50%; transform: translateY(-50%);">
+  <div class="relative" style="height: 120px; width: 60px;">
+    <!-- Left Leg (behind) -->
+    <div class="leg leg-left" style="z-index: 1;">
+      <svg width="12" height="30" viewBox="0 0 12 30" style="position: absolute; left: 10px; bottom: 0;">
+        <path d="M6 0 L6 22" stroke="#000000" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="6" cy="26" rx="6" ry="3" fill="#000000"/>
+      </svg>
+    </div>
+    
+    <!-- Right Leg (behind) -->
+    <div class="leg leg-right" style="z-index: 1;">
+      <svg width="12" height="30" viewBox="0 0 12 30" style="position: absolute; right: 10px; bottom: 0;">
+        <path d="M6 0 L6 22" stroke="#000000" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="6" cy="26" rx="6" ry="3" fill="#000000"/>
+      </svg>
+    </div>
+    
     <!-- Notepad Body -->
-    <svg class="absolute" width="50" height="65" viewBox="0 0 50 65" style="left: 5px; top: 0;">
+    <svg class="absolute" width="50" height="65" viewBox="0 0 50 65" style="left: 5px; top: 15px; z-index: 2;">
       <!-- Main body -->
       <rect x="2" y="2" width="46" height="58" rx="4" fill="#ffffff" stroke="#8B4513" stroke-width="3"/>
       
@@ -124,38 +124,8 @@
       <circle cx="8" cy="48" r="2" fill="#8B4513"/>
     </svg>
     
-    <!-- Left Arm -->
-    <div class="arm arm-left">
-      <svg width="20" height="12" viewBox="0 0 20 12" style="position: absolute; left: -5px; top: 25px;">
-        <path d="M20 6 Q10 6 5 6" stroke="#000000" stroke-width="4" stroke-linecap="round" fill="none"/>
-      </svg>
-    </div>
-    
-    <!-- Right Arm -->
-    <div class="arm arm-right">
-      <svg width="20" height="12" viewBox="0 0 20 12" style="position: absolute; right: -5px; top: 25px;">
-        <path d="M0 6 Q10 6 15 6" stroke="#000000" stroke-width="4" stroke-linecap="round" fill="none"/>
-      </svg>
-    </div>
-    
-    <!-- Left Leg -->
-    <div class="leg leg-left">
-      <svg width="12" height="25" viewBox="0 0 12 25" style="position: absolute; left: 12px; bottom: -15px;">
-        <path d="M6 0 L6 20" stroke="#000000" stroke-width="5" stroke-linecap="round"/>
-        <ellipse cx="6" cy="23" rx="6" ry="3" fill="#000000"/>
-      </svg>
-    </div>
-    
-    <!-- Right Leg -->
-    <div class="leg leg-right">
-      <svg width="12" height="25" viewBox="0 0 12 25" style="position: absolute; right: 12px; bottom: -15px;">
-        <path d="M6 0 L6 20" stroke="#000000" stroke-width="5" stroke-linecap="round"/>
-        <ellipse cx="6" cy="23" rx="6" ry="3" fill="#000000"/>
-      </svg>
-    </div>
-    
     <!-- Googly Eyes -->
-    <div class="absolute" style="left: 12px; top: 8px;">
+    <div class="absolute" style="left: 12px; top: 20px; z-index: 3;">
       <div class="eye eye-left">
         <div class="eye-white"></div>
         <div class="pupil"></div>
@@ -164,6 +134,20 @@
         <div class="eye-white"></div>
         <div class="pupil"></div>
       </div>
+    </div>
+    
+    <!-- Left Arm (front) -->
+    <div class="arm arm-left" style="z-index: 4;">
+      <svg width="35" height="20" viewBox="0 0 35 20" style="position: absolute; left: -15px; top: 30px;">
+        <path d="M30 10 Q15 10 5 15" stroke="#000000" stroke-width="4" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    
+    <!-- Right Arm (front) -->
+    <div class="arm arm-right" style="z-index: 4;">
+      <svg width="35" height="20" viewBox="0 0 35 20" style="position: absolute; right: -15px; top: 30px;">
+        <path d="M5 10 Q20 10 30 15" stroke="#000000" stroke-width="4" stroke-linecap="round" fill="none"/>
+      </svg>
     </div>
   </div>
 </div>
@@ -180,61 +164,61 @@
     transition: left 0.3s ease-out;
   }
   
-  #scroll-character.idle .leg-left {
-    transform: rotate(-15deg);
+  #scroll-character.idle .leg-left svg {
+    transform: rotate(-10deg);
     transform-origin: top center;
   }
   
-  #scroll-character.idle .leg-right {
-    transform: rotate(15deg);
+  #scroll-character.idle .leg-right svg {
+    transform: rotate(10deg);
     transform-origin: top center;
   }
   
-  #scroll-character.idle .arm-left {
-    transform: rotate(25deg);
+  #scroll-character.idle .arm-left svg {
+    transform: rotate(20deg);
     transform-origin: left center;
   }
   
-  #scroll-character.idle .arm-right {
-    transform: rotate(-25deg);
+  #scroll-character.idle .arm-right svg {
+    transform: rotate(-20deg);
     transform-origin: right center;
   }
   
   /* Walking animation */
-  #scroll-character.walking .leg-left {
+  #scroll-character.walking .leg-left svg {
     animation: walkLeft 0.3s ease-in-out infinite;
   }
   
-  #scroll-character.walking .leg-right {
+  #scroll-character.walking .leg-right svg {
     animation: walkRight 0.3s ease-in-out infinite;
   }
   
-  #scroll-character.walking .arm-left {
+  #scroll-character.walking .arm-left svg {
     animation: swingArmLeft 0.3s ease-in-out infinite;
   }
   
-  #scroll-character.walking .arm-right {
+  #scroll-character.walking .arm-right svg {
     animation: swingArmRight 0.3s ease-in-out infinite;
   }
   
   @keyframes walkLeft {
-    0%, 100% { transform: rotate(-25deg); transform-origin: top center; }
-    50% { transform: rotate(25deg); transform-origin: top center; }
+    0%, 100% { transform: rotate(-20deg); transform-origin: top center; }
+    50% { transform: rotate(20deg); transform-origin: top center; }
   }
   
   @keyframes walkRight {
-    0%, 100% { transform: rotate(25deg); transform-origin: top center; }
-    50% { transform: rotate(-25deg); transform-origin: top center; }
+    0%, 100% { transform: rotate(20deg); transform-origin: top center; }
+    50% { transform: rotate(-20deg); transform-origin: top center; }
   }
   
   @keyframes swingArmLeft {
-    0%, 100% { transform: rotate(35deg); transform-origin: left center; }
-    50% { transform: rotate(-35deg); transform-origin: left center; }
+    0%, 100% { transform: rotate(30deg); transform-origin: left center; }
+    50% { transform: rotate(-30deg); transform-origin: left center; }
   }
   
   @keyframes swingArmRight {
-    0%, 100% { transform: rotate(-35deg); transform-origin: right center; }
-    50% { transform: rotate(35deg); transform-origin: right center; }
+    0%, 100% { transform: rotate(-30deg); transform-origin: right center; }
+    50% { transform: rotate(30deg); transform-origin: right center; }
   }
   
   /* Jump animation */
@@ -313,7 +297,15 @@
     if (character) character.style.left = `${charLeft}px`;
     
     bubbles.forEach((bubble) => {
+      const el = bubble as HTMLElement;
       const threshold = parseFloat(bubble.getAttribute('data-threshold') || '0');
+      const leftPos = bubble.getAttribute('data-left') || '50%';
+      const topPos = bubble.getAttribute('data-top') || '30%';
+      
+      el.style.left = leftPos;
+      el.style.top = topPos;
+      el.style.transform = `translateX(-50%) translateY(${progress < threshold ? '20px' : '0'})`;
+      
       if (progress >= threshold) {
         bubble.classList.add('visible');
       } else {
