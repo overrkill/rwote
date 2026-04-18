@@ -14,6 +14,26 @@ interface NoteCardProps {
 export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }: NoteCardProps) {
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null)
   
+  const getTagColor = (tag: string): string => {
+    let hash = 0
+    for (let i = 0; i < tag.length; i++) {
+      hash = tag.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const hue = Math.abs(hash) % 360
+    return `hsl(${hue}, 70%, 85%)`
+  }
+
+  const getTagTextColor = (tag: string): string => {
+    let hash = 0
+    for (let i = 0; i < tag.length; i++) {
+      hash = tag.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const hue = Math.abs(hash) % 360
+    return `hsl(${hue}, 70%, 25%)`
+  }
+
+  const tags = note.tag.split(',').filter(t => t.length > 0)
+  
   const handleCopy = () => {
     const cleanText = note.text.replace(/#\w+/g, '').trim()
     const textToCopy = note.note ? `${cleanText}\n\n${note.note}` : cleanText
@@ -45,9 +65,20 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
       }}
     >
       <div className="flex-1 min-w-0">
-        <span className={`tag-${note.tag} text-xs font-semibold px-2.5 py-0.5 rounded-xl uppercase tracking-wide inline-block mb-2`}>
-          {note.tag}
-        </span>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {tags.map((tag) => (
+            <span 
+              key={tag}
+              className="text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide"
+              style={{ 
+                backgroundColor: getTagColor(tag),
+                color: getTagTextColor(tag),
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
         <p className="leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>
           {note.text}
         </p>

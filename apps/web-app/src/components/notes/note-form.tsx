@@ -1,13 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import type { Note } from '@/lib/types'
-
-const DEFAULT_TAGS = [
-  'uncategorized', 'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
-  'hashing', 'trees', 'graphs', 'dp', 'sorting',
-  'backtracking', 'binary-search', 'heaps', 'tries'
-]
 
 interface NoteFormProps {
   note?: Note
@@ -18,15 +12,16 @@ interface NoteFormProps {
 export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
   const [text, setText] = useState(note?.text || '')
   const [extraNote, setExtraNote] = useState(note?.note || '')
-  const [tag, setTag] = useState(note?.tag || 'uncategorized')
-  const [showTagPicker, setShowTagPicker] = useState(false)
-  const [filteredTags, setFilteredTags] = useState(DEFAULT_TAGS)
+  const [removedTags, setRemovedTags] = useState<string[]>([])
+  
+  // Get existing tags from note being edited
+  const existingTags = note?.tag ? note.tag.split(',').filter(t => t.length > 0) : []
 
   useEffect(() => {
     if (note) {
       setText(note.text)
       setExtraNote(note.note)
-      setTag(note.tag)
+      setRemovedTags([])
     }
   }, [note])
 
@@ -35,38 +30,70 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
     return matches ? matches.map((t) => t.slice(1).toLowerCase()) : []
   }
 
-  const handleTextChange = (value: string) => {
-    setText(value)
-    const tags = extractTags(value)
-    if (tags.length > 0 && DEFAULT_TAGS.includes(tags[0])) {
-      setTag(tags[0])
-    }
+  const cleanText = (input: string): string => {
+    return input.replace(/#\w+/g, '').trim()
   }
 
-  const handleTagSearch = (query: string) => {
-    if (!query) {
-      setFilteredTags(DEFAULT_TAGS)
+  const currentTags = useMemo(() => extractTags(text), [text])
+  
+  // Combine existing tags (minus removed) with newly typed tags for display
+  const allTags = useMemo(() => {
+    const keptExisting = existingTags.filter(t => !removedTags.includes(t))
+    const newTags = currentTags.filter(t => !keptExisting.includes(t))
+    return [...keptExisting, ...newTags]
+  }, [existingTags, removedTags, currentTags])
+
+  const removeTag = (tagToRemove: string) => {
+    if (existingTags.includes(tagToRemove) && !removedTags.includes(tagToRemove)) {
+      setRemovedTags([...removedTags, tagToRemove])
     } else {
-      setFilteredTags(DEFAULT_TAGS.filter((t) => t.includes(query.toLowerCase())))
+      const regex = new RegExp(`#${tagToRemove}\\b`, 'gi')
+      setText(text.replace(regex, '').trim())
     }
   }
 
   const handleSave = () => {
     if (!text.trim()) return
-    onSave(text.trim(), extraNote.trim(), tag)
+    
+    const tags = extractTags(text)
+    // Combine: kept existing tags + new tags from text
+    const keptExisting = existingTags.filter(t => !removedTags.includes(t))
+    const finalTags = [...new Set([...keptExisting, ...tags])]
+    const tagString = finalTags.length > 0 ? finalTags.join(',') : 'uncategorized'
+    const cleanedText = cleanText(text)
+    
+    onSave(cleanedText, extraNote.trim(), tagString)
+    
     if (!note) {
       setText('')
       setExtraNote('')
-      setTag('uncategorized')
     }
+  }
+
+  const getTagColor = (tag: string): string => {
+    let hash = 0
+    for (let i = 0; i < tag.length; i++) {
+      hash = tag.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const hue = Math.abs(hash) % 360
+    return `hsl(${hue}, 70%, 85%)`
+  }
+
+  const getTagTextColor = (tag: string): string => {
+    let hash = 0
+    for (let i = 0; i < tag.length; i++) {
+      hash = tag.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const hue = Math.abs(hash) % 360
+    return `hsl(${hue}, 70%, 25%)`
   }
 
   return (
     <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
       <textarea
         value={text}
-        onChange={(e) => handleTextChange(e.target.value)}
-        placeholder="Write your note... use #tag for tags"
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Write your note... use #hashtag to add tags"
         className="w-full px-3.5 py-3 text-base rounded-md outline-none transition-all mb-3 min-h-[80px] resize-none"
         style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
         rows={3}
@@ -81,48 +108,32 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
         rows={2}
       />
 
-      <div className="flex items-center gap-3 mb-3">
-        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Tag:</span>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowTagPicker(!showTagPicker)}
-            className={`tag-${tag} text-xs font-semibold px-2.5 py-1 rounded-xl uppercase tracking-wide`}
-          >
-            {tag}
-          </button>
-          {showTagPicker && (
-            <div className="absolute top-full left-0 mt-1 rounded-lg shadow-lg z-10 min-w-[150px]" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <div className="p-2" style={{ borderBottom: '1px solid var(--border)' }}>
-                <input
-                  type="text"
-                  placeholder="Search tags..."
-                  className="w-full px-2 py-1 text-sm rounded"
-                  style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                  onChange={(e) => handleTagSearch(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="max-h-48 overflow-y-auto">
-                {filteredTags.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => {
-                      setTag(t)
-                      setShowTagPicker(false)
-                    }}
-                    className="block w-full text-left px-3 py-2 text-sm"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3 p-2 rounded" style={{ backgroundColor: 'var(--surface-alt)' }}>
+          {allTags.map((tag) => (
+            <span 
+              key={tag}
+              className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full"
+              style={{ 
+                backgroundColor: getTagColor(tag),
+                color: getTagTextColor(tag),
+              }}
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="hover:opacity-70"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </span>
+          ))}
         </div>
-      </div>
+      )}
 
       <div className="flex gap-2">
         <button

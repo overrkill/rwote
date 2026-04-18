@@ -8,22 +8,22 @@ interface TagFilterProps {
   onChange: (tags: string[]) => void
 }
 
-const TAG_LABELS: Record<string, string> = {
-  uncategorized: 'Uncategorized',
-  general: 'General',
-  arrays: 'Arrays',
-  strings: 'Strings',
-  'sliding-window': 'Sliding Window',
-  'prefix-sum': 'Prefix Sum',
-  hashing: 'Hashing',
-  trees: 'Trees',
-  graphs: 'Graphs',
-  dp: 'DP',
-  sorting: 'Sorting',
-  backtracking: 'Backtracking',
-  'binary-search': 'Binary Search',
-  heaps: 'Heaps',
-  tries: 'Tries',
+const getTagColor = (tag: string): string => {
+  let hash = 0
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const hue = Math.abs(hash) % 360
+  return `hsl(${hue}, 70%, 85%)`
+}
+
+const getTagTextColor = (tag: string): string => {
+  let hash = 0
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const hue = Math.abs(hash) % 360
+  return `hsl(${hue}, 70%, 25%)`
 }
 
 export default function TagFilter({ tags, activeTags, onChange }: TagFilterProps) {
@@ -79,22 +79,31 @@ export default function TagFilter({ tags, activeTags, onChange }: TagFilterProps
               )}
             </div>
             <div className="max-h-64 overflow-y-auto p-2">
-              <div className="flex flex-wrap gap-1">
-                {tags.map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    className="text-xs px-2 py-1 rounded-full border transition-colors"
-                    style={{ 
-                      backgroundColor: activeTags.includes(tag) ? 'var(--accent-btn)' : 'var(--surface-alt)',
-                      color: activeTags.includes(tag) ? 'var(--bg)' : 'var(--text-secondary)',
-                      borderColor: activeTags.includes(tag) ? 'var(--accent-btn)' : 'var(--border)'
-                    }}
-                  >
-                    {TAG_LABELS[tag] || tag}
-                  </button>
-                ))}
-              </div>
+              {tags.length === 0 ? (
+                <p className="text-sm p-2" style={{ color: 'var(--text-secondary)' }}>
+                  No tags yet. Add #hashtags to your notes!
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {tags.map((tag) => {
+                    const isActive = activeTags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => toggleTag(tag)}
+                        className="text-xs px-2 py-1 rounded-full border transition-colors"
+                        style={{ 
+                          backgroundColor: isActive ? getTagColor(tag) : 'transparent',
+                          color: isActive ? getTagTextColor(tag) : 'var(--text-primary)',
+                          borderColor: isActive ? getTagColor(tag) : 'var(--border)'
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </>

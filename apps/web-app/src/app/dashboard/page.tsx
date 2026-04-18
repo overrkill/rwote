@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   getAuthToken,
@@ -26,12 +26,6 @@ import TagFilter from '@/components/notes/tag-filter'
 import SubscriptionModal from '@/components/ui/subscription-modal'
 import AiSettingsModal from '@/components/ui/ai-settings-modal'
 import { useTheme } from '@/components/providers/theme-provider'
-
-const DEFAULT_TAGS = [
-  'uncategorized', 'general', 'arrays', 'strings', 'sliding-window', 'prefix-sum',
-  'hashing', 'trees', 'graphs', 'dp', 'sorting',
-  'backtracking', 'binary-search', 'heaps', 'tries'
-]
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -84,6 +78,11 @@ export default function DashboardPage() {
     { id: 'monokai', name: 'Monokai' },
     { id: 'monokai_light', name: 'Monokai Pro' },
   ]
+
+  const availableTags = useMemo(() => {
+    const tagsFromNotes = notes.flatMap(n => n.tag.split(',').filter(t => t.length > 0))
+    return [...new Set(tagsFromNotes)].sort()
+  }, [notes])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -209,10 +208,7 @@ export default function DashboardPage() {
         }
         finalText = result.summary
         if (result.tags.length > 0 && tag === 'uncategorized') {
-          const matchedTag = DEFAULT_TAGS.find(t => result.tags.includes(t))
-          if (matchedTag) {
-            tag = matchedTag
-          }
+          tag = result.tags.join(',')
         }
       } catch (e) {
         console.error('AI summarization failed:', e)
@@ -499,7 +495,7 @@ export default function DashboardPage() {
             <SearchBar value={searchQuery} onChange={setSearchQuery} />
           </div>
           <TagFilter
-            tags={DEFAULT_TAGS}
+            tags={availableTags}
             activeTags={activeTags}
             onChange={setActiveTags}
           />

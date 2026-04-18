@@ -37,7 +37,10 @@ export default function NoteList({
     }
 
     if (activeTags.length > 0) {
-      result = result.filter((note) => activeTags.includes(note.tag))
+      result = result.filter((noteItem) => {
+        const noteTags = noteItem.tag.split(',')
+        return activeTags.some((at) => noteTags.includes(at))
+      })
     }
 
     result.sort((a, b) => {
