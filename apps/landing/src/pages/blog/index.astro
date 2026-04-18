@@ -30,7 +30,7 @@ const formatDate = (date: Date) => {
       {posts.map((post) => (
         <a 
           href={`/blog/${post.id}`}
-          class="group relative block p-8 rounded-2xl bg-[#1a1917] dark:bg-[#1a1917] border border-[#2d2b28] hover:border-accent/50 transition-all duration-300 hover:-translate-y-1"
+          class="group relative block p-8 rounded-2xl bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] hover:border-accent/50 transition-all duration-300 hover:-translate-y-1"
         >
           <div class="flex items-start gap-4">
             <div class="flex-1">
@@ -42,12 +42,12 @@ const formatDate = (date: Date) => {
               </p>
               <div class="flex items-center gap-4 text-sm text-secondary dark:text-[#9a9590]">
                 <time>{formatDate(post.data.pubDate)}</time>
-                <span class="w-1 h-1 rounded-full bg-[#9a9590]"></span>
+                <span class="w-1 h-1 rounded-full bg-secondary dark:bg-[#9a9590]"></span>
                 <span>{Math.ceil((post.body?.split(/\s+/).length ?? 400) / 200)} min read</span>
               </div>
             </div>
             
-            <div class="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[#252422] group-hover:bg-accent/20 transition-colors">
+            <div class="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-surfaceAlt dark:bg-[#252422] group-hover:bg-accent/20 transition-colors">
               <svg class="w-6 h-6 text-secondary dark:text-[#9a9590] group-hover:text-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
               </svg>

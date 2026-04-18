@@ -1,21 +1,83 @@
 ---
 ---
-<section class="min-h-[70vh] flex items-center bg-bg dark:bg-[#0f0e0d]">
-  <div class="max-w-3xl mx-auto px-4 py-20 text-center">
-    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-primary dark:text-[#faf9f7]">
-      Simple notes.<br />
-      <span class="text-accent">Powerful insights.</span>
-    </h1>
-    <p class="text-lg md:text-xl mb-10 text-secondary dark:text-[#9a9590] max-w-xl mx-auto">
-      Capture insights while you learn. No clutter. No complexity. Just your thoughts, organized.
-    </p>
-    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <a href="https://app.rwote.com/auth/register" class="px-8 py-4 rounded-full font-semibold bg-accent text-white hover:opacity-85 transition-opacity">
-        Get Started Free
-      </a>
-      <a href="https://app.rwote.com/auth/login" class="px-8 py-4 rounded-full font-medium bg-surfaceAlt dark:bg-[#252422] text-primary dark:text-[#faf9f7] border border-border dark:border-[#2d2b28] hover:bg-surface dark:hover:bg-[#1a1917] transition-colors">
-        Login
-      </a>
+<section class="relative min-h-[80vh] flex items-center overflow-hidden bg-bg dark:bg-[#0f0e0d]">
+  <!-- Background elements -->
+  <div class="absolute inset-0">
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-[120px] dark:bg-accent/10"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-orange-500/10 rounded-full blur-[100px] dark:bg-orange-500/10"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[150px] dark:bg-accent/5"></div>
+  </div>
+
+  <!-- Grid pattern -->
+  <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.03]" 
+    style="background-image: linear-gradient(#faf9f7 1px, transparent 1px), linear-gradient(90deg, #faf9f7 1px, transparent 1px); background-size: 60px 60px;">
+  </div>
+
+  <div class="relative max-w-6xl mx-auto px-4 py-20 grid lg:grid-cols-2 gap-12 items-center">
+    <div class="text-center lg:text-left">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surfaceAlt dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] mb-8">
+        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        <span class="text-sm text-secondary dark:text-[#9a9590]">Now in public beta</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-primary dark:text-[#faf9f7]">
+        Simple notes.<br />
+        <span class="text-accent">Powerful insights.</span>
+      </h1>
+      <p class="text-lg md:text-xl mb-10 text-secondary dark:text-[#9a9590] max-w-xl mx-auto lg:mx-0">
+        Capture insights while you learn. No clutter. No complexity. Just your thoughts, organized.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+        <a href="https://app.rwote.com/auth/register" class="px-8 py-4 rounded-full font-semibold bg-accent text-white hover:opacity-85 transition-all hover:scale-105 hover:shadow-lg hover:shadow-accent/25">
+          Get Started Free
+        </a>
+        <a href="https://app.rwote.com/auth/login" class="px-8 py-4 rounded-full font-medium bg-surfaceAlt dark:bg-[#1a1917] text-primary dark:text-[#faf9f7] border border-border dark:border-[#2d2b28] hover:bg-surface dark:hover:bg-[#252422] transition-all">
+          Login
+        </a>
+      </div>
+      <p class="mt-6 text-sm text-secondary dark:text-[#9a9590]">
+        No credit card required
+      </p>
+    </div>
+
+    <!-- Visual mockup -->
+    <div class="hidden lg:block relative">
+      <div class="relative mx-auto max-w-sm">
+        <!-- Note card mockup -->
+        <div class="rounded-2xl bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] p-6 shadow-2xl">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
+          </div>
+          <div class="space-y-3">
+            <div class="flex gap-2">
+              <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-400 dark:bg-blue-500/20 dark:text-blue-400">notes</span>
+              <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-500/20 text-purple-400 dark:bg-purple-500/20 dark:text-purple-400">insights</span>
+            </div>
+            <p class="text-primary dark:text-[#faf9f7] text-lg font-medium">Easliy capture thoughts</p>
+            <p class="text-secondary dark:text-[#9a9590] text-sm">No more Mess to optimize simple and effective notes</p>
+            <p class="text-secondary dark:text-[#6b6560] text-xs">Apr 18, 2026</p>
+          </div>
+        </div>
+        
+        <!-- Floating tags -->
+        <div class="absolute -top-4 -right-8 px-4 py-2 rounded-full bg-surfaceAlt dark:bg-[#252422] border border-border dark:border-[#2d2b28] text-sm text-primary dark:text-[#faf9f7] shadow-lg animate-float">
+          #hashtags
+        </div>
+        <div class="absolute bottom-8 -left-6 px-4 py-2 rounded-full bg-accent text-white text-sm font-semibold shadow-lg animate-float" style="animation-delay: 0.5s;">
+          + Sync
+        </div>
+      </div>
     </div>
   </div>
 </section>
+
+<style>
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+</style>

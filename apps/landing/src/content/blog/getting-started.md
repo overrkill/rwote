@@ -16,24 +16,37 @@ Rwote is a simple note-taking tool designed for capturing insights while you lea
 
 Visit [app.rwote.com](https://app.rwote.com) and sign up with your email. The free tier gives you unlimited notes with local storage.
 
-### 2. Install the Chrome Extension
+### 2. Install the Chrome Extension - Coming soon
 
 1. Visit the Chrome Web Store and search for "Rwote"
 2. Click "Add to Chrome"
 3. Pin the extension to your toolbar for quick access
 
-### 3. Start Capturing
+### 3. Install the Android app - Coming soon
 
-**Using the Chrome Extension:**
-- Select any text on a webpage
-- Right-click and select "Save to Rwote"
-- Your note is instantly saved
+1. Visit PlayStore and search for "Rwote"
+2. Click "Install"
+3. Start saving your note
+
+### 4. Start Capturing
+
 
 **Using the Web App:**
 - Visit [app.rwote.com](https://app.rwote.com)
 - Type your note in the input field
 - Add tags using `#tagname` syntax
 
+**Using the Chrome Extension:**
+- Coming soon
+- Select any text on a webpage
+- Right-click and select "Save to Rwote"
+- Your note is instantly saved
+
+**Using the Android App:**
+- Coming soon
+- Click + icon to add notes 
+- Search using hashtags or text 
+- Your note is instantly saved
 ## Using Tags
 
 Tags help you organize and find notes quickly.

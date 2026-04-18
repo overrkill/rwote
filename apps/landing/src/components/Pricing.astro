@@ -1,7 +1,11 @@
 ---
 ---
-<section id="pricing" class="py-24 bg-surfaceAlt dark:bg-[#0f0e0d]">
-  <div class="max-w-4xl mx-auto px-4">
+<section id="pricing" class="py-24 bg-bg dark:bg-[#0f0e0d] relative overflow-hidden">
+  <!-- Background -->
+  <div class="absolute top-0 right-1/4 w-64 h-64 bg-accent/5 dark:bg-accent/5 rounded-full blur-[80px]"></div>
+  <div class="absolute bottom-0 left-1/4 w-64 h-64 bg-green-500/5 dark:bg-green-500/5 rounded-full blur-[80px]"></div>
+
+  <div class="max-w-4xl mx-auto px-4 relative">
     <div class="text-center mb-16">
       <h2 class="text-3xl md:text-4xl font-bold mb-4 text-primary dark:text-[#faf9f7]">
         Simple pricing
@@ -10,72 +14,77 @@
         Start free. Upgrade when you need cloud sync.
       </p>
     </div>
-    <div class="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-      <div class="rounded-2xl p-8 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] hover:border-accent/50 transition-colors">
-        <h3 class="text-xl font-semibold mb-2 text-primary dark:text-[#faf9f7]">Free</h3>
-        <div class="flex items-baseline gap-1 mb-2">
-          <span class="text-4xl font-bold text-primary dark:text-[#faf9f7]">$0</span>
+    
+    <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+      <!-- Free Plan -->
+      <div class="group relative rounded-2xl p-8 bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] hover:border-accent/50 transition-all duration-300 hover:-translate-y-2">
+        <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        
+        <div class="relative">
+          <h3 class="text-xl font-semibold mb-2 text-primary dark:text-[#faf9f7]">Free</h3>
+          <div class="flex items-baseline gap-1 mb-2">
+            <span class="text-4xl font-bold text-primary dark:text-[#faf9f7]">$0</span>
+          </div>
+          <p class="text-sm mb-6 text-secondary dark:text-[#9a9590]">Forever free</p>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Unlimited notes
+            </li>
+            <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Browser extension
+            </li>
+            <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Select to add
+            </li>
+            <li class="flex items-center gap-3 text-sm text-secondary dark:text-[#9a9590]">
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+              Local storage only
+            </li>
+          </ul>
+          <a href="https://app.rwote.com/auth/register" class="block w-full px-6 py-3 rounded-full text-center bg-surfaceAlt dark:bg-[#252422] text-primary dark:text-[#faf9f7] border border-border dark:border-[#2d2b28] hover:bg-border dark:hover:bg-[#2d2b28] transition-colors">
+            Get Started
+          </a>
         </div>
-        <p class="text-sm mb-6 text-secondary dark:text-[#9a9590]">Forever free</p>
-        <ul class="space-y-3 mb-8">
-          <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
-            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Unlimited notes
-          </li>
-          <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
-            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Browser extension
-          </li>
-          <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
-            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Select to add
-          </li>
-          <li class="flex items-center gap-3 text-sm text-secondary dark:text-[#9a9590]">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
-            Local storage only
-          </li>
-          <li class="flex items-center gap-3 text-sm text-secondary dark:text-[#9a9590]">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
-            coming soon
-          </li>
-        </ul>
-        <a href="https://app.rwote.com/auth/register" class="block w-full px-6 py-3 rounded-full text-center bg-surfaceAlt dark:bg-[#252422] text-primary dark:text-[#faf9f7] border border-border dark:border-[#2d2b28] hover:bg-border dark:hover:bg-[#2d2b28] transition-colors">
-          Get Started
-        </a>
       </div>
 
-      <div class="relative rounded-2xl p-8 bg-surface dark:bg-[#1a1917] border-2 border-accent shadow-lg shadow-accent/10">
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-accent text-white text-xs font-semibold">
+      <!-- Pro Plan -->
+      <div class="relative group">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-accent text-white text-xs font-semibold z-10">
           Most Popular
         </div>
-        <h3 class="text-xl font-semibold mb-2 text-primary dark:text-[#faf9f7]">Pro</h3>
-        <div class="flex items-baseline gap-1 mb-2">
-          <span class="text-4xl font-bold text-primary dark:text-[#faf9f7]">$5</span>
-          <span class="text-secondary dark:text-[#9a9590]">/mo</span>
+        <div class="relative rounded-2xl p-8 bg-surface dark:bg-[#1a1917] border-2 border-accent shadow-lg shadow-accent/10 hover:shadow-accent/20 transition-all duration-300 hover:-translate-y-2">
+          <h3 class="text-xl font-semibold mb-2 text-primary dark:text-[#faf9f7]">Pro</h3>
+          <div class="flex items-baseline gap-1 mb-2">
+            <span class="text-4xl font-bold text-primary dark:text-[#faf9f7]">$5</span>
+            <span class="text-secondary dark:text-[#9a9590]">/mo</span>
+          </div>
+          <p class="text-sm mb-6 text-secondary dark:text-[#9a9590]">or $40 lifetime</p>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Everything in Free
+            </li>
+            <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Cloud sync
+            </li>
+            <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Access on any device 
+            </li>
+            <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Automatic backup
+            </li>
+          </ul>
+          <a href="https://app.rwote.com/auth/register" class="block w-full px-8 py-3 rounded-full font-semibold text-center bg-accent text-white hover:opacity-85 transition-all hover:shadow-lg hover:shadow-accent/25">
+            Start Free Trial
+          </a>
+          <p class="text-xs text-center mt-3 text-secondary dark:text-[#9a9590]">7-day free trial. No credit card required.</p>
         </div>
-        <p class="text-sm mb-6 text-secondary dark:text-[#9a9590]">or $40 lifetime</p>
-        <ul class="space-y-3 mb-8">
-          <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
-            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Everything in Free
-          </li>
-          <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
-            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Cloud sync
-          </li>
-          <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
-            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Access on any device 
-          </li>
-          <li class="flex items-center gap-3 text-sm text-primary dark:text-[#faf9f7]">
-            <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            Automatic backup
-          </li>
-        </ul>
-        <a href="https://app.rwote.com/auth/register" class="block w-full px-8 py-3 rounded-full font-semibold text-center bg-accent text-white hover:opacity-85 transition-opacity">
-          Start Free Trial
-        </a>
-        <p class="text-xs text-center mt-3 text-secondary dark:text-[#9a9590]">7-day free trial. No credit card required.</p>
       </div>
     </div>
   </div>

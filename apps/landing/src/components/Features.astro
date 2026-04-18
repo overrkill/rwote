@@ -5,23 +5,30 @@ const features = [
     title: 'Capture anywhere',
     description: 'Use the Chrome extension to save insights while browsing. Or use the web app anywhere.',
     gradient: 'from-yellow-500 to-orange-500',
+    borderGradient: 'from-yellow-500/50 to-orange-500/50',
   },
   {
     icon: '🏷️',
     title: 'Organize with tags',
     description: 'Tag your notes by topic. Filter and search to find what you need instantly.',
     gradient: 'from-blue-500 to-purple-500',
+    borderGradient: 'from-blue-500/50 to-purple-500/50',
   },
   {
     icon: '☁️',
     title: 'Sync across devices',
     description: 'Access your notes on any device with cloud sync. Never lose an insight.',
     gradient: 'from-green-500 to-teal-500',
+    borderGradient: 'from-green-500/50 to-teal-500/50',
   },
 ];
 ---
-<section class="py-24 bg-surfaceAlt dark:bg-[#0f0e0d]">
-  <div class="max-w-6xl mx-auto px-4">
+<section class="py-24 bg-bg dark:bg-[#0f0e0d] relative overflow-hidden">
+  <!-- Background accents -->
+  <div class="absolute top-0 left-1/4 w-64 h-64 bg-accent/5 dark:bg-accent/5 rounded-full blur-[80px]"></div>
+  <div class="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500/5 dark:bg-purple-500/5 rounded-full blur-[80px]"></div>
+
+  <div class="max-w-6xl mx-auto px-4 relative">
     <div class="text-center mb-16">
       <h2 class="text-3xl md:text-4xl font-bold mb-4 text-primary dark:text-[#faf9f7]">
         Everything you need to learn better
@@ -30,14 +37,19 @@ const features = [
         Simple tools that fit into your workflow. Capture insights without breaking your flow.
       </p>
     </div>
-    <div class="grid md:grid-cols-3 gap-8">
+    <div class="grid md:grid-cols-3 gap-6">
       {features.map((feature, i) => (
-        <div class="group relative p-8 rounded-2xl bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] hover:border-accent/50 transition-all duration-300 hover:-translate-y-1">
-          <div class={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform`}>
-            {feature.icon}
+        <div class="group relative p-8 rounded-2xl bg-surface dark:bg-[#1a1917] border border-border dark:border-[#2d2b28] hover:border-transparent transition-all duration-500 hover:-translate-y-2">
+          {/* Gradient border on hover */}
+          <div class="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={`background-image: linear-gradient(to bottom right, ${feature.borderGradient});`}></div>
+          
+          <div class="relative">
+            <div class={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center text-2xl mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg`}>
+              {feature.icon}
+            </div>
+            <h3 class="text-xl font-semibold mb-3 text-primary dark:text-[#faf9f7]">{feature.title}</h3>
+            <p class="text-secondary dark:text-[#9a9590]">{feature.description}</p>
           </div>
-          <h3 class="text-xl font-semibold mb-3 text-primary dark:text-[#faf9f7]">{feature.title}</h3>
-          <p class="text-secondary dark:text-[#9a9590]">{feature.description}</p>
         </div>
       ))}
     </div>

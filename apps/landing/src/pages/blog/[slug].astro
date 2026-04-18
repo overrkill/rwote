@@ -47,19 +47,19 @@ const readingTime = Math.ceil((post.body?.split(/\s+/).length ?? 400) / 200);
         </div>
       </header>
       
-      <div class="prose prose-stone prose-invert max-w-none 
-        prose-headings:text-[#faf9f7] prose-headings:font-semibold
-        prose-p:text-[#9a9590] prose-p:leading-relaxed
+      <div class="prose prose-stone dark:prose-invert max-w-none 
+        prose-headings:text-primary dark:prose-headings:text-[#faf9f7] prose-headings:font-semibold
+        prose-p:text-secondary dark:prose-p:text-[#9a9590] prose-p:leading-relaxed
         prose-a:text-accent prose-a:no-underline hover:prose-a:underline
-        prose-code:bg-[#252422] prose-code:text-[#faf9f7] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
-        prose-pre:bg-[#1a1917] prose-pre:border prose-pre:border-[#2d2b28]
-        prose-li:text-[#9a9590]
-        prose-strong:text-[#faf9f7]
-        prose-blockquote:border-l-accent prose-blockquote:bg-[#1a1917] prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-r-lg">
+        prose-code:bg-surfaceAlt dark:prose-code:bg-[#252422] prose-code:text-primary dark:prose-code:text-[#faf9f7] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
+        prose-pre:bg-surfaceAlt dark:prose-pre:bg-[#1a1917] prose-pre:border prose-pre:border-border dark:prose-pre:border-[#2d2b28]
+        prose-li:text-secondary dark:prose-li:text-[#9a9590]
+        prose-strong:text-primary dark:prose-strong:text-[#faf9f7]
+        prose-blockquote:border-l-accent prose-blockquote:bg-surfaceAlt dark:prose-blockquote:bg-[#1a1917] prose-blockquote:px-6 prose-blockquote:py-4 prose-blockquote:rounded-r-lg">
         <Content />
       </div>
       
-      <footer class="mt-16 pt-8 border-t border-[#2d2b28]">
+      <footer class="mt-16 pt-8 border-t border-border dark:border-[#2d2b28]">
         <a href="/blog" class="inline-flex items-center gap-2 text-accent hover:underline">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
