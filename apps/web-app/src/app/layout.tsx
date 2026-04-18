@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import '@/styles/globals.css'
 import { ThemeProvider } from '@/components/providers/theme-provider'
+import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
   title: 'Rwote - Capture and organize insights from your learning',
@@ -46,9 +47,11 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen antialiased transition-colors">
+        
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        <Analytics/>
       </body>
     </html>
   )
