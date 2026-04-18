@@ -7,29 +7,60 @@ export const prerender = true;
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
+
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
 ---
 
 <BlogLayout title="Blog" description="Guides and updates from the Rwote team">
   <main class="max-w-4xl mx-auto px-4 py-16">
-    <h1 class="text-3xl font-bold text-primary mb-8">Blog</h1>
-    <div class="space-y-8">
+    <header class="mb-12 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-primary dark:text-[#faf9f7] mb-4">Blog</h1>
+      <p class="text-lg text-secondary dark:text-[#9a9590] max-w-xl mx-auto">
+        Guides, updates, and tips for capturing insights from your learning.
+      </p>
+    </header>
+
+    <div class="grid gap-6">
       {posts.map((post) => (
-        <article class="border-b border-border pb-8">
-          <a href={`/blog/${post.id}`} class="block group">
-            <h2 class="text-xl font-semibold text-primary group-hover:text-accent transition-colors mb-2">
-              {post.data.title}
-            </h2>
-            <p class="text-secondary mb-2">{post.data.description}</p>
-            <time class="text-sm text-secondary">
-              {post.data.pubDate.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </time>
-          </a>
-        </article>
+        <a 
+          href={`/blog/${post.id}`}
+          class="group relative block p-8 rounded-2xl bg-[#1a1917] dark:bg-[#1a1917] border border-[#2d2b28] hover:border-accent/50 transition-all duration-300 hover:-translate-y-1"
+        >
+          <div class="flex items-start gap-4">
+            <div class="flex-1">
+              <h2 class="text-2xl font-semibold text-primary dark:text-[#faf9f7] mb-3 group-hover:text-accent transition-colors">
+                {post.data.title}
+              </h2>
+              <p class="text-secondary dark:text-[#9a9590] mb-4 leading-relaxed">
+                {post.data.description}
+              </p>
+              <div class="flex items-center gap-4 text-sm text-secondary dark:text-[#9a9590]">
+                <time>{formatDate(post.data.pubDate)}</time>
+                <span class="w-1 h-1 rounded-full bg-[#9a9590]"></span>
+                <span>{Math.ceil((post.body?.split(/\s+/).length ?? 400) / 200)} min read</span>
+              </div>
+            </div>
+            
+            <div class="hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[#252422] group-hover:bg-accent/20 transition-colors">
+              <svg class="w-6 h-6 text-secondary dark:text-[#9a9590] group-hover:text-accent transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+        </a>
       ))}
     </div>
+
+    {posts.length === 0 && (
+      <div class="text-center py-16">
+        <p class="text-secondary dark:text-[#9a9590]">No blog posts yet. Check back soon!</p>
+      </div>
+    )}
   </main>
 </BlogLayout>
