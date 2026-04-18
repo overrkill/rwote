@@ -1,23 +1,24 @@
-import Header from '@/components/layout/header'
-import Footer from '@/components/layout/footer'
-import Hero from '@/components/marketing/hero'
-import Features from '@/components/marketing/features'
-import HowItWorks from '@/components/marketing/how-it-works'
-import Pricing from '@/components/marketing/pricing'
-import FAQ from '@/components/marketing/faq'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { getStoredUser } from '@/lib/supabase'
 
 export default function HomePage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const user = getStoredUser()
+    if (user) {
+      router.push('/dashboard')
+    } else {
+      router.push('/auth/login')
+    }
+  }, [router])
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1">
-        <Hero />
-        <Features />
-        <HowItWorks />
-        <Pricing />
-        <FAQ />
-      </main>
-      <Footer />
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
+      <div style={{ color: 'var(--text-secondary)' }}>Redirecting...</div>
     </div>
   )
 }

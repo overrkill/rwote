@@ -40,7 +40,9 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
   const allTags = useMemo(() => {
     const keptExisting = existingTags.filter(t => !removedTags.includes(t))
     const newTags = currentTags.filter(t => !keptExisting.includes(t))
-    return [...keptExisting, ...newTags]
+    // Deduplicate
+    const combined = [...keptExisting, ...newTags]
+    return [...new Set(combined)]
   }, [existingTags, removedTags, currentTags])
 
   const removeTag = (tagToRemove: string) => {

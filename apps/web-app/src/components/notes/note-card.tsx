@@ -32,7 +32,7 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
     return `hsl(${hue}, 70%, 25%)`
   }
 
-  const tags = note.tag.split(',').filter(t => t.length > 0)
+  const tags = [...new Set(note.tag.split(',').filter(t => t.length > 0))]
   
   const handleCopy = () => {
     const cleanText = note.text.replace(/#\w+/g, '').trim()
