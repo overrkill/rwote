@@ -239,7 +239,7 @@ export default function NotesScreen() {
       </View>
 
       {showFilter && filterTags.length > 0 && (
-        <View style={styles.filterDropdown}>
+        <View style={[styles.filterDropdown, { backgroundColor: cardBg, borderColor: theme.colors.border }]}>
           {filterTags.map((tag) => (
             <Pressable
               key={tag}
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   searchInput: { borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 15 },
   filterBtn: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
-  filterDropdown: { position: 'absolute', top: 58, left: 12, right: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, zIndex: 100, paddingVertical: 8 },
+  filterDropdown: { position: 'absolute', top: 58, left: 12, right: 12, borderRadius: 10, borderWidth: 1, zIndex: 100, paddingVertical: 8 },
   filterItem: { paddingHorizontal: 12, paddingVertical: 8 },
   filterText: { fontSize: 13, fontWeight: '500' },
   list: { padding: 12, paddingBottom: 100 },
