@@ -325,7 +325,7 @@ function renderTagDropdown(query) {
     filterDropdownEl.classList.add('open');
   } else {
     filterDropdownEl.innerHTML = matches.map(tag => {
-      const count = notes.filter(n => n.tag === tag).length;
+      const count = notes.filter(n => n.tags && n.tags.includes(tag)).length;
       const isActive = activeTags.has(tag);
       return `<div class="filter-dropdown-item${isActive ? ' active' : ''}" data-tag="${tag}">
         <span>${escHtml(labelOf(tag))}</span>
@@ -390,7 +390,7 @@ function updateChatMatches() {
   if (!chatText) return;
   const chatLower = chatText.toLowerCase();
   notes.forEach(n => {
-    const words = n.text.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+    const words = (n.title || '').toLowerCase().split(/\s+/).filter(w => w.length > 4);
     const matchCount = words.filter(w => chatLower.includes(w)).length;
     if (matchCount >= 2 || (words.length === 1 && matchCount === 1)) chatMatchIds.add(n.id);
   });
@@ -407,14 +407,14 @@ function updateChatBanner() {
 function getFiltered() {
   let result = [...notes];
   if (activeTags.size > 0) {
-    result = result.filter(n => activeTags.has(n.tag));
+    result = result.filter(n => n.tags && n.tags.some(t => activeTags.has(t)));
   }
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     result = result.filter(n =>
-      n.text.toLowerCase().includes(q) ||
-      (n.note && n.note.toLowerCase().includes(q)) ||
-      n.tag.toLowerCase().includes(q)
+      (n.title || '').toLowerCase().includes(q) ||
+      (n.content && n.content.toLowerCase().includes(q)) ||
+      (n.tags && n.tags.some(t => t.toLowerCase().includes(q)))
     );
   }
   return result;
@@ -433,10 +433,10 @@ function noteCardHTML(n, realIndex) {
   return `
   <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
     <div class="card-body">
-      <span class="card-tag" ${tagBadgeStyle(n.tag)}>${escHtml(labelOf(n.tag))}</span>
-      <div class="card-text">${processNoteText(n.text, searchQuery)}</div>
-      ${n.note ? `<div class="card-note">${processNoteText(n.note, searchQuery)}</div>` : ''}
-      <div class="card-meta"><span class="card-date">${n.date}</span></div>
+      <span class="card-tag" ${tagBadgeStyle(n.tags ? n.tags[0] : 'general')}>${escHtml(labelOf(n.tags ? n.tags[0] : 'general'))}</span>
+      <div class="card-text">${processNoteText(n.title || '', searchQuery)}</div>
+      ${n.content ? `<div class="card-note">${processNoteText(n.content, searchQuery)}</div>` : ''}
+      <div class="card-meta"><span class="card-date">${n.created_at ? new Date(n.created_at).toLocaleDateString() : ''}</span></div>
     </div>
     <div class="card-actions">
       <button class="card-btn pin${n.pinned ? ' active' : ''}" data-id="${n.id}" title="${n.pinned ? 'Unpin' : 'Pin'}">
@@ -471,8 +471,8 @@ function attachCardEventListeners() {
     } else if (btn.classList.contains('copy')) {
       const n = notes.find(x => x.id === id);
       if (!n) return;
-      const cleanText = stripTags(n.text);
-      navigator.clipboard.writeText(n.note ? `${cleanText}\n\n${n.note}` : cleanText)
+      const cleanText = stripTags(n.title || '');
+      navigator.clipboard.writeText(n.content ? `${cleanText}\n\n${n.content}` : cleanText)
         .then(() => showToast('Copied'));
     } else if (btn.classList.contains('pin')) {
       const res = await sendMessage({ type: 'TOGGLE_PIN', id });
@@ -537,20 +537,21 @@ function renderNotes() {
       
       const tagEl = existingCard.querySelector('.card-tag');
       if (tagEl) {
-        const c = colorOf(n.tag);
+        const firstTag = n.tags ? n.tags[0] : 'general';
+        const c = colorOf(firstTag);
         tagEl.style.background = c.bg;
         tagEl.style.color = c.text;
-        tagEl.textContent = labelOf(n.tag);
+        tagEl.textContent = labelOf(firstTag);
       }
       
       const textEl = existingCard.querySelector('.card-text');
-      if (textEl) textEl.innerHTML = processNoteText(n.text, searchQuery);
+      if (textEl) textEl.innerHTML = processNoteText(n.title || '', searchQuery);
       
       const noteEl = existingCard.querySelector('.card-note');
-      const expectedNoteHTML = n.note ? processNoteText(n.note, searchQuery) : '';
+      const expectedNoteHTML = n.content ? processNoteText(n.content, searchQuery) : '';
       if (noteEl) {
         noteEl.innerHTML = expectedNoteHTML;
-      } else if (n.note) {
+      } else if (n.content) {
         const newNoteEl = document.createElement('div');
         newNoteEl.className = 'card-note';
         newNoteEl.innerHTML = expectedNoteHTML;
@@ -558,7 +559,7 @@ function renderNotes() {
       }
       
       const dateEl = existingCard.querySelector('.card-date');
-      if (dateEl) dateEl.textContent = n.date;
+      if (dateEl) dateEl.textContent = n.created_at ? new Date(n.created_at).toLocaleDateString() : '';
       
       const pinBtn = existingCard.querySelector('.card-btn.pin');
       if (pinBtn) {
@@ -595,8 +596,8 @@ function showEditModal(id) {
         <button class="modal-close" id="edit-modal-close">×</button>
       </div>
       <div class="edit-modal-body">
-        <textarea id="edit-text" placeholder="Your note…" rows="4">${escHtml(note.text)}</textarea>
-        <textarea id="edit-note" placeholder="Extra context (optional)…" rows="2">${escHtml(note.note || '')}</textarea>
+        <textarea id="edit-text" placeholder="Your note…" rows="4">${escHtml(note.title || '')}</textarea>
+        <textarea id="edit-note" placeholder="Extra context (optional)…" rows="2">${escHtml(note.content || '')}</textarea>
         <div class="edit-modal-actions">
           <button class="edit-cancel" id="edit-cancel">Cancel</button>
           <button class="edit-save" id="edit-save">Save</button>
@@ -1043,7 +1044,9 @@ importFileEl.addEventListener('change', handleFileSelect);
 function showStatsModal() {
   const byTag = {};
   notes.forEach(n => {
-    byTag[n.tag] = (byTag[n.tag] || 0) + 1;
+    (n.tags || ['general']).forEach(t => {
+      byTag[t] = (byTag[t] || 0) + 1;
+    });
   });
   const sorted = Object.entries(byTag).sort((a, b) => b[1] - a[1]);
   const maxCount = Math.max(...Object.values(byTag), 1);
@@ -1579,8 +1582,8 @@ function handleKeyboard(e) {
     e.preventDefault();
     const note = filtered[selectedNoteIndex];
     if (note) {
-      const cleanText = stripTags(note.text);
-      navigator.clipboard.writeText(note.note ? `${cleanText}\n\n${note.note}` : cleanText)
+      const cleanText = stripTags(note.title || '');
+      navigator.clipboard.writeText(note.content ? `${cleanText}\n\n${note.content}` : cleanText)
         .then(() => showToast('Copied'));
     }
     return;

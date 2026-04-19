@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 function AuthStack() {
   return (
@@ -45,10 +46,12 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        {user ? <MainStack /> : <AuthStack />}
-      </ToastProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          {user ? <MainStack /> : <AuthStack />}
+        </ToastProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

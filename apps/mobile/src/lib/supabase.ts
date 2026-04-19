@@ -114,19 +114,18 @@ export const supabase = {
   },
 
   async saveNote(accessToken: string, note: {
-    local_id: string;
-    text: string;
-    note?: string;
-    tag?: string;
-    date: string;
+    id: string;
+    title: string;
+    content?: string;
+    tags?: string[];
     pinned?: boolean;
     updated_at?: string;
   }) {
     return callEdgeFunction('save-note', accessToken, { note });
   },
 
-  async deleteNote(accessToken: string, cloud_id: string) {
-    return callEdgeFunction('delete-note', accessToken, { local_id: cloud_id });
+  async deleteNote(accessToken: string, noteId: string) {
+    return callEdgeFunction('delete-note', accessToken, { id: noteId });
   },
 
   async syncNotes(accessToken: string, localNotes: any[], last_synced_at?: string) {

@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { Note, User, SubscriptionStatus, AiSettings, SummarizeResult } from './types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvcXhzYmJveG1rcGNpemFzZGJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjI2ODgsImV4cCI6MjA5MTQzODY4OH0.AlJh4bvWk_aMxHnWFg4xqZhY3UzbUclcKtLvkBARAQo'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -145,21 +145,20 @@ export async function loadNotes(token: string): Promise<{ notes: Note[], error?:
   const result = await callEdgeFunction('load-notes', {}, token)
   return {
     notes: (result.notes || []).map((n: any) => ({
-      id: String(n.local_id || n.id),
-      text: n.text,
-      note: n.note || '',
-      tag: n.tag || 'uncategorized',
-      date: n.date,
+      id: String(n.id),
+      title: n.title || 'Untitled',
+      content: n.content || '',
+      tags: n.tags || [],
       pinned: n.pinned || false,
-      updated_at: new Date(n.updated_at).getTime(),
-      cloudId: n.id,
+      created_at: n.created_at || new Date().toISOString(),
+      updated_at: n.updated_at || new Date().toISOString(),
     })),
     error: result.error
   }
 }
 
-export async function deleteNote(localId: string, token: string) {
-  return callEdgeFunction('delete-note', { local_id: localId }, token)
+export async function deleteNote(noteId: string, token: string) {
+  return callEdgeFunction('delete-note', { id: noteId }, token)
 }
 
 export async function getSubscriptionStatus(token: string): Promise<SubscriptionStatus> {

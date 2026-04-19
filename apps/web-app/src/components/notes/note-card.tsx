@@ -32,11 +32,11 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
     return `hsl(${hue}, 70%, 25%)`
   }
 
-  const tags = [...new Set(note.tag.split(',').filter(t => t.length > 0))]
+  const tags = note.tags || []
   
   const handleCopy = () => {
-    const cleanText = note.text.replace(/#\w+/g, '').trim()
-    const textToCopy = note.note ? `${cleanText}\n\n${note.note}` : cleanText
+    const cleanText = note.title.replace(/#\w+/g, '').trim()
+    const textToCopy = note.content ? `${cleanText}\n\n${note.content}` : cleanText
     navigator.clipboard.writeText(textToCopy)
   }
 
@@ -80,14 +80,14 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
           ))}
         </div>
         <p className="leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>
-          {note.text}
+          {note.title}
         </p>
-        {note.note && (
+        {note.content && (
           <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
-            {note.note}
+            {note.content}
           </p>
         )}
-        <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>{note.date}</p>
+        <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>{note.created_at}</p>
       </div>
       <div className="flex gap-1 shrink-0">
         <button

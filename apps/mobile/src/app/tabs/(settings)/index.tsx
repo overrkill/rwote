@@ -1,12 +1,12 @@
 'use client';
 
-import { View, Text, Pressable, StyleSheet, ScrollView, Alert, TextInput } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert, TextInput } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useTheme, THEMES, Theme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
 import { useNotesStore } from '@/stores/notes-store';
-import { CheckIcon } from '@/components/icons';
+import { Check } from 'lucide-react-native';
 import { storage } from '@/lib/storage';
 import { useToast } from '@/components/toast-context';
 
@@ -75,82 +75,85 @@ export default function SettingsScreen() {
       <Pressable
         key={t.id}
         style={{
-          ...styles.themeOption,
+          width: 150,
+          borderRadius: 12,
+          padding: s.md,
           backgroundColor: t.colors.bg,
           borderColor: isSelected ? t.colors.accent : t.colors.border,
           borderWidth: isSelected ? 2 : 1,
+          position: 'relative',
         }}
         onPress={() => setThemeId(t.id)}
       >
-        <View style={styles.themePreview}>
-          <View style={{ ...styles.previewBar, backgroundColor: t.colors.surface }} />
-          <View style={{ ...styles.previewBar, ...styles.previewBarSmall, backgroundColor: t.colors.textTertiary }} />
+        <View style={{ height: 60, borderRadius: 8, overflow: 'hidden', marginBottom: 8, justifyContent: 'flex-end', padding: 8, gap: 6 }}>
+          <View style={{ height: 16, borderRadius: 4, backgroundColor: t.colors.surface }} />
+          <View style={{ height: 10, width: '70%', borderRadius: 4, backgroundColor: t.colors.textTertiary }} />
         </View>
-        <Text style={{ ...styles.themeName, color: t.colors.textPrimary }}>
+        <Text style={{ fontSize: 14, fontWeight: '500', color: t.colors.textPrimary }}>
           {t.name}
         </Text>
         {isSelected && (
-          <View style={styles.checkmark}>
-            <CheckIcon size={18} color={t.colors.accent} />
+          <View style={{ position: 'absolute', top: 12, right: 12 }}>
+            <Check size={18} color={t.colors.accent} />
           </View>
         )}
       </Pressable>
     );
   };
 
+  const s = theme.spacing;
+
   return (
     <ScrollView
-      style={{ ...styles.container, backgroundColor: theme.colors.bg }}
-      contentContainerStyle={styles.content}
+      style={{ flex: 1, backgroundColor: theme.colors.bg }}
+      contentContainerStyle={{ padding: s.lg, paddingBottom: 100 }}
     >
-      <View style={styles.section}>
-        <Text style={{ ...styles.sectionTitle, color: theme.colors.textSecondary }}>
+      <View style={{ marginBottom: s.xl }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: s.sm, color: theme.colors.textSecondary }}>
           Account
         </Text>
-        <View style={{ ...styles.card, backgroundColor: theme.colors.surface }}>
-          <View style={styles.row}>
-            <Text style={{ ...styles.label, color: theme.colors.textPrimary }}>
+        <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: theme.colors.surface }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: s.lg }}>
+            <Text style={{ fontSize: 16, color: theme.colors.textPrimary }}>
               Email
             </Text>
-            <Text style={{ ...styles.value, color: theme.colors.textSecondary }}>
+            <Text style={{ fontSize: 16, color: theme.colors.textSecondary }}>
               {user?.email || 'Not signed in'}
             </Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={{ ...styles.sectionTitle, color: theme.colors.textSecondary }}>
+      <View style={{ marginBottom: s.xl }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: s.sm, color: theme.colors.textSecondary }}>
           Appearance
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.themesContainer}>
-          <View style={styles.themesGrid}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: s.md, paddingRight: s.lg }}>
             {Object.values(THEMES).map(renderThemeOption)}
           </View>
         </ScrollView>
       </View>
 
-      <View style={styles.section}>
-        <Text style={{ ...styles.sectionTitle, color: theme.colors.textSecondary }}>
+      <View style={{ marginBottom: s.xl }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: s.sm, color: theme.colors.textSecondary }}>
           AI Settings
         </Text>
-        <View style={{ ...styles.card, backgroundColor: theme.colors.surface, padding: 16 }}>
-          <View style={styles.aiModeRow}>
+        <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: theme.colors.surface, padding: s.lg }}>
+          <View style={{ flexDirection: 'row', gap: s.sm }}>
             {(['off', 'local', 'cloud'] as AIMode[]).map((mode) => (
               <Pressable
                 key={mode}
                 style={{
-                  ...styles.aiModeBtn,
+                  flex: 1,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  alignItems: 'center',
                   backgroundColor: aiMode === mode ? theme.colors.accentBtn : theme.colors.bg,
                 }}
                 onPress={() => handleAiModeChange(mode)}
               >
-                <Text
-                  style={{
-                    ...styles.aiModeText,
-                    color: aiMode === mode ? theme.colors.bg : theme.colors.textSecondary,
-                  }}
-                >
+                <Text style={{ fontSize: 14, fontWeight: '600', color: aiMode === mode ? theme.colors.bg : theme.colors.textSecondary }}>
                   {mode.charAt(0).toUpperCase() + mode.slice(1)}
                 </Text>
               </Pressable>
@@ -158,13 +161,16 @@ export default function SettingsScreen() {
           </View>
 
           {aiMode === 'local' && (
-            <View style={styles.localSettings}>
-              <Text style={{ ...styles.inputLabel, color: theme.colors.textSecondary }}>
+            <View style={{ marginTop: s.lg }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', marginBottom: s.xs, color: theme.colors.textSecondary }}>
                 API URL
               </Text>
               <TextInput
                 style={{
-                  ...styles.input,
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  padding: s.md,
+                  fontSize: 14,
                   backgroundColor: theme.colors.bg,
                   color: theme.colors.textPrimary,
                   borderColor: theme.colors.border,
@@ -174,12 +180,15 @@ export default function SettingsScreen() {
                 value={localUrl}
                 onChangeText={handleLocalUrlChange}
               />
-              <Text style={{ ...styles.inputLabel, color: theme.colors.textSecondary, marginTop: 12 }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', marginBottom: s.xs, marginTop: s.md, color: theme.colors.textSecondary }}>
                 Model
               </Text>
               <TextInput
                 style={{
-                  ...styles.input,
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  padding: s.md,
+                  fontSize: 14,
                   backgroundColor: theme.colors.bg,
                   color: theme.colors.textPrimary,
                   borderColor: theme.colors.border,
@@ -193,8 +202,8 @@ export default function SettingsScreen() {
           )}
 
           {aiMode === 'cloud' && (
-            <View style={styles.cloudNote}>
-              <Text style={{ ...styles.cloudNoteText, color: theme.colors.textTertiary }}>
+            <View style={{ marginTop: s.md }}>
+              <Text style={{ fontSize: 13, textAlign: 'center', color: theme.colors.textTertiary }}>
                 Cloud AI uses your subscription credits
               </Text>
             </View>
@@ -202,16 +211,16 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={{ ...styles.sectionTitle, color: theme.colors.textSecondary }}>
+      <View style={{ marginBottom: s.xl }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: s.sm, color: theme.colors.textSecondary }}>
           About
         </Text>
-        <View style={{ ...styles.card, backgroundColor: theme.colors.surface }}>
-          <View style={styles.row}>
-            <Text style={{ ...styles.label, color: theme.colors.textPrimary }}>
+        <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: theme.colors.surface }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: s.lg }}>
+            <Text style={{ fontSize: 16, color: theme.colors.textPrimary }}>
               Version
             </Text>
-            <Text style={{ ...styles.value, color: theme.colors.textSecondary }}>
+            <Text style={{ fontSize: 16, color: theme.colors.textSecondary }}>
               1.0.0
             </Text>
           </View>
@@ -219,13 +228,13 @@ export default function SettingsScreen() {
       </View>
 
       {user && (
-        <View style={styles.section}>
+        <View>
           <Pressable
-            style={{ ...styles.signOutBtn, backgroundColor: theme.colors.surface }}
+            style={{ borderRadius: 12, padding: s.lg, alignItems: 'center', backgroundColor: theme.colors.surface }}
             onPress={handleSignOut}
             disabled={isLoading}
           >
-            <Text style={{ ...styles.signOutText, color: '#ff4444' }}>
+            <Text style={{ fontSize: 16, fontWeight: '500', color: '#ff4444' }}>
               {isLoading ? 'Signing out...' : 'Sign Out'}
             </Text>
           </Pressable>
@@ -234,32 +243,3 @@ export default function SettingsScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, paddingHorizontal: 4 },
-  card: { borderRadius: 12, overflow: 'hidden' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  label: { fontSize: 16 },
-  value: { fontSize: 16 },
-  themesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  themesContainer: { paddingRight: 16 },
-  themeOption: { width: 150, borderRadius: 12, padding: 12, position: 'relative' },
-  themePreview: { height: 60, borderRadius: 8, overflow: 'hidden', marginBottom: 8, justifyContent: 'flex-end', padding: 8, gap: 6 },
-  previewBar: { height: 16, borderRadius: 4 },
-  previewBarSmall: { height: 10, width: '70%' },
-  themeName: { fontSize: 14, fontWeight: '500' },
-  checkmark: { position: 'absolute', top: 12, right: 12 },
-  signOutBtn: { borderRadius: 12, padding: 16, alignItems: 'center' },
-  signOutText: { fontSize: 16, fontWeight: '500' },
-  aiModeRow: { flexDirection: 'row', gap: 8 },
-  aiModeBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
-  aiModeText: { fontSize: 14, fontWeight: '600' },
-  localSettings: { marginTop: 16 },
-  inputLabel: { fontSize: 13, fontWeight: '500', marginBottom: 6 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 14 },
-  cloudNote: { marginTop: 12 },
-  cloudNoteText: { fontSize: 13, textAlign: 'center' },
-});

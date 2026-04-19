@@ -17,8 +17,15 @@ import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
 import { MarkdownView } from '@/components/markdown-view';
-import { EyeIcon, EditIcon } from '@/components/icons';
+import { Eye, Pencil } from 'lucide-react-native';
 
+function generateId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 function getTagColor(tag: string): string {
   let hash = 0;
   for (let i = 0; i < tag.length; i++) {
@@ -93,7 +100,7 @@ export default function NewNoteScreen() {
         synced: false,
       };
 
-      const localId = crypto.randomUUID();
+      const localId = generateId();
       const tempNote = {
         id: localId,
         created_at: new Date().toISOString(),
@@ -104,25 +111,23 @@ export default function NewNoteScreen() {
 
       if (accessToken) {
         try {
-          const result = await supabase.saveNote(accessToken, {
-            local_id: localId,
-            text: cleanedTitle,
-            note: cleanedContent,
-            tag: finalTags.join(','),
-            date: new Date().toISOString(),
+          await supabase.saveNote(accessToken, {
+            id: localId,
+            title: cleanedTitle,
+            content: cleanedContent,
+            tags: finalTags,
             pinned: false,
             updated_at: new Date().toISOString(),
           });
-          if (result?.id) {
-            updateNote(localId, { cloud_id: result.id, synced: true });
-          }
+          updateNote(localId, { synced: true });
         } catch {
           toast.error('Failed to sync note');
         }
       }
 
       router.back();
-    } catch {
+    } catch(err) {
+      console.log(err)
       toast.error('Failed to save note');
     } finally {
       setSaving(false);
@@ -136,7 +141,7 @@ export default function NewNoteScreen() {
           headerRight: () => (
             <Pressable onPress={() => setViewMode(!viewMode)}>
               {viewMode ? (
-                <EditIcon size={22} color={theme.colors.accent} />
+                <Pencil size={22} color={theme.colors.accent} />
               ) : (
                 <Pressable onPress={handleSave} disabled={saving}>
                   <Text style={{ color: theme.colors.accent, fontWeight: '600', opacity: saving ? 0.5 : 1 }}>

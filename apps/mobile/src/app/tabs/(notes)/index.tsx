@@ -1,12 +1,11 @@
 'use client';
 
-import { PinIcon, PlusIcon, TrashIcon, FilterIcon } from '@/components/icons';
-import { MarkdownView } from '@/components/markdown-view';
 import { useTheme } from '@/components/theme-provider';
 import { useToast } from '@/components/toast-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
-import { Note, getFilteredNotes, useNotesStore } from '@/stores/notes-store';
+import { Note, useNotesStore } from '@/stores/notes-store';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -23,7 +22,15 @@ import Animated, {
   FadeIn,
   FadeOut,
   Layout,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SkeletonList } from '@/components/ui/skeleton';
+import { Pin, Trash2, Filter, Plus } from 'lucide-react-native';
+import { MarkdownView } from '@/components/markdown-view';
 
 function getTagColor(tag: string): string {
   let hash = 0;
@@ -32,6 +39,19 @@ function getTagColor(tag: string): string {
   }
   const hue = Math.abs(hash) % 360;
   return `hsl(${hue}, 70%, 85%)`;
+}
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function getTagTextColor(tag: string): string {
@@ -43,26 +63,60 @@ function getTagTextColor(tag: string): string {
   return `hsl(${hue}, 70%, 25%)`;
 }
 
+function getFilteredByTag(notes: Note[], query: string, selectedTags: Set<string>): Note[] {
+  let result = [...notes];
+  
+  if (query) {
+    const q = query.toLowerCase();
+    result = result.filter(n =>
+      n.title?.toLowerCase().includes(q) ||
+      n.content?.toLowerCase().includes(q) ||
+      n.tags?.some(t => t.toLowerCase().includes(q))
+    );
+  }
+  
+  if (selectedTags.size > 0 && !selectedTags.has('all')) {
+    result = result.filter(n => 
+      n.tags?.some(t => selectedTags.has(t))
+    );
+  }
+  
+  return result;
+}
+
 export default function NotesScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const toast = useToast();
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [showFilter, setShowFilter] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set(['all']));
 
-  const {
-    notes,
-    activeTag,
-    searchQuery,
-    setNotes,
-    updateNote,
-    deleteNote,
-    setSearchQuery,
-    setActiveTag,
-  } = useNotesStore();
+  const fabScale = useSharedValue(1);
 
-  const filteredByTag = getFilteredNotes(notes || [], searchQuery || '', activeTag || 'all');
+  const fabAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: fabScale.value }],
+  }));
 
+  const handleFabPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/tabs/(notes)/new');
+  };
+
+  const handleFabPressIn = () => {
+    fabScale.value = withSpring(0.9, { damping: 15, stiffness: 400 });
+  };
+
+  const handleFabPressOut = () => {
+    fabScale.value = withSpring(1, { damping: 15, stiffness: 400 });
+  };
+
+  const s = theme.spacing;
+
+  const { notes, setNotes, updateNote, deleteNote } = useNotesStore();
   const { user, accessToken, initialize } = useAuthStore();
 
   useEffect(() => {
@@ -71,33 +125,37 @@ export default function NotesScreen() {
 
   const loadNotes = useCallback(async () => {
     const currentToken = useAuthStore.getState().accessToken;
-    if (!currentToken) return;
+    if (!currentToken) {
+      setIsLoading(false);
+      return;
+    }
     try {
       const data = await supabase.fetchNotes(currentToken);
       const notesData = data?.notes || [];
       const seen = new Set<string>();
 
       const mappedNotes = notesData
-        .filter((item: any) => item.local_id && !seen.has(item.local_id))
+        .filter((item: any) => item.id && !seen.has(item.id))
         .filter((item: any) => {
-          if (seen.has(item.local_id)) return false;
-          seen.add(item.local_id);
+          if (seen.has(item.id)) return false;
+          seen.add(item.id);
           return true;
         })
         .map((item: any) => ({
-          id: item.local_id,
-          cloud_id: item.id,
-          title: item.text || 'Untitled',
-          content: item.note || '',
-          tags: item.tag ? item.tag.split(',').filter((t: string) => t.length > 0) : [],
+          id: item.id,
+          title: item.title || 'Untitled',
+          content: item.content || '',
+          tags: item.tags || [],
           pinned: item.pinned || false,
-          created_at: item.date || item.created_at || new Date().toISOString(),
+          created_at: item.created_at || new Date().toISOString(),
           updated_at: item.updated_at || new Date().toISOString(),
           synced: true,
         }));
       setNotes(mappedNotes);
+      setIsLoading(false);
     } catch {
       toast.error('Failed to load notes');
+      setIsLoading(false);
     }
   }, [setNotes]);
 
@@ -115,14 +173,14 @@ export default function NotesScreen() {
 
   const handleSearch = (text: string) => {
     setSearchText(text);
-    setSearchQuery(text);
   };
 
   const handleDelete = async (note: Note) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     deleteNote(note.id);
-    if (note.cloud_id && accessToken) {
+    if (accessToken) {
       try {
-        await supabase.deleteNote(accessToken, note.cloud_id);
+        await supabase.deleteNote(accessToken, note.id);
       } catch {
         toast.error('Failed to delete note');
       }
@@ -132,73 +190,89 @@ export default function NotesScreen() {
   const handleTogglePin = async (note: Note) => {
     const newPinned = !note.pinned;
     updateNote(note.id, { pinned: newPinned });
-    if (note.cloud_id && accessToken) {
+    if (accessToken) {
       try {
-        const result = await supabase.saveNote(accessToken, {
-          local_id: note.id,
-          text: note.title,
-          note: note.content,
-          tag: (note.tags || []).join(','),
-          date: note.created_at,
+        await supabase.saveNote(accessToken, {
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          tags: note.tags || [],
           pinned: newPinned,
           updated_at: new Date().toISOString(),
         });
-        if (result?.id) {
-          updateNote(note.id, { cloud_id: result.id, synced: true });
-        }
+        updateNote(note.id, { synced: true });
       } catch {
         toast.error('Failed to update note');
       }
     }
   };
 
-  const cardBg = theme.colors.surface;
-  const textPrimary = theme.colors.textPrimary;
-  const textSecondary = theme.colors.textSecondary;
-  const textTertiary = theme.colors.textTertiary;
-  const accentBtn = theme.colors.accentBtn;
-
   const uniqueTags = notes.length > 0
     ? [...new Set(notes.flatMap((n) => n.tags || []))]
     : [];
   const filterTags = uniqueTags.length > 0 ? ['all', ...uniqueTags] : [];
 
-  const renderNote = ({ item }: { item: Note }) => (
+  const filteredNotes = getFilteredByTag(notes || [], searchText, selectedTags);
+
+  const updateTagsSelection = (tag: string) => {
+    setSelectedTags(prev => {
+      const newSelected = new Set(prev);
+      if (tag === 'all') {
+        newSelected.clear();
+        newSelected.add('all');
+      } else if (newSelected.has(tag)) {
+        newSelected.delete(tag);
+        if (newSelected.size === 0) newSelected.add('all');
+      } else {
+        newSelected.delete('all');
+        newSelected.add(tag);
+      }
+      return newSelected;
+    });
+  };
+
+  const renderNote = ({ item, index }: { item: Note; index: number }) => (
     <Animated.View
-      entering={FadeIn.duration(100)}
+      entering={FadeIn.delay(index * 50).springify().damping(50).stiffness(400)}
       exiting={FadeOut.duration(100)}
       layout={Layout.springify().damping(50).stiffness(400)}
-      style={{ marginBottom: 12 }}
+      style={{ marginBottom: s.md }}
     >
       <Pressable
         style={{
-          ...styles.card,
-          backgroundColor: cardBg,
+          backgroundColor: theme.colors.surface,
           borderColor: item.pinned ? theme.colors.accent : theme.colors.border,
           borderWidth: item.pinned ? 1.5 : 1,
+          borderRadius: 12,
+          padding: s.md,
         }}
         onPress={() => router.push(`/tabs/(notes)/note/${item.id}`)}
       >
-        <View style={styles.cardHeader}>
-          <Text style={{ ...styles.cardTitle, color: textPrimary }} numberOfLines={1}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: s.xs }}>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.textPrimary, flex: 1 }} numberOfLines={1}>
             {item.title || 'Untitled'}
           </Text>
+          <Text style={{ fontSize: 11, color: theme.colors.textTertiary, marginLeft: s.sm }}>
+            {formatDate(item.created_at)}
+          </Text>
         </View>
-        <MarkdownView content={item.content || ''} style={styles.cardContent} />
-        <View style={styles.cardFooter}>
-          <View style={styles.tags}>
+        <View style={{ marginBottom: s.sm }}>
+          <MarkdownView content={item.content || ''} style={{ fontSize: 13, lineHeight: 18 }} />
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', gap: s.xs }}>
             {(item.tags || []).slice(0, 3).map((tag: string) => (
-              <View key={tag} style={{ ...styles.tag, backgroundColor: getTagColor(tag) }}>
-                <Text style={{ ...styles.tagText, color: getTagTextColor(tag) }}>#{tag}</Text>
+              <View key={tag} style={{ backgroundColor: getTagColor(tag), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                <Text style={{ fontSize: 11, color: getTagTextColor(tag) }}>#{tag}</Text>
               </View>
             ))}
           </View>
-          <View style={styles.actions}>
-            <Pressable style={styles.actionBtn} onPress={() => handleTogglePin(item)}>
-              <PinIcon size={18} color={item.pinned ? theme.colors.accent : textTertiary} fill={item.pinned ? theme.colors.accent : 'none'} />
+          <View style={{ flexDirection: 'row', gap: s.md }}>
+            <Pressable style={{ padding: 4 }} onPress={() => handleTogglePin(item)}>
+              <Pin size={18} color={item.pinned ? theme.colors.accent : theme.colors.textTertiary} fill={item.pinned ? theme.colors.accent : undefined} />
             </Pressable>
-            <Pressable style={styles.actionBtn} onPress={() => handleDelete(item)}>
-              <TrashIcon size={18} color={textTertiary} />
+            <Pressable style={{ padding: 4 }} onPress={() => handleDelete(item)}>
+              <Trash2 size={18} color={theme.colors.textTertiary} />
             </Pressable>
           </View>
         </View>
@@ -206,112 +280,132 @@ export default function NotesScreen() {
     </Animated.View>
   );
 
-  const [showFilter, setShowFilter] = useState(false);
-
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-      <View style={styles.header}>
-        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.bg, paddingTop: s.lg }}>
+      <View style={{ paddingHorizontal: s.lg, paddingBottom: s.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: s.sm }}>
           <TextInput
             style={{
-              ...styles.searchInput,
               flex: 1,
-              backgroundColor: cardBg,
-              color: textPrimary,
+              backgroundColor: theme.colors.surface,
+              color: theme.colors.textPrimary,
               borderColor: theme.colors.border,
+              borderWidth: 1,
+              borderRadius: 10,
+              padding: s.md,
+              fontSize: 15,
             }}
-            placeholder="Search notes..."
-            placeholderTextColor={textTertiary}
+            placeholder="Search..."
+            placeholderTextColor={theme.colors.textTertiary}
             value={searchText}
             onChangeText={handleSearch}
           />
           <Pressable
             style={{
-              ...styles.filterBtn,
-              backgroundColor: showFilter ? accentBtn : cardBg,
+              width: 44,
+              height: 44,
+              borderRadius: 10,
+              backgroundColor: showFilter ? theme.colors.accentBtn : theme.colors.surface,
+              borderWidth: 1,
               borderColor: theme.colors.border,
+              justifyContent: 'center',
+              alignItems: 'center',
             }}
             onPress={() => setShowFilter(!showFilter)}
           >
-            <FilterIcon size={18} color={showFilter ? theme.colors.bg : textSecondary} />
+            <Filter size={18} color={showFilter ? theme.colors.bg : theme.colors.textSecondary} />
           </Pressable>
         </View>
       </View>
 
       {showFilter && filterTags.length > 0 && (
-        <View style={[styles.filterDropdown, { backgroundColor: cardBg, borderColor: theme.colors.border }]}>
-          {filterTags.map((tag) => (
-            <Pressable
-              key={tag}
-              style={{
-                ...styles.filterItem,
-                backgroundColor: activeTag === tag ? accentBtn : 'transparent',
-              }}
-              onPress={() => setActiveTag(tag)}
-            >
-              <Text
+        <View style={styles.filterChipsRow}>
+          {filterTags.map((tag) => {
+            const isSelected = selectedTags.has(tag);
+            return (
+              <Pressable
+                key={tag}
+                onPress={() => updateTagsSelection(tag)}
                 style={{
-                  ...styles.filterText,
-                  color: activeTag === tag ? theme.colors.bg : textSecondary,
+                  backgroundColor: isSelected ? getTagColor(tag) : theme.colors.surfaceAlt,
+                  paddingHorizontal: s.sm,
+                  paddingVertical: s.xs,
+                  borderRadius: 8,
+                  marginRight: s.xs,
+                  marginBottom: s.xs,
+                  borderWidth: 1,
+                  borderColor: isSelected ? getTagColor(tag) : theme.colors.border,
                 }}
               >
-                {tag === 'all' ? 'All' : `#${tag}`}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: isSelected ? getTagTextColor(tag) : theme.colors.textSecondary,
+                  }}
+                >
+                  {tag === 'all' ? 'All' : `#${tag}`}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       )}
-      {filteredByTag.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={{ ...styles.emptyText, color: textSecondary }}>
-            {notes.length === 0 ? 'No notes yet' : 'No notes match your search'}
-          </Text>
-          <Text style={{ ...styles.emptySubtext, color: textTertiary }}>
-            Tap + to add your first note
-          </Text>
-        </View>
+
+      {isLoading ? (
+        <SkeletonList count={3} />
+      ) : filteredNotes.length === 0 ? (
+        <EmptyState type="notes" />
       ) : (
         <FlatList
-          data={filteredByTag}
+          data={filteredNotes}
           keyExtractor={(item) => item.id}
           renderItem={renderNote}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ padding: s.lg, paddingBottom: 100 + s.xxl + insets.bottom }}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.colors.accent}
+            />
+          }
         />
       )}
 
-      <Pressable
-        style={{ ...styles.fab, backgroundColor: accentBtn }}
-        onPress={() => router.push('/tabs/(notes)/new')}
-      >
-        <PlusIcon size={24} color={theme.colors.bg} />
-      </Pressable>
+      <Animated.View style={fabAnimatedStyle}>
+        <Pressable
+          style={{
+            position: 'absolute',
+            right: s.lg,
+            bottom: s.lg + insets.bottom,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: theme.colors.accentBtn,
+            justifyContent: 'center',
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 8,
+            elevation: 6,
+          }}
+          onPress={handleFabPress}
+          onPressIn={handleFabPressIn}
+          onPressOut={handleFabPressOut}
+        >
+          <Plus size={28} color={theme.colors.bg} />
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
-  searchInput: { borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 15 },
-  filterBtn: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
-  filterDropdown: { position: 'absolute', top: 58, left: 12, right: 12, borderRadius: 10, borderWidth: 1, zIndex: 100, paddingVertical: 8 },
-  filterItem: { paddingHorizontal: 12, paddingVertical: 8 },
-  filterText: { fontSize: 13, fontWeight: '500' },
-  list: { padding: 12, paddingBottom: 100 },
-  card: { borderRadius: 10, padding: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  cardTitle: { fontSize: 15, fontWeight: '600', flex: 1 },
-  pinIcon: { fontSize: 14, marginLeft: 8 },
-  cardContent: { fontSize: 13, lineHeight: 18, marginBottom: 8 },
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tags: { flexDirection: 'row', gap: 4 },
-  tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  tagText: { fontSize: 11 },
-  actions: { flexDirection: 'row', gap: 12 },
-  actionBtn: { padding: 4 },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-  emptySubtext: { fontSize: 14 },
-  fab: { position: 'absolute', right: 16, bottom: 16, width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
+  filterChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
 });

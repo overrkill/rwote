@@ -97,8 +97,8 @@ async function cloudLoadNotes(token) {
   return callEdgeFunction('load-notes', {}, token);
 }
 
-async function cloudDeleteNote(localId, token) {
-  return callEdgeFunction('delete-note', { local_id: localId }, token);
+async function cloudDeleteNote(noteId, token) {
+  return callEdgeFunction('delete-note', { id: noteId }, token);
 }
 
 async function getSubscriptionStatus(token) {

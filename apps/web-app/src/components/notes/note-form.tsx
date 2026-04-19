@@ -5,22 +5,22 @@ import type { Note } from '@/lib/types'
 
 interface NoteFormProps {
   note?: Note
-  onSave: (text: string, note: string, tag: string) => void
+  onSave: (title: string, content: string, tags: string[]) => void
   onCancel?: () => void
 }
 
 export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
-  const [text, setText] = useState(note?.text || '')
-  const [extraNote, setExtraNote] = useState(note?.note || '')
+  const [title, setTitle] = useState(note?.title || '')
+  const [content, setContent] = useState(note?.content || '')
   const [removedTags, setRemovedTags] = useState<string[]>([])
   
   // Get existing tags from note being edited
-  const existingTags = note?.tag ? note.tag.split(',').filter(t => t.length > 0) : []
+  const existingTags = note?.tags || []
 
   useEffect(() => {
     if (note) {
-      setText(note.text)
-      setExtraNote(note.note)
+      setTitle(note.title)
+      setContent(note.content)
       setRemovedTags([])
     }
   }, [note])
@@ -34,7 +34,7 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
     return input.replace(/#\w+/g, '').trim()
   }
 
-  const currentTags = useMemo(() => extractTags(text), [text])
+  const currentTags = useMemo(() => extractTags(title), [title])
   
   // Combine existing tags (minus removed) with newly typed tags for display
   const allTags = useMemo(() => {
@@ -50,25 +50,24 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
       setRemovedTags([...removedTags, tagToRemove])
     } else {
       const regex = new RegExp(`#${tagToRemove}\\b`, 'gi')
-      setText(text.replace(regex, '').trim())
+      setTitle(title.replace(regex, '').trim())
     }
   }
 
   const handleSave = () => {
-    if (!text.trim()) return
+    if (!title.trim()) return
     
-    const tags = extractTags(text)
+    const tags = extractTags(title)
     // Combine: kept existing tags + new tags from text
     const keptExisting = existingTags.filter(t => !removedTags.includes(t))
     const finalTags = [...new Set([...keptExisting, ...tags])]
-    const tagString = finalTags.length > 0 ? finalTags.join(',') : 'uncategorized'
-    const cleanedText = cleanText(text)
+    const cleanedTitle = cleanText(title)
     
-    onSave(cleanedText, extraNote.trim(), tagString)
+    onSave(cleanedTitle, content.trim(), finalTags)
     
     if (!note) {
-      setText('')
-      setExtraNote('')
+      setTitle('')
+      setContent('')
     }
   }
 
@@ -93,8 +92,8 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
   return (
     <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
       <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
         placeholder="Write your note... use #hashtag to add tags"
         className="w-full px-3.5 py-3 text-base rounded-md outline-none transition-all mb-3 min-h-[80px] resize-none"
         style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
@@ -102,8 +101,8 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
       />
 
       <textarea
-        value={extraNote}
-        onChange={(e) => setExtraNote(e.target.value)}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
         placeholder="Extra context (optional)..."
         className="w-full px-3.5 py-3 text-base rounded-md outline-none transition-all mb-3 resize-none"
         style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}

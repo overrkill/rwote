@@ -30,15 +30,15 @@ export default function NoteList({
       const query = searchQuery.toLowerCase()
       result = result.filter(
         (note) =>
-          note.text.toLowerCase().includes(query) ||
-          note.note?.toLowerCase().includes(query) ||
-          note.tag.toLowerCase().includes(query)
+          note.title.toLowerCase().includes(query) ||
+          note.content?.toLowerCase().includes(query) ||
+          note.tags?.some(t => t.toLowerCase().includes(query))
       )
     }
 
     if (activeTags.length > 0) {
       result = result.filter((noteItem) => {
-        const noteTags = noteItem.tag.split(',')
+        const noteTags = noteItem.tags || []
         return activeTags.some((at) => noteTags.includes(at))
       })
     }
@@ -46,7 +46,7 @@ export default function NoteList({
     result.sort((a, b) => {
       if (a.pinned && !b.pinned) return -1
       if (!a.pinned && b.pinned) return 1
-      return Number(b.id) - Number(a.id)
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     })
 
     return result

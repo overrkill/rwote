@@ -1,12 +1,11 @@
 export interface Note {
   id: string;
-  text: string;
-  note: string;
-  tag: string;
-  date: string;
+  title: string;
+  content: string;
+  tags: string[];
   pinned: boolean;
-  updated_at: number;
-  cloudId?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface User {

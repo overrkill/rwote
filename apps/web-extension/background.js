@@ -496,7 +496,21 @@ async function handleSignOut() {
 // ── State Managers ───────────────────────────────────
 async function getNotes() {
   const res = await storage.get(STORAGE_KEYS.NOTES);
-  return res[STORAGE_KEYS.NOTES] || [];
+  const notes = res[STORAGE_KEYS.NOTES] || [];
+  
+  return notes.map(n => {
+    if (n.title !== undefined) return n;
+    
+    return {
+      id: n.id,
+      title: n.text || '',
+      content: n.note || '',
+      tags: n.tag ? [n.tag] : ['uncategorized'],
+      pinned: n.pinned || false,
+      created_at: n.date || new Date().toISOString(),
+      updated_at: n.date || new Date().toISOString()
+    };
+  });
 }
 
 async function setNotes(notes) {
@@ -564,15 +578,14 @@ async function addNote(text, noteText = '') {
     await setTags(tagsData);
   }
   
-  const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   const newNote = {
     id: String(Date.now()),
-    text: text.trim(),
-    note: noteText.trim(),
-    tag,
-    date,
+    title: text.trim(),
+    content: noteText.trim(),
+    tags: noteTags,
     pinned: false,
-    updated_at: Date.now()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
   
   notes.unshift(newNote);
@@ -595,9 +608,9 @@ async function updateNote(id, text, noteText = '') {
   const note = notes.find(n => n.id === id);
   if (!note) return { ok: false, error: 'Note not found' };
   
-  const oldTags = extractTags(note.text);
-  note.text = text.trim();
-  note.note = noteText.trim();
+  const oldTags = note.tags || [];
+  note.title = text.trim();
+  note.content = noteText.trim();
   
   const newTags = extractTags(text);
   const allNewTags = [...new Set([...oldTags, ...newTags])];
@@ -610,11 +623,8 @@ async function updateNote(id, text, noteText = '') {
   
   await setTags(tagsData);
   
-  if (newTags.length > 0) {
-    note.tag = newTags[0];
-  }
-  
-  note.updated_at = Date.now();
+  note.tags = allNewTags;
+  note.updated_at = new Date().toISOString();
   await setNotes(notes);
   
   // Queue cloud sync if in cloud mode (non-blocking)
@@ -650,7 +660,7 @@ async function togglePin(id) {
   if (!note) return { ok: false };
   
   note.pinned = !note.pinned;
-  note.updated_at = Date.now();
+  note.updated_at = new Date().toISOString();
   await setNotes(notes);
   
   // Queue cloud sync if in cloud mode (non-blocking)
@@ -671,9 +681,9 @@ async function syncNoteToCloud(note, token) {
   }
 }
 
-async function cloudDeleteNote(localId, token) {
+async function cloudDeleteNote(noteId, token) {
   try {
-    await callEdgeFunction('delete-note', { local_id: localId }, token);
+    await callEdgeFunction('delete-note', { id: noteId }, token);
   } catch (e) {
     console.error('Cloud delete error:', e);
   }
@@ -692,16 +702,15 @@ async function loadNotesFromCloud() {
     
     const cloudMap = new Map();
     cloudNotes.forEach(n => {
-      const id = String(n.local_id || n.id);
+      const id = String(n.id);
       cloudMap.set(id, {
         id,
-        text: n.text,
-        note: n.note || '',
-        tag: n.tag || 'uncategorized',
-        date: n.date,
+        title: n.title || 'Untitled',
+        content: n.content || '',
+        tags: n.tags || [],
         pinned: n.pinned || false,
-        updated_at: new Date(n.updated_at).getTime(),
-        cloudId: n.id
+        created_at: n.created_at || new Date().toISOString(),
+        updated_at: n.updated_at || new Date().toISOString(),
       });
     });
     
@@ -712,13 +721,17 @@ async function loadNotesFromCloud() {
         merged.set(cloudId, cloudNote);
       } else {
         const local = merged.get(cloudId);
-        if (cloudNote.updated_at > local.updated_at) {
+        const cloudTime = new Date(cloudNote.updated_at).getTime();
+        const localTime = new Date(local.updated_at).getTime();
+        if (cloudTime > localTime) {
           merged.set(cloudId, cloudNote);
         }
       }
     });
     
-    const mergedNotes = Array.from(merged.values()).sort((a, b) => Number(b.id) - Number(a.id));
+    const mergedNotes = Array.from(merged.values()).sort((a, b) => 
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
     await setNotes(mergedNotes);
     
     broadcastStateUpdate();

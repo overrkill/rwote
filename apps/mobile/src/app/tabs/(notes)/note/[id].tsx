@@ -16,7 +16,7 @@ import { useNotesStore } from '@/stores/notes-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
-import { EyeIcon, EditIcon } from '@/components/icons';
+import { Eye, Pencil } from 'lucide-react-native';
 import { MarkdownView } from '@/components/markdown-view';
 
 function getTagColor(tag: string): string {
@@ -146,7 +146,7 @@ export default function NoteDetailScreen() {
           headerRight: () => (
             <Pressable onPress={() => setViewMode(!viewMode)}>
               {viewMode ? (
-                <EditIcon size={22} color={theme.colors.accent} />
+                <Pencil size={22} color={theme.colors.accent} />
               ) : (
                 <Pressable onPress={handleSave} disabled={saving}>
                   <Text style={{ color: theme.colors.accent, fontWeight: '600', opacity: saving ? 0.5 : 1 }}>

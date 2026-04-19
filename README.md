@@ -216,6 +216,44 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 
 RLS: Users can only access their own notes.
 
+### Note Structure
+
+The note object is consistent across all apps (Chrome extension, web app, mobile app):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `local_id` | string | Client-generated unique ID (UUID or timestamp-based) |
+| `text` | string | Note title/content |
+| `note` | string | Extended note content (markdown) |
+| `tag` | text | Comma-separated tags |
+| `date` | string | Creation date (ISO or formatted string) |
+| `pinned` | boolean | Pinned status |
+| `updated_at` | ISO timestamp | Last update time |
+
+#### App-Specific Mappings
+
+**Mobile App:**
+- `id` ← `local_id`
+- `cloud_id` ← DB row `id`
+
+**Web Extension:**
+- `id` ← `local_id || id`
+- `cloudId` ← DB row `id`
+
+#### Example Note Object
+
+```javascript
+{
+  local_id: "12345678-1234-1234-1234-123456789012",
+  text: "Binary Search Tree traversal",
+  note: "## Inorder\n- Left -> Root -> Right\n\n## Preorder\n- Root -> Left -> Right",
+  tag: "trees,algorithms",
+  date: "2024-03-15",
+  pinned: false,
+  updated_at: "2024-03-15T10:30:00Z"
+}
+```
+
 ## Design System
 
 ### Colors (Light)

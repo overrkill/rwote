@@ -1,10 +1,11 @@
 import { Tabs } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
-import { NotesIcon, SettingsIcon } from '@/components/icons';
-import { TodoIcon } from '@/components/todo-icon';
+import { FileText, Settings, CheckSquare } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -13,6 +14,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          paddingTop: 8,
+          height: 56 + (insets.bottom > 0 ? insets.bottom : 0),
         },
         tabBarActiveTintColor: theme.colors.accent,
         tabBarInactiveTintColor: theme.colors.textTertiary,
@@ -22,21 +26,21 @@ export default function TabsLayout() {
         name="(notes)"
         options={{
           title: 'Notes',
-          tabBarIcon: ({ color }) => <NotesIcon size={24} color={color} />,
+          tabBarIcon: ({ color }) => <FileText size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="(todos)"
         options={{
           title: 'Todos',
-          tabBarIcon: ({ color }) => <TodoIcon size={24} color={color} />,
+          tabBarIcon: ({ color }) => <CheckSquare size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="(settings)"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <SettingsIcon size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Settings size={24} color={color} />,
         }}
       />
     </Tabs>

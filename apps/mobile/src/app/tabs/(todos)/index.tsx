@@ -10,11 +10,12 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
+import { Check, Square } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 
 interface TodoItem {
   id: string;
@@ -92,6 +93,7 @@ export default function TodosScreen() {
   }, [loadNotes]);
 
   const toggleTodo = async (todo: TodoItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const note = notes.find((n) => n.id === todo.noteId);
     if (!note) return;
 
@@ -125,49 +127,38 @@ export default function TodosScreen() {
   };
 
   const TodoCheckbox = ({ completed }: { completed: boolean }) => (
-    <View style={[checkboxStyles.box, {
-      backgroundColor: completed ? theme.colors.accent : 'transparent',
-      borderColor: theme.colors.border,
-    }]}>
-      {completed && <Text style={checkboxStyles.check}>✓</Text>}
-    </View>
+    completed ? (
+      <Check size={22} color="#22c55e" />
+    ) : (
+      <Square size={22} color={theme.colors.textTertiary} />
+    )
   );
-
-  const checkboxStyles = StyleSheet.create({
-    box: {
-      width: 22,
-      height: 22,
-      borderRadius: 6,
-      borderWidth: 2,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    check: {
-      color: 'white',
-      fontSize: 14,
-      fontWeight: '700',
-    },
-  });
 
   const renderTodo = ({ item }: { item: TodoItem }) => (
     <Animated.View
       entering={FadeIn.duration(100)}
       exiting={FadeOut.duration(100)}
       layout={Layout.springify().damping(50).stiffness(400)}
-      style={{ marginBottom: 8 }}
+      style={{ marginBottom: s.sm }}
     >
       <Pressable
         style={{
-          ...styles.todoItem,
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: s.md,
+          borderRadius: 12,
+          borderWidth: 1,
           backgroundColor: theme.colors.surface,
           borderColor: item.completed ? theme.colors.textTertiary : theme.colors.border,
+          gap: s.md,
         }}
         onPress={() => toggleTodo(item)}
       >
         <TodoCheckbox completed={item.completed} />
         <Text
           style={{
-            ...styles.todoText,
+            flex: 1,
+            fontSize: 16,
             color: item.completed ? theme.colors.textTertiary : theme.colors.textPrimary,
             textDecorationLine: item.completed ? 'line-through' : 'none',
           }}
@@ -178,20 +169,22 @@ export default function TodosScreen() {
     </Animated.View>
   );
 
+  const s = theme.spacing;
+
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-      <View style={styles.header}>
-        <Text style={{ ...styles.headerSubtitle, color: theme.colors.textSecondary }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.bg, paddingTop: s.lg }}>
+      <View style={{ paddingHorizontal: s.lg, paddingBottom: s.sm }}>
+        <Text style={{ fontSize: 14, color: theme.colors.textSecondary }}>
           {pendingTodos.length} pending · {completedTodos.length} completed
         </Text>
       </View>
 
       {sortedTodos.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={{ ...styles.emptyText, color: theme.colors.textSecondary }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: s.sm, color: theme.colors.textSecondary }}>
             No todos found
           </Text>
-          <Text style={{ ...styles.emptySubtext, color: theme.colors.textTertiary }}>
+          <Text style={{ fontSize: 14, color: theme.colors.textTertiary }}>
             Add - [ ] task in your notes
           </Text>
         </View>
@@ -200,7 +193,7 @@ export default function TodosScreen() {
           data={sortedTodos}
           keyExtractor={(item) => item.id}
           renderItem={renderTodo}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={{ padding: s.lg, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
@@ -208,22 +201,3 @@ export default function TodosScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  headerTitle: { fontSize: 28, fontWeight: '700', marginBottom: 4 },
-  headerSubtitle: { fontSize: 14 },
-  list: { padding: 16, paddingTop: 8 },
-  todoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 12,
-  },
-  todoText: { flex: 1, fontSize: 16 },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-  emptySubtext: { fontSize: 14 },
-});
