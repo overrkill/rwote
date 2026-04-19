@@ -139,7 +139,7 @@ export default function NoteForm({ note, onSave, onCancel }: NoteFormProps) {
       <div className="flex gap-2">
         <button
           onClick={handleSave}
-          disabled={!text.trim()}
+          disabled={!title.trim()}
           className="px-6 py-2.5 rounded-md font-semibold cursor-pointer transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ backgroundColor: 'var(--accent-btn)', color: 'var(--bg)' }}
         >

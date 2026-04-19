@@ -106,6 +106,10 @@ rwote/
 - [ ] Mobile responsive improvements
 - [ ] Performance optimization
 
+## Workflow Rules
+
+- **Always commit after a change** - Make a git commit after every code change before moving to another task
+
 ## Quick Start
 
 ### Web App (Development)

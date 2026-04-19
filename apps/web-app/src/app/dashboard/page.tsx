@@ -171,44 +171,47 @@ export default function DashboardPage() {
     }
   }
 
-  const deleteFromCloud = async (id: string) => {
-    if (!subscription?.can_sync) return
+  const deleteFromCloud = async (id: string): Promise<boolean> => {
+    if (!subscription?.can_sync) return false
     const token = await getAuthToken()
-    if (!token) return
+    if (!token) return false
 
     setSyncStatus('syncing')
     try {
       await cloudDeleteNote(id, token)
       setSyncStatus('synced')
       setLastSyncedAt(Date.now())
+      return true
     } catch (e) {
       console.error('Failed to delete from cloud:', e)
       setSyncStatus('error')
+      return false
     }
   }
 
-  const handleSaveNote = async (text: string, noteText: string, tag: string) => {
+  const handleSaveNote = async (title: string, content: string, tags: string[]) => {
     const token = await getAuthToken()
     if (!token || !subscription?.can_sync) {
       setShowSubscriptionModal(true)
       return
     }
 
-    let finalText = text
-    let finalNote = noteText
+    let finalTitle = title
+    let finalContent = content
+    let finalTags = tags
 
-    if (aiEnabled && aiSettings.provider !== 'disabled' && text.trim()) {
+    if (aiEnabled && aiSettings.provider !== 'disabled' && title.trim()) {
       setAiSummarizing(true)
       try {
         let result
         if (aiSettings.provider === 'groq') {
-          result = await summarizeUsingCloud(text, token)
+          result = await summarizeUsingCloud(title, token)
         } else {
-          result = await summarizeUsingLocal(text, aiSettings.ollamaUrl, aiSettings.ollamaModel)
+          result = await summarizeUsingLocal(title, aiSettings.ollamaUrl, aiSettings.ollamaModel)
         }
-        finalText = result.summary
-        if (result.tags.length > 0 && tag === 'uncategorized') {
-          tag = result.tags.join(',')
+        finalTitle = result.summary
+        if (result.tags.length > 0) {
+          finalTags = [...new Set([...finalTags, ...result.tags])]
         }
       } catch (e) {
         console.error('AI summarization failed:', e)
@@ -219,9 +222,9 @@ export default function DashboardPage() {
     if (editingNote) {
       const updatedNote: Note = {
         ...editingNote,
-        title: finalText,
-        content: finalNote,
-        tags: [...new Set([...editingNote.tags, tag])],
+        title: finalTitle,
+        content: finalContent,
+        tags: finalTags,
         updated_at: new Date().toISOString()
       }
       const updatedNotes = notes.map((n) =>
@@ -233,9 +236,9 @@ export default function DashboardPage() {
     } else {
       const newNote: Note = {
         id: crypto.randomUUID(),
-        title: finalText,
-        content: finalNote,
-        tags: [tag],
+        title: finalTitle,
+        content: finalContent,
+        tags: finalTags,
         pinned: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -246,17 +249,24 @@ export default function DashboardPage() {
     setShowForm(false)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    const previousNotes = [...notes]
     setNotes(notes.filter((n) => n.id !== id))
-    deleteFromCloud(id)
+    
+    const success = await deleteFromCloud(id)
+    if (!success) {
+      setNotes(previousNotes)
+    }
   }
 
   const handleTogglePin = (id: string) => {
-    const updatedNotes = notes.map((n) =>
-      n.id === id ? { ...n, pinned: !n.pinned, updated_at: new Date().toISOString() } : n
-    )
+    const noteToUpdate = notes.find((n) => n.id === id)
+    if (!noteToUpdate) return
+    
+    const updatedNote = { ...noteToUpdate, pinned: !noteToUpdate.pinned, updated_at: new Date().toISOString() }
+    const updatedNotes = notes.map((n) => n.id === id ? updatedNote : n)
     setNotes(updatedNotes)
-    syncToCloud(updatedNotes.find((n) => n.id === id)!)
+    syncToCloud(updatedNote)
   }
 
   const handleSubscribe = async (plan: string) => {
@@ -542,6 +552,9 @@ export default function DashboardPage() {
           }}
           onDelete={handleDelete}
           onTogglePin={handleTogglePin}
+          onCopy={() => {
+            // Copy is handled internally in NoteCard with clipboard API
+          }}
         />
       </main>
 
