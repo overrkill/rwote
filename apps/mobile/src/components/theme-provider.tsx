@@ -5,6 +5,15 @@ import * as SecureStore from 'expo-secure-store';
 
 const CACHE: Record<string, string> = {};
 
+export interface ThemeSpacing {
+  xs: number;
+  sm: number;
+  md: number;
+  lg: number;
+  xl: number;
+  xxl: number;
+}
+
 export interface ThemeColors {
   bg: string;
   surface: string;
@@ -23,6 +32,7 @@ export interface Theme {
   name: string;
   type: 'dark' | 'light';
   colors: ThemeColors;
+  spacing: ThemeSpacing;
 }
 
 export interface ThemeContextType {
@@ -69,11 +79,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+const SPACING: ThemeSpacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+};
+
 export const THEMES: Record<string, Theme> = {
   paper_dark: {
     id: 'paper_dark',
     name: 'Paper Dark',
     type: 'dark',
+    spacing: SPACING,
     colors: {
       bg: '#1a1a1e',
       surface: '#242428',
@@ -91,6 +111,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'tokyonight',
     name: 'Tokyo Night',
     type: 'dark',
+    spacing: SPACING,
     colors: {
       bg: '#1a1b26',
       surface: '#16161e',
@@ -108,6 +129,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'tokyonight_light',
     name: 'Tokyo Night Light',
     type: 'light',
+    spacing: SPACING,
     colors: {
       bg: '#dfe2e8',
       surface: '#e8ebf2',
@@ -125,6 +147,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'catppuccin',
     name: 'Catppuccin',
     type: 'dark',
+    spacing: SPACING,
     colors: {
       bg: '#1e1e2e',
       surface: '#181825',
@@ -142,6 +165,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'catppuccin_light',
     name: 'Catppuccin Latte',
     type: 'light',
+    spacing: SPACING,
     colors: {
       bg: '#eff1f5',
       surface: '#e6e9ef',
@@ -159,6 +183,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'nord',
     name: 'Nord',
     type: 'dark',
+    spacing: SPACING,
     colors: {
       bg: '#2e3440',
       surface: '#3b4252',
@@ -176,6 +201,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'nord_light',
     name: 'Nord Frost',
     type: 'light',
+    spacing: SPACING,
     colors: {
       bg: '#e5e9f0',
       surface: '#eceff4',
@@ -193,6 +219,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'ayu',
     name: 'Ayu Dark',
     type: 'dark',
+    spacing: SPACING,
     colors: {
       bg: '#0f0e0d',
       surface: '#171614',
@@ -210,6 +237,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'ayu_light',
     name: 'Ayu Mirage',
     type: 'light',
+    spacing: SPACING,
     colors: {
       bg: '#f3f1eb',
       surface: '#faf8f5',
@@ -227,6 +255,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'monokai',
     name: 'Monokai',
     type: 'dark',
+    spacing: SPACING,
     colors: {
       bg: '#272822',
       surface: '#1e1f1c',
@@ -244,6 +273,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'monokai_light',
     name: 'Monokai Pro',
     type: 'light',
+    spacing: SPACING,
     colors: {
       bg: '#faf8f5',
       surface: '#f2efe9',
@@ -261,6 +291,7 @@ export const THEMES: Record<string, Theme> = {
     id: 'light',
     name: 'Light',
     type: 'light',
+    spacing: SPACING,
     colors: {
       bg: '#ffffff',
       surface: '#fafafa',
