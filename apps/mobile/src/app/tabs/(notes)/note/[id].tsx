@@ -113,15 +113,22 @@ export default function NoteDetailScreen() {
       updateNote(id!, updates);
 
       if (accessToken && note) {
-        await supabase.saveNote(accessToken, {
-          id: note.id,
-          text: cleanedTitle,
-          note: cleanedContent,
-          tag: finalTags.join(','),
-          date: note.created_at,
-          pinned: note.pinned,
-          updated_at: new Date().toISOString(),
-        });
+        try {
+          const result = await supabase.saveNote(accessToken, {
+            local_id: note.id,
+            text: cleanedTitle,
+            note: cleanedContent,
+            tag: finalTags.join(','),
+            date: note.created_at,
+            pinned: note.pinned,
+            updated_at: new Date().toISOString(),
+          });
+          if (result?.id) {
+            updateNote(id!, { cloud_id: result.id, synced: true });
+          }
+        } catch {
+          toast.error('Failed to sync note');
+        }
       }
 
       router.back();
@@ -220,13 +227,13 @@ export default function NoteDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
-  titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, marginBottom: 12 },
-  contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
-  titleRead: { fontSize: 28, fontWeight: '700', paddingVertical: 12, marginBottom: 16 },
-  contentRead: { fontSize: 17, lineHeight: 28, marginBottom: 16, whiteSpace: 'pre-wrap' },
-  tagsSection: { marginTop: 16 },
-  tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  tagText: { fontSize: 12 },
+  content: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 80 },
+  titleInput: { fontSize: 22, fontWeight: '600', paddingVertical: 6, marginBottom: 10 },
+  contentInput: { fontSize: 15, lineHeight: 22, minHeight: 120, marginBottom: 12 },
+  titleRead: { fontSize: 24, fontWeight: '700', paddingVertical: 10, marginBottom: 12 },
+  contentRead: { fontSize: 15, lineHeight: 24, marginBottom: 12, whiteSpace: 'pre-wrap' },
+  tagsSection: { marginTop: 12 },
+  tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  tagText: { fontSize: 11 },
 });

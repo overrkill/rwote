@@ -2,12 +2,14 @@ import { create } from 'zustand';
 
 export interface Note {
   id: string;
+  cloud_id?: string;
   title: string;
   content: string;
   tags: string[];
   pinned: boolean;
   created_at: string;
   updated_at: string;
+  synced: boolean;
 }
 
 interface NotesState {

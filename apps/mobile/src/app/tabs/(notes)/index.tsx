@@ -8,58 +8,17 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
 import { Note, getFilteredNotes, useNotesStore } from '@/stores/notes-store';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   Pressable,
   RefreshControl,
-  SectionList,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-function getDateGroup(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const noteDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.floor((today.getTime() - noteDate.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays === 2) return 'Day before yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
-}
-
-function groupNotesByDate(notes: Note[]): { pinned: Note[]; grouped: { date: string; notes: Note[] }[] } {
-  const pinned = notes.filter(n => n.pinned);
-  const unpinned = notes.filter(n => !n.pinned);
-
-  const groups: { [key: string]: Note[] } = {};
-  for (const note of unpinned) {
-    const dateKey = getDateGroup(note.created_at);
-    if (!groups[dateKey]) {
-      groups[dateKey] = [];
-    }
-    groups[dateKey].push(note);
-  }
-
-  const order = ['Today', 'Yesterday', 'Day before yesterday'];
-  const sortedKeys = Object.keys(groups).sort((a, b) => {
-    const aIdx = order.indexOf(a);
-    const bIdx = order.indexOf(b);
-    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-    if (aIdx !== -1) return -1;
-    if (bIdx !== -1) return 1;
-    return new Date(b).getTime() - new Date(a).getTime();
-  });
-
-  const grouped = sortedKeys.map(date => ({ date, notes: groups[date] }));
-  return { pinned, grouped };
-}
 import Animated, {
   FadeIn,
   FadeOut,
@@ -103,7 +62,6 @@ export default function NotesScreen() {
   } = useNotesStore();
 
   const filteredByTag = getFilteredNotes(notes || [], searchQuery || '', activeTag || 'all');
-  const { pinned, grouped } = useMemo(() => groupNotesByDate(filteredByTag), [filteredByTag]);
 
   const { user, accessToken, initialize } = useAuthStore();
 
@@ -116,17 +74,27 @@ export default function NotesScreen() {
     if (!currentToken) return;
     try {
       const data = await supabase.fetchNotes(currentToken);
-      // Map API response from edge function: { notes: [...] }
       const notesData = data?.notes || [];
-      const mappedNotes = notesData.map((item: any) => ({
-        id: item.local_id || item.id,
-        title: item.text || 'Untitled',
-        content: item.note || '',
-        tags: item.tag ? item.tag.split(',').filter((t: string) => t.length > 0) : [],
-        pinned: item.pinned || false,
-        created_at: item.date || item.created_at || new Date().toISOString(),
-        updated_at: item.updated_at || new Date().toISOString(),
-      }));
+      const seen = new Set<string>();
+
+      const mappedNotes = notesData
+        .filter((item: any) => item.local_id && !seen.has(item.local_id))
+        .filter((item: any) => {
+          if (seen.has(item.local_id)) return false;
+          seen.add(item.local_id);
+          return true;
+        })
+        .map((item: any) => ({
+          id: item.local_id,
+          cloud_id: item.id,
+          title: item.text || 'Untitled',
+          content: item.note || '',
+          tags: item.tag ? item.tag.split(',').filter((t: string) => t.length > 0) : [],
+          pinned: item.pinned || false,
+          created_at: item.date || item.created_at || new Date().toISOString(),
+          updated_at: item.updated_at || new Date().toISOString(),
+          synced: true,
+        }));
       setNotes(mappedNotes);
     } catch {
       toast.error('Failed to load notes');
@@ -150,11 +118,11 @@ export default function NotesScreen() {
     setSearchQuery(text);
   };
 
-  const handleDelete = async (id: string) => {
-    deleteNote(id);
-    if (accessToken) {
+  const handleDelete = async (note: Note) => {
+    deleteNote(note.id);
+    if (note.cloud_id && accessToken) {
       try {
-        await supabase.deleteNote(accessToken, id);
+        await supabase.deleteNote(accessToken, note.cloud_id);
       } catch {
         toast.error('Failed to delete note');
       }
@@ -162,18 +130,22 @@ export default function NotesScreen() {
   };
 
   const handleTogglePin = async (note: Note) => {
-    updateNote(note.id, { pinned: !note.pinned });
-    if (accessToken) {
+    const newPinned = !note.pinned;
+    updateNote(note.id, { pinned: newPinned });
+    if (note.cloud_id && accessToken) {
       try {
-        await supabase.saveNote(accessToken, {
-          id: note.id,
+        const result = await supabase.saveNote(accessToken, {
+          local_id: note.id,
           text: note.title,
           note: note.content,
           tag: (note.tags || []).join(','),
           date: note.created_at,
-          pinned: !note.pinned,
+          pinned: newPinned,
           updated_at: new Date().toISOString(),
         });
+        if (result?.id) {
+          updateNote(note.id, { cloud_id: result.id, synced: true });
+        }
       } catch {
         toast.error('Failed to update note');
       }
@@ -225,7 +197,7 @@ export default function NotesScreen() {
             <Pressable style={styles.actionBtn} onPress={() => handleTogglePin(item)}>
               <PinIcon size={18} color={item.pinned ? theme.colors.accent : textTertiary} fill={item.pinned ? theme.colors.accent : 'none'} />
             </Pressable>
-            <Pressable style={styles.actionBtn} onPress={() => handleDelete(item.id)}>
+            <Pressable style={styles.actionBtn} onPress={() => handleDelete(item)}>
               <TrashIcon size={18} color={textTertiary} />
             </Pressable>
           </View>
@@ -290,19 +262,12 @@ export default function NotesScreen() {
           </Text>
         </View>
       ) : (
-        <SectionList
-          sections={[
-            ...(pinned.length > 0 ? [{ title: 'Pinned', data: pinned }] : []),
-            ...grouped.flatMap(g => [{ title: g.date, data: g.notes }])
-          ]}
+        <FlatList
+          data={filteredByTag}
           keyExtractor={(item) => item.id}
           renderItem={renderNote}
-          renderSectionHeader={({ section: { title } }) => (
-            <Text style={{ ...styles.sectionHeader, color: textSecondary }}>{title}</Text>
-          )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          stickySectionHeadersEnabled={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       )}
@@ -319,26 +284,25 @@ export default function NotesScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
-  searchInput: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 16 },
-  filters: { height: 44, paddingBottom: 8 },
-  filtersList: { paddingHorizontal: 16, gap: 8 },
-  filterChip: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  filterText: { fontSize: 14, fontWeight: '500', textAlignVertical: 'center' },
-  sectionHeader: { fontSize: 13, fontWeight: '600', paddingVertical: 8, paddingHorizontal: 4, marginTop: 8, marginBottom: 4 },
-  list: { padding: 16, paddingBottom: 100 },
-  card: { borderRadius: 12, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  cardTitle: { fontSize: 16, fontWeight: '600', flex: 1 },
+  searchInput: { borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 15 },
+  filters: { height: 36, paddingBottom: 6 },
+  filtersList: { paddingHorizontal: 12, gap: 6 },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  filterText: { fontSize: 13, fontWeight: '500', textAlignVertical: 'center' },
+  list: { padding: 12, paddingBottom: 100 },
+  card: { borderRadius: 10, padding: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  cardTitle: { fontSize: 15, fontWeight: '600', flex: 1 },
   pinIcon: { fontSize: 14, marginLeft: 8 },
-  cardContent: { fontSize: 14, lineHeight: 20, marginBottom: 12 },
+  cardContent: { fontSize: 13, lineHeight: 18, marginBottom: 8 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tags: { flexDirection: 'row', gap: 8 },
-  tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  tagText: { fontSize: 12 },
+  tags: { flexDirection: 'row', gap: 4 },
+  tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  tagText: { fontSize: 11 },
   actions: { flexDirection: 'row', gap: 12 },
   actionBtn: { padding: 4 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
   emptySubtext: { fontSize: 14 },
-  fab: { position: 'absolute', right: 20, bottom: 20, width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
+  fab: { position: 'absolute', right: 16, bottom: 16, width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
 });

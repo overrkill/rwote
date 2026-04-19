@@ -54,9 +54,9 @@ export default function NewNoteScreen() {
   const [content, setContent] = useState('');
   const [removedTags, setRemovedTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [viewMode, setViewMode] = useState(true);
+  const [viewMode, setViewMode] = useState(false);
 
-  const { addNote } = useNotesStore();
+  const { addNote, updateNote } = useNotesStore();
   const { accessToken } = useAuthStore();
 
   const combinedText = `${title} ${content}`;
@@ -90,25 +90,35 @@ export default function NewNoteScreen() {
         content: cleanedContent,
         tags: finalTags,
         pinned: false,
+        synced: false,
       };
 
+      const localId = crypto.randomUUID();
       const tempNote = {
-        id: `temp_${Date.now()}`,
-        ...noteData,
+        id: localId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        ...noteData,
       };
       addNote(tempNote);
 
       if (accessToken) {
-        await supabase.saveNote(accessToken, {
-          text: cleanedTitle,
-          note: cleanedContent,
-          tag: finalTags.join(','),
-          date: new Date().toISOString(),
-          pinned: false,
-          updated_at: new Date().toISOString(),
-        });
+        try {
+          const result = await supabase.saveNote(accessToken, {
+            local_id: localId,
+            text: cleanedTitle,
+            note: cleanedContent,
+            tag: finalTags.join(','),
+            date: new Date().toISOString(),
+            pinned: false,
+            updated_at: new Date().toISOString(),
+          });
+          if (result?.id) {
+            updateNote(localId, { cloud_id: result.id, synced: true });
+          }
+        } catch {
+          toast.error('Failed to sync note');
+        }
       }
 
       router.back();
@@ -210,14 +220,14 @@ export default function NewNoteScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
-  titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, marginBottom: 12 },
-  contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
-  titleRead: { fontSize: 28, fontWeight: '700', paddingVertical: 12, marginBottom: 16 },
-  contentRead: { fontSize: 17, lineHeight: 28, marginBottom: 16 },
-  tagsSection: { marginTop: 16 },
-  tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  tagText: { fontSize: 12 },
-  tagRemove: { fontSize: 12, fontWeight: '600' },
+  content: { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 80 },
+  titleInput: { fontSize: 22, fontWeight: '600', paddingVertical: 6, marginBottom: 10 },
+  contentInput: { fontSize: 15, lineHeight: 22, minHeight: 120, marginBottom: 12 },
+  titleRead: { fontSize: 24, fontWeight: '700', paddingVertical: 10, marginBottom: 12 },
+  contentRead: { fontSize: 15, lineHeight: 24, marginBottom: 12 },
+  tagsSection: { marginTop: 12 },
+  tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, flexDirection: 'row', alignItems: 'center', gap: 2 },
+  tagText: { fontSize: 11 },
+  tagRemove: { fontSize: 11, fontWeight: '600' },
 });
