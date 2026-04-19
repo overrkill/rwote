@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
-import { View, ActivityIndicator, useColorScheme } from 'react-native';
-import { Stack } from 'expo-router';
-import { useAuthStore } from '@/stores/auth-store';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ToastProvider } from '@/components/toast-context';
+import { useAuthStore } from '@/stores/auth-store';
+import { Stack } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, useColorScheme, View } from 'react-native';
 
 function AuthStack() {
   return (

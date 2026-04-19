@@ -1,7 +1,7 @@
-import { Stack } from 'expo-router/stack';
 import { useTheme } from '@/components/theme-provider';
+import { Stack } from 'expo-router/stack';
 
-import { View, Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 export default function NotesLayout() {
   const { theme } = useTheme();
@@ -22,8 +22,8 @@ export default function NotesLayout() {
           headerTintColor: theme.colors.textPrimary,
           headerShadowVisible: false,
           headerTitle: () => (
-            <View style={{ alignItems: 'center' }}>
-              Notes
+            <View style={{ alignItems: "flex-start" }}>
+              <Text style={{color:theme.colors.textPrimary}}>Notes</Text>
             </View>
           ),
         }}

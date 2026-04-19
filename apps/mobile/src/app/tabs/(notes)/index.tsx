@@ -1,27 +1,27 @@
 'use client';
 
+import { PinIcon, PlusIcon, TrashIcon } from '@/components/icons';
+import { useTheme } from '@/components/theme-provider';
+import { useToast } from '@/components/toast-context';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/auth-store';
+import { Note, getFilteredNotes, useNotesStore } from '@/stores/notes-store';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
   FlatList,
   Pressable,
-  StyleSheet,
   RefreshControl,
+  StyleSheet,
+  Text,
   TextInput,
+  View,
 } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
   Layout,
 } from 'react-native-reanimated';
-import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'expo-router';
-import { useTheme } from '@/components/theme-provider';
-import { useNotesStore, Note, getFilteredNotes } from '@/stores/notes-store';
-import { useAuthStore } from '@/stores/auth-store';
-import { supabase } from '@/lib/supabase';
-import { PinIcon, TrashIcon, PlusIcon } from '@/components/icons';
-import { useToast } from '@/components/toast-context';
 
 function getTagColor(tag: string): string {
   let hash = 0;
@@ -238,7 +238,6 @@ export default function NotesScreen() {
           />
         </View>
       )}
-
       {filteredByTag.length === 0 ? (
         <View style={styles.empty}>
           <Text style={{ ...styles.emptyText, color: textSecondary }}>

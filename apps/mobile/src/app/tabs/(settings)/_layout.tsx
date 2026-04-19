@@ -1,7 +1,7 @@
-import { Stack } from 'expo-router/stack';
 import { useTheme } from '@/components/theme-provider';
+import { Stack } from 'expo-router/stack';
 
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 
 export default function SettingsLayout() {
   const { theme } = useTheme();
@@ -22,8 +22,8 @@ export default function SettingsLayout() {
           headerTintColor: theme.colors.textPrimary,
           headerShadowVisible: false,
           headerTitle: () => (
-            <View style={{ alignItems: 'center' }}>
-              Settings
+            <View style={{ alignItems: 'flex-start' }}>
+              <Text style={{color:theme.colors.textPrimary}}>Settings</Text>
             </View>
           ),
         }}

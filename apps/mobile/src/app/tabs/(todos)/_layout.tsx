@@ -1,7 +1,7 @@
-import { Stack } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
+import { Stack } from 'expo-router';
 
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 
 export default function TodosLayout() {
   const { theme } = useTheme();
@@ -22,8 +22,8 @@ export default function TodosLayout() {
           headerTintColor: theme.colors.textPrimary,
           headerShadowVisible: false,
           headerTitle: () => (
-            <View style={{ alignItems: 'center' }}>
-              Todos
+            <View style={{ alignItems: "flex-start" }}>
+              <Text style={{color:theme.colors.textPrimary}}>Todos</Text>
             </View>
           ),
         }}

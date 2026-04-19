@@ -1,20 +1,20 @@
 'use client';
 
+import { useTheme } from '@/components/theme-provider';
+import { useToast } from '@/components/toast-context';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/auth-store';
+import { useNotesStore } from '@/stores/notes-store';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
   FlatList,
   Pressable,
-  StyleSheet,
   RefreshControl,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
-import { useState, useCallback, useMemo } from 'react';
-import { useTheme } from '@/components/theme-provider';
-import { useNotesStore } from '@/stores/notes-store';
-import { useAuthStore } from '@/stores/auth-store';
-import { supabase } from '@/lib/supabase';
-import { useToast } from '@/components/toast-context';
 
 interface TodoItem {
   id: string;
@@ -181,9 +181,6 @@ export default function TodosScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <View style={styles.header}>
-        <Text style={{ ...styles.headerTitle, color: theme.colors.textPrimary }}>
-          Todos
-        </Text>
         <Text style={{ ...styles.headerSubtitle, color: theme.colors.textSecondary }}>
           {pendingTodos.length} pending · {completedTodos.length} completed
         </Text>
