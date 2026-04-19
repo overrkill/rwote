@@ -9,7 +9,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
 import { useNotesStore } from '@/stores/notes-store';
@@ -17,7 +17,32 @@ import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
 
-const AVAILABLE_TAGS = ['general', 'arrays', 'strings', 'trees', 'graphs', 'dp', 'sorting', 'searching'];
+function getTagColor(tag: string): string {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 70%, 85%)`;
+}
+
+function getTagTextColor(tag: string): string {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 70%, 25%)`;
+}
+
+function extractTags(text: string): string[] {
+  const matches = text.match(/#(\w+)/g);
+  return matches ? matches.map((t) => t.slice(1).toLowerCase()) : [];
+}
+
+function cleanText(text: string): string {
+  return text.replace(/#\w+/g, '').trim();
+}
 
 export default function NoteDetailScreen() {
   const { theme } = useTheme();
@@ -26,7 +51,7 @@ export default function NoteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>(['general']);
+  const [removedTags, setRemovedTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const { notes, updateNote } = useNotesStore();
@@ -37,14 +62,30 @@ export default function NoteDetailScreen() {
     if (note) {
       setTitle(note.title);
       setContent(note.content);
-      setSelectedTags(note.tags.length > 0 ? note.tags : ['general']);
+      setRemovedTags([]);
     }
   }, [id, notes]);
 
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const combinedText = `${title} ${content}`;
+  const parsedTags = useMemo(() => extractTags(combinedText), [title, content]);
+  
+  // Start with existing tags from note, filter out removed ones, add new parsed ones
+  const note = notes.find((n) => n.id === id);
+  const existingTags = note?.tags || [];
+  
+  const allTags = useMemo(() => {
+    const keptExisting = existingTags.filter((t) => !removedTags.includes(t));
+    const newTags = parsedTags.filter((t) => !keptExisting.includes(t));
+    return [...new Set([...keptExisting, ...newTags])];
+  }, [existingTags, parsedTags, removedTags]);
+
+  const removeTag = (tagToRemove: string) => {
+    if (existingTags.includes(tagToRemove) && !removedTags.includes(tagToRemove)) {
+      setRemovedTags([...removedTags, tagToRemove]);
+    } else if (parsedTags.includes(tagToRemove)) {
+      const regex = new RegExp(`#${tagToRemove}\\b`, 'gi');
+      setTitle(title.replace(regex, '').trim());
+    }
   };
 
   const handleSave = async () => {
@@ -55,11 +96,14 @@ export default function NoteDetailScreen() {
 
     setSaving(true);
     try {
-      const note = notes.find((n) => n.id === id);
+      const cleanedTitle = cleanText(title);
+      const cleanedContent = cleanText(content);
+      const finalTags = allTags.length > 0 ? allTags : ['uncategorized'];
+
       const updates = {
-        title: title.trim(),
-        content: content.trim(),
-        tags: selectedTags,
+        title: cleanedTitle,
+        content: cleanedContent,
+        tags: finalTags,
         updated_at: new Date().toISOString(),
       };
 
@@ -68,9 +112,9 @@ export default function NoteDetailScreen() {
       if (accessToken && note) {
         await supabase.saveNote(accessToken, {
           id: note.id,
-          text: title.trim(),
-          note: content.trim(),
-          tag: selectedTags[0] || 'general',
+          text: cleanedTitle,
+          note: cleanedContent,
+          tag: finalTags.join(','),
           date: note.created_at,
           pinned: note.pinned,
           updated_at: new Date().toISOString(),
@@ -108,11 +152,15 @@ export default function NoteDetailScreen() {
             ...styles.titleInput,
             color: theme.colors.textPrimary,
             borderBottomColor: theme.colors.border,
+            minHeight: 96,
+            maxHeight: 96,
           }}
-          placeholder="Title"
+          placeholder="Write your insight... use #hashtag to add tags"
           placeholderTextColor={theme.colors.textTertiary}
           value={title}
           onChangeText={setTitle}
+          multiline
+          scrollEnabled
         />
 
         <TextInput
@@ -120,7 +168,7 @@ export default function NoteDetailScreen() {
             ...styles.contentInput,
             color: theme.colors.textPrimary,
           }}
-          placeholder="Start writing your insight..."
+          placeholder="Extra context..."
           placeholderTextColor={theme.colors.textTertiary}
           value={content}
           onChangeText={setContent}
@@ -128,36 +176,30 @@ export default function NoteDetailScreen() {
           textAlignVertical="top"
         />
 
-        <View style={styles.tagsSection}>
-          <Text style={{ ...styles.tagsLabel, color: theme.colors.textSecondary }}>
-            Tags
-          </Text>
-          <View style={styles.tagsGrid}>
-            {AVAILABLE_TAGS.map((tag) => (
-              <Pressable
-                key={tag}
-                style={{
-                  ...styles.tagChip,
-                  backgroundColor: selectedTags.includes(tag)
-                    ? theme.colors.accentBtn
-                    : theme.colors.surface,
-                }}
-                onPress={() => toggleTag(tag)}
-              >
-                <Text
+        {allTags.length > 0 && (
+          <View style={styles.tagsSection}>
+            <Text style={{ ...styles.tagsLabel, color: theme.colors.textSecondary }}>
+              Tags
+            </Text>
+            <View style={styles.tagsGrid}>
+              {allTags.map((tag) => (
+                <Pressable
+                  key={tag}
                   style={{
-                    ...styles.tagText,
-                    color: selectedTags.includes(tag)
-                      ? theme.colors.bg
-                      : theme.colors.textSecondary,
+                    ...styles.tagChip,
+                    backgroundColor: getTagColor(tag),
                   }}
+                  onPress={() => removeTag(tag)}
                 >
-                  {tag.charAt(0).toUpperCase() + tag.slice(1)}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text style={{ ...styles.tagText, color: getTagTextColor(tag) }}>
+                    #{tag}
+                  </Text>
+                  <Text style={{ ...styles.tagRemove, color: getTagTextColor(tag) }}>×</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </>
   );
@@ -166,11 +208,12 @@ export default function NoteDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
-  titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, borderBottomWidth: 1, marginBottom: 12 },
+  titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, marginBottom: 12 },
   contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
   tagsSection: { marginTop: 8 },
   tagsLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tagChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-  tagText: { fontSize: 14, fontWeight: '500' },
+  tagChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 4 },
+  tagText: { fontSize: 14, fontWeight: '600' },
+  tagRemove: { fontSize: 16, fontWeight: '600' },
 });

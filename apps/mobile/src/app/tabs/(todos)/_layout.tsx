@@ -1,9 +1,9 @@
-import { Stack } from 'expo-router/stack';
+import { Stack } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
 import { RwoteLogo } from '@/components/rwote-logo';
 import { View } from 'react-native';
 
-export default function SettingsLayout() {
+export default function TodosLayout() {
   const { theme } = useTheme();
 
   return (
@@ -16,7 +16,7 @@ export default function SettingsLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'Settings',
+          title: 'Todos',
           headerShown: true,
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.textPrimary,

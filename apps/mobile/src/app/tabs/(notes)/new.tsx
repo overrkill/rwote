@@ -9,7 +9,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
 import { useNotesStore } from '@/stores/notes-store';
@@ -17,7 +17,32 @@ import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
 
-const AVAILABLE_TAGS = ['general','thought','uncategorized'];
+function getTagColor(tag: string): string {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 70%, 85%)`;
+}
+
+function getTagTextColor(tag: string): string {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 70%, 25%)`;
+}
+
+function extractTags(text: string): string[] {
+  const matches = text.match(/#(\w+)/g);
+  return matches ? matches.map((t) => t.slice(1).toLowerCase()) : [];
+}
+
+function cleanText(text: string): string {
+  return text.replace(/#\w+/g, '').trim();
+}
 
 export default function NewNoteScreen() {
   const { theme } = useTheme();
@@ -25,16 +50,24 @@ export default function NewNoteScreen() {
   const toast = useToast();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>(['general']);
+  const [removedTags, setRemovedTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const { addNote } = useNotesStore();
   const { accessToken } = useAuthStore();
 
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const combinedText = `${title} ${content}`;
+  const parsedTags = useMemo(() => extractTags(combinedText), [title, content]);
+  
+  const allTags = useMemo(() => {
+    const kept = parsedTags.filter((t) => !removedTags.includes(t));
+    return [...new Set(kept)];
+  }, [parsedTags, removedTags]);
+
+  const removeTag = (tagToRemove: string) => {
+    if (parsedTags.includes(tagToRemove) && !removedTags.includes(tagToRemove)) {
+      setRemovedTags([...removedTags, tagToRemove]);
+    }
   };
 
   const handleSave = async () => {
@@ -45,10 +78,14 @@ export default function NewNoteScreen() {
 
     setSaving(true);
     try {
+      const cleanedTitle = cleanText(title);
+      const cleanedContent = cleanText(content);
+      const finalTags = allTags.length > 0 ? allTags : ['uncategorized'];
+
       const noteData = {
-        title: title.trim(),
-        content: content.trim(),
-        tags: selectedTags,
+        title: cleanedTitle,
+        content: cleanedContent,
+        tags: finalTags,
         pinned: false,
       };
 
@@ -62,9 +99,9 @@ export default function NewNoteScreen() {
 
       if (accessToken) {
         await supabase.saveNote(accessToken, {
-          text: title.trim(),
-          note: content.trim(),
-          tag: selectedTags[0] || 'general',
+          text: cleanedTitle,
+          note: cleanedContent,
+          tag: finalTags.join(','),
           date: new Date().toISOString(),
           pinned: false,
           updated_at: new Date().toISOString(),
@@ -102,11 +139,15 @@ export default function NewNoteScreen() {
             ...styles.titleInput,
             color: theme.colors.textPrimary,
             borderBottomColor: theme.colors.border,
+            minHeight: 96,
+            maxHeight: 96,
           }}
-          placeholder="Title"
+          placeholder="Write your insight... use #hashtag to add tags"
           placeholderTextColor={theme.colors.textTertiary}
           value={title}
           onChangeText={setTitle}
+          multiline
+          scrollEnabled
           autoFocus
         />
 
@@ -115,7 +156,7 @@ export default function NewNoteScreen() {
             ...styles.contentInput,
             color: theme.colors.textPrimary,
           }}
-          placeholder="Start writing your insight..."
+          placeholder="Extra context..."
           placeholderTextColor={theme.colors.textTertiary}
           value={content}
           onChangeText={setContent}
@@ -123,36 +164,30 @@ export default function NewNoteScreen() {
           textAlignVertical="top"
         />
 
-        <View style={styles.tagsSection}>
-          <Text style={{ ...styles.tagsLabel, color: theme.colors.textSecondary }}>
-            Tags
-          </Text>
-          <View style={styles.tagsGrid}>
-            {AVAILABLE_TAGS.map((tag) => (
-              <Pressable
-                key={tag}
-                style={{
-                  ...styles.tagChip,
-                  backgroundColor: selectedTags.includes(tag)
-                    ? theme.colors.accentBtn
-                    : theme.colors.surface,
-                }}
-                onPress={() => toggleTag(tag)}
-              >
-                <Text
+        {allTags.length > 0 && (
+          <View style={styles.tagsSection}>
+            <Text style={{ ...styles.tagsLabel, color: theme.colors.textSecondary }}>
+              Tags
+            </Text>
+            <View style={styles.tagsGrid}>
+              {allTags.map((tag) => (
+                <Pressable
+                  key={tag}
                   style={{
-                    ...styles.tagText,
-                    color: selectedTags.includes(tag)
-                      ? theme.colors.bg
-                      : theme.colors.textSecondary,
+                    ...styles.tagChip,
+                    backgroundColor: getTagColor(tag),
                   }}
+                  onPress={() => removeTag(tag)}
                 >
-                  {tag.charAt(0).toUpperCase() + tag.slice(1)}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text style={{ ...styles.tagText, color: getTagTextColor(tag) }}>
+                    #{tag}
+                  </Text>
+                  <Text style={{ ...styles.tagRemove, color: getTagTextColor(tag) }}>×</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </>
   );
@@ -161,11 +196,12 @@ export default function NewNoteScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
-  titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, borderBottomWidth: 1, marginBottom: 12 },
+  titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, marginBottom: 12 },
   contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
   tagsSection: { marginTop: 8 },
   tagsLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tagChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-  tagText: { fontSize: 14, fontWeight: '500' },
+  tagChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 4 },
+  tagText: { fontSize: 14, fontWeight: '600' },
+  tagRemove: { fontSize: 16, fontWeight: '600' },
 });

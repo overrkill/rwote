@@ -82,9 +82,10 @@ export function NotesIcon({ size = 20, color = 'currentColor' }: IconProps) {
 }
 
 export function CheckIcon({ size = 20, color = 'currentColor' }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <Polyline points="20 6 9 17 4 12" />
+return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      <Path d="M9 12l2 2 4-4"/>
     </Svg>
   );
 }

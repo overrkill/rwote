@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/toast-context';
+import { RwoteLogo } from '@/components/rwote-logo';
 
 export default function RegisterScreen() {
   const { theme } = useTheme();
@@ -37,7 +38,9 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <Text style={{ ...styles.title, color: theme.colors.textPrimary }}>Create Account</Text>
+        <View style={styles.logoContainer}>
+          <RwoteLogo size="large" />
+        </View>
         <Text style={{ ...styles.subtitle, color: theme.colors.textSecondary }}>
           Start capturing your insights
         </Text>
@@ -113,7 +116,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1, justifyContent: 'center', padding: 24 },
-  title: { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  logoContainer: { alignItems: 'center', marginBottom: 16 },
   subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 32 },
   form: { gap: 16 },
   input: { borderWidth: 1, borderRadius: 12, padding: 16, fontSize: 16 },

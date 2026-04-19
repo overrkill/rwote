@@ -23,6 +23,24 @@ import { supabase } from '@/lib/supabase';
 import { PinIcon, TrashIcon, PlusIcon } from '@/components/icons';
 import { useToast } from '@/components/toast-context';
 
+function getTagColor(tag: string): string {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 70%, 85%)`;
+}
+
+function getTagTextColor(tag: string): string {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) {
+    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 70%, 25%)`;
+}
+
 export default function NotesScreen() {
   const { theme } = useTheme();
   const router = useRouter();
@@ -60,7 +78,7 @@ export default function NotesScreen() {
         id: item.local_id || item.id,
         title: item.text || 'Untitled',
         content: item.note || '',
-        tags: item.tag ? [item.tag] : [],
+        tags: item.tag ? item.tag.split(',').filter((t: string) => t.length > 0) : [],
         pinned: item.pinned || false,
         created_at: item.date || item.created_at || new Date().toISOString(),
         updated_at: item.updated_at || new Date().toISOString(),
@@ -107,7 +125,7 @@ export default function NotesScreen() {
           id: note.id,
           text: note.title,
           note: note.content,
-          tag: note.tags?.[0] || 'general',
+          tag: (note.tags || []).join(','),
           date: note.created_at,
           pinned: !note.pinned,
           updated_at: new Date().toISOString(),
@@ -155,9 +173,9 @@ export default function NotesScreen() {
         </Text>
         <View style={styles.cardFooter}>
           <View style={styles.tags}>
-            {(item.tags || []).slice(0, 2).map((tag: string) => (
-              <View key={tag} style={{ ...styles.tag, backgroundColor: theme.colors.bg }}>
-                <Text style={{ ...styles.tagText, color: textTertiary }}>{tag}</Text>
+            {(item.tags || []).slice(0, 3).map((tag: string) => (
+              <View key={tag} style={{ ...styles.tag, backgroundColor: getTagColor(tag) }}>
+                <Text style={{ ...styles.tagText, color: getTagTextColor(tag) }}>#{tag}</Text>
               </View>
             ))}
           </View>

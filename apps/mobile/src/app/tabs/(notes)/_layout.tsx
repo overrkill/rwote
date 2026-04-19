@@ -1,5 +1,7 @@
 import { Stack } from 'expo-router/stack';
 import { useTheme } from '@/components/theme-provider';
+import { RwoteLogo } from '@/components/rwote-logo';
+import { View, Text } from 'react-native';
 
 export default function NotesLayout() {
   const { theme } = useTheme();
@@ -19,6 +21,11 @@ export default function NotesLayout() {
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.textPrimary,
           headerShadowVisible: false,
+          headerTitle: () => (
+            <View style={{ alignItems: 'center' }}>
+              <RwoteLogo size="small" />
+            </View>
+          ),
         }}
       />
       <Stack.Screen

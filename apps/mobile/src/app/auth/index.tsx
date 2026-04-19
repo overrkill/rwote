@@ -7,6 +7,7 @@ import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
 import { GoogleIcon } from '@/components/icons';
 import { useToast } from '@/components/toast-context';
+import { RwoteLogo } from '@/components/rwote-logo';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
@@ -46,7 +47,9 @@ export default function LoginScreen() {
         keyboardVerticalOffset={0}
       >
         <View style={styles.content}>
-          <Text style={{ ...styles.title, color: theme.colors.textPrimary }}>Rwote</Text>
+          <View style={styles.logoContainer}>
+            <RwoteLogo size="large" />
+          </View>
           <Text style={{ ...styles.subtitle, color: theme.colors.textSecondary }}>
             Sign in to your account
           </Text>
@@ -126,7 +129,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1, justifyContent: 'center', padding: 24 },
-  title: { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
+  logoContainer: { alignItems: 'center', marginBottom: 16 },
   subtitle: { fontSize: 16, textAlign: 'center', marginBottom: 32 },
   form: { gap: 16 },
   googleButton: {
