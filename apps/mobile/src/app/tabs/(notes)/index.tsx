@@ -1,6 +1,7 @@
 'use client';
 
 import { PinIcon, PlusIcon, TrashIcon } from '@/components/icons';
+import { MarkdownView } from '@/components/markdown-view';
 import { useTheme } from '@/components/theme-provider';
 import { useToast } from '@/components/toast-context';
 import { supabase } from '@/lib/supabase';
@@ -168,9 +169,7 @@ export default function NotesScreen() {
             {item.title || 'Untitled'}
           </Text>
         </View>
-        <Text style={{ ...styles.cardContent, color: textSecondary }} numberOfLines={2}>
-          {item.content || ''}
-        </Text>
+        <MarkdownView content={item.content || ''} style={styles.cardContent} />
         <View style={styles.cardFooter}>
           <View style={styles.tags}>
             {(item.tags || []).slice(0, 3).map((tag: string) => (
