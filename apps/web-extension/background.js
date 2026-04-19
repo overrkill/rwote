@@ -498,19 +498,15 @@ async function getNotes() {
   const res = await storage.get(STORAGE_KEYS.NOTES);
   const notes = res[STORAGE_KEYS.NOTES] || [];
   
-  return notes.map(n => {
-    if (n.title !== undefined) return n;
-    
-    return {
-      id: n.id,
-      title: n.text || '',
-      content: n.note || '',
-      tags: n.tag ? [n.tag] : ['uncategorized'],
-      pinned: n.pinned || false,
-      created_at: n.date || new Date().toISOString(),
-      updated_at: n.date || new Date().toISOString()
-    };
-  });
+  return notes.map(n => ({
+    id: n.id,
+    title: n.title || '',
+    content: n.content || '',
+    tags: Array.isArray(n.tags) ? n.tags : [],
+    pinned: n.pinned || false,
+    created_at: n.created_at || new Date().toISOString(),
+    updated_at: n.updated_at || new Date().toISOString()
+  }));
 }
 
 async function setNotes(notes) {
