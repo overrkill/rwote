@@ -1,6 +1,6 @@
 'use client';
 
-import { PinIcon, PlusIcon, TrashIcon } from '@/components/icons';
+import { PinIcon, PlusIcon, TrashIcon, FilterIcon } from '@/components/icons';
 import { MarkdownView } from '@/components/markdown-view';
 import { useTheme } from '@/components/theme-provider';
 import { useToast } from '@/components/toast-context';
@@ -206,50 +206,59 @@ export default function NotesScreen() {
     </Animated.View>
   );
 
+  const [showFilter, setShowFilter] = useState(false);
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <View style={styles.header}>
-        <TextInput
-          style={{
-            ...styles.searchInput,
-            backgroundColor: cardBg,
-            color: textPrimary,
-            borderColor: theme.colors.border,
-          }}
-          placeholder="Search notes..."
-          placeholderTextColor={textTertiary}
-          value={searchText}
-          onChangeText={handleSearch}
-        />
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TextInput
+            style={{
+              ...styles.searchInput,
+              flex: 1,
+              backgroundColor: cardBg,
+              color: textPrimary,
+              borderColor: theme.colors.border,
+            }}
+            placeholder="Search notes..."
+            placeholderTextColor={textTertiary}
+            value={searchText}
+            onChangeText={handleSearch}
+          />
+          <Pressable
+            style={{
+              ...styles.filterBtn,
+              backgroundColor: showFilter ? accentBtn : cardBg,
+              borderColor: theme.colors.border,
+            }}
+            onPress={() => setShowFilter(!showFilter)}
+          >
+            <FilterIcon size={18} color={showFilter ? theme.colors.bg : textSecondary} />
+          </Pressable>
+        </View>
       </View>
 
-      {filterTags.length > 0 && (
-        <View style={styles.filters}>
-          <FlatList
-            horizontal
-            data={filterTags}
-            keyExtractor={(item) => item}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filtersList}
-            renderItem={({ item }) => (
-              <Pressable
+      {showFilter && filterTags.length > 0 && (
+        <View style={styles.filterDropdown}>
+          {filterTags.map((tag) => (
+            <Pressable
+              key={tag}
+              style={{
+                ...styles.filterItem,
+                backgroundColor: activeTag === tag ? accentBtn : 'transparent',
+              }}
+              onPress={() => setActiveTag(tag)}
+            >
+              <Text
                 style={{
-                  ...styles.filterChip,
-                  backgroundColor: activeTag === item ? accentBtn : cardBg,
+                  ...styles.filterText,
+                  color: activeTag === tag ? theme.colors.bg : textSecondary,
                 }}
-                onPress={() => setActiveTag(item)}
               >
-                <Text
-                  style={{
-                    ...styles.filterText,
-                    color: activeTag === item ? theme.colors.bg : textSecondary,
-                  }}
-                >
-                  {item === 'all' ? 'All' : item.charAt(0).toUpperCase() + item.slice(1)}
-                </Text>
-              </Pressable>
-            )}
-          />
+                {tag === 'all' ? 'All' : `#${tag}`}
+              </Text>
+            </Pressable>
+          ))}
         </View>
       )}
       {filteredByTag.length === 0 ? (
@@ -285,10 +294,10 @@ export default function NotesScreen() {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   searchInput: { borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 15 },
-  filters: { height: 36, paddingBottom: 6 },
-  filtersList: { paddingHorizontal: 12, gap: 6 },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  filterText: { fontSize: 13, fontWeight: '500', textAlignVertical: 'center' },
+  filterBtn: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+  filterDropdown: { position: 'absolute', top: 58, left: 12, right: 12, backgroundColor: cardBg, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, zIndex: 100, paddingVertical: 8 },
+  filterItem: { paddingHorizontal: 12, paddingVertical: 8 },
+  filterText: { fontSize: 13, fontWeight: '500' },
   list: { padding: 12, paddingBottom: 100 },
   card: { borderRadius: 10, padding: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },

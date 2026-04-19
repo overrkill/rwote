@@ -101,9 +101,17 @@ export function EyeIcon({ size = 20, color = 'currentColor' }: IconProps) {
 
 export function XIcon({ size = 20, color = 'currentColor' }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <Line x1="18" y1="6" x2="6" y2="18" />
       <Line x1="6" y1="6" x2="18" y2="18" />
+    </Svg>
+  );
+}
+
+export function FilterIcon({ size = 20, color = 'currentColor' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3" />
     </Svg>
   );
 }
