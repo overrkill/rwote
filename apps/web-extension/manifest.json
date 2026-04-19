@@ -52,7 +52,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["callback.html"],
+      "resources": ["callback.html", "storage.js"],
       "matches": ["https://*/*"]
     }
   ]
