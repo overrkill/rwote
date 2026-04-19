@@ -8,16 +8,58 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
 import { Note, getFilteredNotes, useNotesStore } from '@/stores/notes-store';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
   RefreshControl,
+  SectionList,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+
+function getDateGroup(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const noteDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.floor((today.getTime() - noteDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays === 2) return 'Day before yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+}
+
+function groupNotesByDate(notes: Note[]): { pinned: Note[]; grouped: { date: string; notes: Note[] }[] } {
+  const pinned = notes.filter(n => n.pinned);
+  const unpinned = notes.filter(n => !n.pinned);
+
+  const groups: { [key: string]: Note[] } = {};
+  for (const note of unpinned) {
+    const dateKey = getDateGroup(note.created_at);
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(note);
+  }
+
+  const order = ['Today', 'Yesterday', 'Day before yesterday'];
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    const aIdx = order.indexOf(a);
+    const bIdx = order.indexOf(b);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return new Date(b).getTime() - new Date(a).getTime();
+  });
+
+  const grouped = sortedKeys.map(date => ({ date, notes: groups[date] }));
+  return { pinned, grouped };
+}
 import Animated, {
   FadeIn,
   FadeOut,
@@ -61,6 +103,7 @@ export default function NotesScreen() {
   } = useNotesStore();
 
   const filteredByTag = getFilteredNotes(notes || [], searchQuery || '', activeTag || 'all');
+  const { pinned, grouped } = useMemo(() => groupNotesByDate(filteredByTag), [filteredByTag]);
 
   const { user, accessToken, initialize } = useAuthStore();
 
@@ -247,12 +290,19 @@ export default function NotesScreen() {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredByTag}
+        <SectionList
+          sections={[
+            ...(pinned.length > 0 ? [{ title: 'Pinned', data: pinned }] : []),
+            ...grouped.flatMap(g => [{ title: g.date, data: g.notes }])
+          ]}
           keyExtractor={(item) => item.id}
           renderItem={renderNote}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={{ ...styles.sectionHeader, color: textSecondary }}>{title}</Text>
+          )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       )}
@@ -274,6 +324,7 @@ const styles = StyleSheet.create({
   filtersList: { paddingHorizontal: 16, gap: 8 },
   filterChip: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   filterText: { fontSize: 14, fontWeight: '500', textAlignVertical: 'center' },
+  sectionHeader: { fontSize: 13, fontWeight: '600', paddingVertical: 8, paddingHorizontal: 4, marginTop: 8, marginBottom: 4 },
   list: { padding: 16, paddingBottom: 100 },
   card: { borderRadius: 12, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
