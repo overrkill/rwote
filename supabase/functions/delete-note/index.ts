@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function decodeJWT(token) {
+function decodeJWT(token: string) {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -44,11 +44,11 @@ serve(async (req) => {
     const userId = payload.sub
 
     const body = await req.json()
-    const { local_id } = body
+    const noteId = body.id
 
-    if (!local_id) {
+    if (!noteId) {
       return new Response(
-        JSON.stringify({ error: 'No local_id provided' }),
+        JSON.stringify({ error: 'No id provided' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -66,10 +66,10 @@ serve(async (req) => {
     )
 
     const { error } = await supabaseClient
-      .from('notes')
+      .from('notes_v2')
       .update({ deleted_at: new Date().toISOString() })
+      .eq('id', noteId)
       .eq('user_id', userId)
-      .eq('local_id', local_id)
 
     if (error) {
       return new Response(

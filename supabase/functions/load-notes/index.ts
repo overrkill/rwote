@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function decodeJWT(token) {
+function decodeJWT(token: string) {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -55,16 +55,16 @@ serve(async (req) => {
       }
     )
 
-    const { data: notes, error: fetchError } = await supabaseClient
-      .from('notes')
+    const { data: notes, error } = await supabaseClient
+      .from('notes_v2')
       .select('*')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
-    if (fetchError) {
+    if (error) {
       return new Response(
-        JSON.stringify({ error: fetchError.message }),
+        JSON.stringify({ error: error.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

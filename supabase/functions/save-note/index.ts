@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function decodeJWT(token) {
+function decodeJWT(token: string) {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -17,9 +17,25 @@ function decodeJWT(token) {
   }
 }
 
+function toISOString(value: any): string {
+  if (!value) return new Date().toISOString();
+  if (typeof value === 'string') {
+    if (value.includes('T') || value.includes('-')) {
+      return new Date(value).toISOString();
+    }
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) return parsed.toISOString();
+    return new Date().toISOString();
+  }
+  if (typeof value === 'number') {
+    return new Date(value).toISOString();
+  }
+  return new Date().toISOString();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -40,6 +56,7 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
 
     const userId = payload.sub
 
@@ -65,50 +82,31 @@ serve(async (req) => {
       }
     )
 
-    const noteData = {
-      user_id: userId,
-      local_id: note.id?.toString(),
-      text: note.text,
-      note: note.note || null,
-      tag: note.tag || 'uncategorized',
-      date: note.date,
-      pinned: note.pinned || false,
-      updated_at: note.updated_at ? new Date(note.updated_at).toISOString() : new Date().toISOString()
-    }
+    const noteId = note.id || note.local_id
 
-    if (note.id) {
-      const { data: existing } = await supabaseClient
-        .from('notes')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('local_id', note.id.toString())
-        .single()
-
-      if (existing) {
-        const { data, error } = await supabaseClient
-          .from('notes')
-          .update(noteData)
-          .eq('id', existing.id)
-          .select()
-          .single()
-
-        if (error) {
-          return new Response(
-            JSON.stringify({ error: error.message }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-
-        return new Response(
-          JSON.stringify({ success: true, note: data }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+    let tagsArray: string[] = [];
+    if (note.tags) {
+      if (Array.isArray(note.tags)) {
+        tagsArray = note.tags;
+      } else if (typeof note.tags === 'string') {
+        tagsArray = note.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
       }
     }
 
+    const noteData = {
+      id: noteId,
+      user_id: userId,
+      title: note.title || 'Untitled',
+      content: note.content || '',
+      tags: tagsArray,
+      pinned: note.pinned || false,
+      created_at: note.created_at ? toISOString(note.created_at) : new Date().toISOString(),
+      updated_at: toISOString(note.updated_at)
+    }
+
     const { data, error } = await supabaseClient
-      .from('notes')
-      .insert(noteData)
+      .from('notes_v2')
+      .upsert(noteData, { onConflict: 'id' })
       .select()
       .single()
 
