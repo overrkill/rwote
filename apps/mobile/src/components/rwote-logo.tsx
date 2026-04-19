@@ -1,6 +1,6 @@
 'use client';
 
-import { Text, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 
 interface RwoteLogoProps {
   size?: 'small' | 'medium' | 'large';
@@ -8,19 +8,16 @@ interface RwoteLogoProps {
 
 export function RwoteLogo({ size = 'medium' }: RwoteLogoProps) {
   const sizes = {
-    small: { fontSize: 24 },
-    medium: { fontSize: 32 },
-    large: { fontSize: 48 },
+    small: { width: 80, height: 35 },
+    medium: { width: 100, height: 44 },
+    large: { width: 140, height: 61 },
   };
 
   return (
-    <Text style={[styles.logo, sizes[size]]}>Rwote</Text>
+    <Image
+      source={require('@/assets/images/rwotelogo-text.svg')}
+      style={sizes[size]}
+      contentFit="contain"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  logo: {
-    fontFamily: "'Grand Hotel', cursive",
-    fontWeight: '400',
-  },
-});

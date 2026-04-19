@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router/stack';
 import { useTheme } from '@/components/theme-provider';
-import { RwoteLogo } from '@/components/rwote-logo';
+
 import { View } from 'react-native';
 
 export default function SettingsLayout() {
@@ -23,7 +23,7 @@ export default function SettingsLayout() {
           headerShadowVisible: false,
           headerTitle: () => (
             <View style={{ alignItems: 'center' }}>
-              <RwoteLogo size="small" />
+              Settings
             </View>
           ),
         }}

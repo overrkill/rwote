@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useTheme } from '@/components/theme-provider';
-import { RwoteLogo } from '@/components/rwote-logo';
+
 import { View } from 'react-native';
 
 export default function TodosLayout() {
@@ -23,7 +23,7 @@ export default function TodosLayout() {
           headerShadowVisible: false,
           headerTitle: () => (
             <View style={{ alignItems: 'center' }}>
-              <RwoteLogo size="small" />
+              Todos
             </View>
           ),
         }}
