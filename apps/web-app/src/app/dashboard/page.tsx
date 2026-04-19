@@ -80,7 +80,7 @@ export default function DashboardPage() {
   ]
 
   const availableTags = useMemo(() => {
-    const tagsFromNotes = notes.flatMap(n => n.tag.split(',').filter(t => t.length > 0))
+    const tagsFromNotes = notes.flatMap(n => n.tags.filter(t => t.length > 0))
     return [...new Set(tagsFromNotes)].sort()
   }, [notes])
 
@@ -219,10 +219,10 @@ export default function DashboardPage() {
     if (editingNote) {
       const updatedNote: Note = {
         ...editingNote,
-        text: finalText,
-        note: finalNote,
-        tag,
-        updated_at: Date.now()
+        title: finalText,
+        content: finalNote,
+        tags: [...new Set([...editingNote.tags, tag])],
+        updated_at: new Date().toISOString()
       }
       const updatedNotes = notes.map((n) =>
         n.id === editingNote.id ? updatedNote : n
@@ -232,13 +232,13 @@ export default function DashboardPage() {
       setEditingNote(null)
     } else {
       const newNote: Note = {
-        id: String(Date.now()),
-        text: finalText,
-        note: finalNote,
-        tag,
-        date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        id: crypto.randomUUID(),
+        title: finalText,
+        content: finalNote,
+        tags: [tag],
         pinned: false,
-        updated_at: Date.now(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }
       setNotes([newNote, ...notes])
       syncToCloud(newNote)
@@ -253,7 +253,7 @@ export default function DashboardPage() {
 
   const handleTogglePin = (id: string) => {
     const updatedNotes = notes.map((n) =>
-      n.id === id ? { ...n, pinned: !n.pinned, updated_at: Date.now() } : n
+      n.id === id ? { ...n, pinned: !n.pinned, updated_at: new Date().toISOString() } : n
     )
     setNotes(updatedNotes)
     syncToCloud(updatedNotes.find((n) => n.id === id)!)
