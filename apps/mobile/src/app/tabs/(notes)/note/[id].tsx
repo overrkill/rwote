@@ -16,6 +16,7 @@ import { useNotesStore } from '@/stores/notes-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
+import { EyeIcon, EditIcon } from '@/components/icons';
 
 function getTagColor(tag: string): string {
   let hash = 0;
@@ -53,6 +54,7 @@ export default function NoteDetailScreen() {
   const [content, setContent] = useState('');
   const [removedTags, setRemovedTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState(true);
 
   const { notes, updateNote } = useNotesStore();
   const { accessToken } = useAuthStore();
@@ -134,10 +136,16 @@ export default function NoteDetailScreen() {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <Pressable onPress={handleSave} disabled={saving}>
-              <Text style={{ color: theme.colors.accent, fontWeight: '600', opacity: saving ? 0.5 : 1 }}>
-                {saving ? 'Saving...' : 'Save'}
-              </Text>
+            <Pressable onPress={() => setViewMode(!viewMode)}>
+              {viewMode ? (
+                <EditIcon size={22} color={theme.colors.accent} />
+              ) : (
+                <Pressable onPress={handleSave} disabled={saving}>
+                  <Text style={{ color: theme.colors.accent, fontWeight: '600', opacity: saving ? 0.5 : 1 }}>
+                    {saving ? 'Saving...' : 'Save'}
+                  </Text>
+                </Pressable>
+              )}
             </Pressable>
           ),
         }}
@@ -147,34 +155,47 @@ export default function NoteDetailScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <TextInput
-          style={{
-            ...styles.titleInput,
-            color: theme.colors.textPrimary,
-            borderBottomColor: theme.colors.border,
-            minHeight: 96,
-            maxHeight: 96,
-          }}
-          placeholder="Write your insight... use #hashtag to add tags"
-          placeholderTextColor={theme.colors.textTertiary}
-          value={title}
-          onChangeText={setTitle}
-          multiline
-          scrollEnabled
-        />
+        {viewMode ? (
+          <View>
+            <Text style={{ ...styles.titleRead, color: theme.colors.textPrimary }}>
+              {title || 'Untitled'}
+            </Text>
+            <Text style={{ ...styles.contentRead, color: theme.colors.textPrimary }}>
+              {content}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <TextInput
+              style={{
+                ...styles.titleInput,
+                color: theme.colors.textPrimary,
+                borderBottomColor: theme.colors.border,
+                minHeight: 96,
+                maxHeight: 96,
+              }}
+              placeholder="Write your insight... use #hashtag to add tags"
+              placeholderTextColor={theme.colors.textTertiary}
+              value={title}
+              onChangeText={setTitle}
+              multiline
+              scrollEnabled
+            />
 
-        <TextInput
-          style={{
-            ...styles.contentInput,
-            color: theme.colors.textPrimary,
-          }}
-          placeholder="Extra context..."
-          placeholderTextColor={theme.colors.textTertiary}
-          value={content}
-          onChangeText={setContent}
-          multiline
-          textAlignVertical="top"
-        />
+            <TextInput
+              style={{
+                ...styles.contentInput,
+                color: theme.colors.textPrimary,
+              }}
+              placeholder="Extra context..."
+              placeholderTextColor={theme.colors.textTertiary}
+              value={content}
+              onChangeText={setContent}
+              multiline
+              textAlignVertical="top"
+            />
+          </>
+        )}
 
         {allTags.length > 0 && (
           <View style={styles.tagsSection}>
@@ -189,12 +210,14 @@ export default function NoteDetailScreen() {
                     ...styles.tagChip,
                     backgroundColor: getTagColor(tag),
                   }}
-                  onPress={() => removeTag(tag)}
+                  onPress={viewMode ? undefined : () => removeTag(tag)}
                 >
                   <Text style={{ ...styles.tagText, color: getTagTextColor(tag) }}>
                     #{tag}
                   </Text>
-                  <Text style={{ ...styles.tagRemove, color: getTagTextColor(tag) }}>×</Text>
+                  {!viewMode && (
+                    <Text style={{ ...styles.tagRemove, color: getTagTextColor(tag) }}>×</Text>
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -210,6 +233,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
   titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, marginBottom: 12 },
   contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
+  titleRead: { fontSize: 28, fontWeight: '700', paddingVertical: 12, marginBottom: 16 },
+  contentRead: { fontSize: 17, lineHeight: 28, marginBottom: 16, whiteSpace: 'pre-wrap' },
   tagsSection: { marginTop: 8 },
   tagsLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
