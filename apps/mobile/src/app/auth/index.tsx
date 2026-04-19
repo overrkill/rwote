@@ -5,7 +5,6 @@ import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
-import { GoogleIcon } from '@/components/icons';
 import { useToast } from '@/components/toast-context';
 import { RwoteLogo } from '@/components/rwote-logo';
 
@@ -60,7 +59,6 @@ export default function LoginScreen() {
               onPress={handleGoogleSignIn}
               disabled={isLoading}
             >
-              <GoogleIcon size={20} />
               <Text style={{ ...styles.googleButtonText, color: theme.colors.textPrimary }}>
                 Continue with Google
               </Text>
