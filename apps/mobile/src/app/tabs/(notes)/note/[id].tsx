@@ -199,26 +199,19 @@ export default function NoteDetailScreen() {
 
         {allTags.length > 0 && (
           <View style={styles.tagsSection}>
-            <Text style={{ ...styles.tagsLabel, color: theme.colors.textSecondary }}>
-              Tags
-            </Text>
             <View style={styles.tagsGrid}>
               {allTags.map((tag) => (
-                <Pressable
+                <View
                   key={tag}
                   style={{
-                    ...styles.tagChip,
+                    ...styles.tag,
                     backgroundColor: getTagColor(tag),
                   }}
-                  onPress={viewMode ? undefined : () => removeTag(tag)}
                 >
                   <Text style={{ ...styles.tagText, color: getTagTextColor(tag) }}>
                     #{tag}
                   </Text>
-                  {!viewMode && (
-                    <Text style={{ ...styles.tagRemove, color: getTagTextColor(tag) }}>×</Text>
-                  )}
-                </Pressable>
+                </View>
               ))}
             </View>
           </View>
@@ -235,10 +228,8 @@ const styles = StyleSheet.create({
   contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
   titleRead: { fontSize: 28, fontWeight: '700', paddingVertical: 12, marginBottom: 16 },
   contentRead: { fontSize: 17, lineHeight: 28, marginBottom: 16, whiteSpace: 'pre-wrap' },
-  tagsSection: { marginTop: 8 },
-  tagsLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  tagsSection: { marginTop: 16 },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tagChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 4 },
-  tagText: { fontSize: 14, fontWeight: '600' },
-  tagRemove: { fontSize: 16, fontWeight: '600' },
+  tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  tagText: { fontSize: 12 },
 });

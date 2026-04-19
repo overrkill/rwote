@@ -166,15 +166,12 @@ export default function NewNoteScreen() {
 
         {allTags.length > 0 && (
           <View style={styles.tagsSection}>
-            <Text style={{ ...styles.tagsLabel, color: theme.colors.textSecondary }}>
-              Tags
-            </Text>
             <View style={styles.tagsGrid}>
               {allTags.map((tag) => (
                 <Pressable
                   key={tag}
                   style={{
-                    ...styles.tagChip,
+                    ...styles.tag,
                     backgroundColor: getTagColor(tag),
                   }}
                   onPress={() => removeTag(tag)}
@@ -198,10 +195,9 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
   titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, marginBottom: 12 },
   contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
-  tagsSection: { marginTop: 8 },
-  tagsLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  tagsSection: { marginTop: 16 },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tagChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 4 },
-  tagText: { fontSize: 14, fontWeight: '600' },
-  tagRemove: { fontSize: 16, fontWeight: '600' },
+  tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  tagText: { fontSize: 12 },
+  tagRemove: { fontSize: 12, fontWeight: '600' },
 });
