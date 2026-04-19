@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
 import { EyeIcon, EditIcon } from '@/components/icons';
+import { MarkdownView } from '@/components/markdown-view';
 
 function getTagColor(tag: string): string {
   let hash = 0;
@@ -157,12 +158,8 @@ export default function NoteDetailScreen() {
       >
         {viewMode ? (
           <View>
-            <Text style={{ ...styles.titleRead, color: theme.colors.textPrimary }}>
-              {title || 'Untitled'}
-            </Text>
-            <Text style={{ ...styles.contentRead, color: theme.colors.textPrimary }}>
-              {content}
-            </Text>
+            <MarkdownView content={title || 'Untitled'} style={styles.titleRead} />
+            <MarkdownView content={content || ''} style={styles.contentRead} />
           </View>
         ) : (
           <>

@@ -16,6 +16,8 @@ import { useNotesStore } from '@/stores/notes-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
+import { MarkdownView } from '@/components/markdown-view';
+import { EyeIcon, EditIcon } from '@/components/icons';
 
 function getTagColor(tag: string): string {
   let hash = 0;
@@ -52,6 +54,7 @@ export default function NewNoteScreen() {
   const [content, setContent] = useState('');
   const [removedTags, setRemovedTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState(true);
 
   const { addNote } = useNotesStore();
   const { accessToken } = useAuthStore();
@@ -121,10 +124,16 @@ export default function NewNoteScreen() {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <Pressable onPress={handleSave} disabled={saving}>
-              <Text style={{ color: theme.colors.accent, fontWeight: '600', opacity: saving ? 0.5 : 1 }}>
-                {saving ? 'Saving...' : 'Save'}
-              </Text>
+            <Pressable onPress={() => setViewMode(!viewMode)}>
+              {viewMode ? (
+                <EditIcon size={22} color={theme.colors.accent} />
+              ) : (
+                <Pressable onPress={handleSave} disabled={saving}>
+                  <Text style={{ color: theme.colors.accent, fontWeight: '600', opacity: saving ? 0.5 : 1 }}>
+                    {saving ? 'Saving...' : 'Save'}
+                  </Text>
+                </Pressable>
+              )}
             </Pressable>
           ),
         }}
@@ -134,35 +143,44 @@ export default function NewNoteScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <TextInput
-          style={{
-            ...styles.titleInput,
-            color: theme.colors.textPrimary,
-            borderBottomColor: theme.colors.border,
-            minHeight: 96,
-            maxHeight: 96,
-          }}
-          placeholder="Write your insight... use #hashtag to add tags"
-          placeholderTextColor={theme.colors.textTertiary}
-          value={title}
-          onChangeText={setTitle}
-          multiline
-          scrollEnabled
-          autoFocus
-        />
+        {viewMode ? (
+          <View>
+            <MarkdownView content={title || 'Write your insight...'} style={styles.titleRead} />
+            <MarkdownView content={content || ''} style={styles.contentRead} />
+          </View>
+        ) : (
+          <>
+            <TextInput
+              style={{
+                ...styles.titleInput,
+                color: theme.colors.textPrimary,
+                borderBottomColor: theme.colors.border,
+                minHeight: 96,
+                maxHeight: 96,
+              }}
+              placeholder="Write your insight... use #hashtag to add tags"
+              placeholderTextColor={theme.colors.textTertiary}
+              value={title}
+              onChangeText={setTitle}
+              multiline
+              scrollEnabled
+              autoFocus
+            />
 
-        <TextInput
-          style={{
-            ...styles.contentInput,
-            color: theme.colors.textPrimary,
-          }}
-          placeholder="Extra context..."
-          placeholderTextColor={theme.colors.textTertiary}
-          value={content}
-          onChangeText={setContent}
-          multiline
-          textAlignVertical="top"
-        />
+            <TextInput
+              style={{
+                ...styles.contentInput,
+                color: theme.colors.textPrimary,
+              }}
+              placeholder="Extra context..."
+              placeholderTextColor={theme.colors.textTertiary}
+              value={content}
+              onChangeText={setContent}
+              multiline
+              textAlignVertical="top"
+            />
+          </>
+        )}
 
         {allTags.length > 0 && (
           <View style={styles.tagsSection}>
@@ -195,6 +213,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
   titleInput: { fontSize: 24, fontWeight: '600', paddingVertical: 8, marginBottom: 12 },
   contentInput: { fontSize: 16, lineHeight: 24, minHeight: 150, marginBottom: 16 },
+  titleRead: { fontSize: 28, fontWeight: '700', paddingVertical: 12, marginBottom: 16 },
+  contentRead: { fontSize: 17, lineHeight: 28, marginBottom: 16 },
   tagsSection: { marginTop: 16 },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
