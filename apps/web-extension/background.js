@@ -579,7 +579,7 @@ async function addNote(text, noteText = '') {
   }
   
   const newNote = {
-    id: String(Date.now()),
+    id: crypto.randomUUID(),
     title: text.trim(),
     content: noteText.trim(),
     tags: noteTags,
@@ -640,12 +640,23 @@ async function deleteNote(id) {
   const notes = await getNotes();
   const mode = await getMode();
   
+  const noteToDelete = notes.find(n => n.id === id);
   const filtered = notes.filter(n => n.id !== id);
   await setNotes(filtered);
   
   // Queue cloud delete if in cloud mode (non-blocking)
   if (mode === 'cloud') {
-    addToQueue({ type: 'delete_note', noteId: id }).catch(console.error);
+    try {
+      await addToQueue({ type: 'delete_note', noteId: id });
+    } catch (e) {
+      console.error('Failed to queue delete:', e);
+      // Rollback: restore note to local state
+      if (noteToDelete) {
+        const restored = await getNotes();
+        restored.unshift(noteToDelete);
+        await setNotes(restored);
+      }
+    }
   }
   
   broadcastStateUpdate();
