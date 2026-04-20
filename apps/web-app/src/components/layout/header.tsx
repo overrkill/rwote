@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { getStoredUser, onAuthStateChange } from '@/lib/supabase'
 import { useTheme } from '@/components/providers/theme-provider'
+import { Sun } from 'lucide-react'
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -77,10 +78,7 @@ export default function Header() {
                 (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'none'
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <circle cx="12" cy="12" r="5"/>
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-              </svg>
+              <Sun size={20} strokeWidth={2} />
             </button>
             {showThemeMenu && (
               <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg overflow-hidden z-50" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
