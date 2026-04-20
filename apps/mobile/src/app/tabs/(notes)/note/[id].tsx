@@ -101,7 +101,7 @@ export default function NoteDetailScreen() {
     try {
       const cleanedTitle = cleanText(title);
       const cleanedContent = cleanText(content);
-      const finalTags = allTags.length > 0 ? allTags : ['uncategorized'];
+      const finalTags = allTags.length > 0 ? allTags : [];
 
       const updates = {
         title: cleanedTitle,

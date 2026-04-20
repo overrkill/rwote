@@ -90,7 +90,7 @@ export default function NewNoteScreen() {
     try {
       const cleanedTitle = cleanText(title);
       const cleanedContent = cleanText(content);
-      const finalTags = allTags.length > 0 ? allTags : ['uncategorized'];
+      const finalTags = allTags.length > 0 ? allTags : [];
 
       const noteData = {
         title: cleanedTitle,
