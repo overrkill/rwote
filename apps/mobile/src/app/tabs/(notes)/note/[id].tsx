@@ -115,13 +115,11 @@ export default function NoteDetailScreen() {
       if (accessToken && note) {
         try {
           const result = await supabase.saveNote(accessToken, {
-            local_id: note.id,
-            text: cleanedTitle,
-            note: cleanedContent,
-            tag: finalTags.join(','),
-            date: note.created_at,
-            pinned: note.pinned,
-            updated_at: new Date().toISOString(),
+            id: note.id,
+            title: cleanedTitle,
+            content: cleanedContent,
+            tags: finalTags,
+            updated_at:note.updated_at,
           });
           if (result?.id) {
             updateNote(id!, { cloud_id: result.id, synced: true });
@@ -231,7 +229,7 @@ const styles = StyleSheet.create({
   titleInput: { fontSize: 22, fontWeight: '600', paddingVertical: 6, marginBottom: 10 },
   contentInput: { fontSize: 15, lineHeight: 22, minHeight: 120, marginBottom: 12 },
   titleRead: { fontSize: 24, fontWeight: '700', paddingVertical: 10, marginBottom: 12 },
-  contentRead: { fontSize: 15, lineHeight: 24, marginBottom: 12, whiteSpace: 'pre-wrap' },
+  contentRead: { fontSize: 15, lineHeight: 24, marginBottom: 12 },
   tagsSection: { marginTop: 12 },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
