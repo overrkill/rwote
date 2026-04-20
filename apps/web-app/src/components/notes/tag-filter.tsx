@@ -91,14 +91,14 @@ export default function TagFilter({ tags, activeTags, onChange }: TagFilterProps
                       <button
                         key={tag}
                         onClick={() => toggleTag(tag)}
-                        className="text-xs px-2 py-1 rounded-full border transition-colors"
+                        className="text-[13px] px-2 py-1 rounded-lg border transition-colors"
                         style={{ 
                           backgroundColor: isActive ? getTagColor(tag) : 'transparent',
                           color: isActive ? getTagTextColor(tag) : 'var(--text-primary)',
                           borderColor: isActive ? getTagColor(tag) : 'var(--border)'
                         }}
                       >
-                        {tag}
+                        #{tag}
                       </button>
                     )
                   })}
