@@ -84,6 +84,9 @@
       <button class="clear-search" id="clear-search" title="Clear search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
+      <button class="filter-icon-btn" id="filter-icon-btn" title="Filter by tag">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      </button>
     </div>
   </header>
 
@@ -95,16 +98,14 @@
 
   <!-- Filter bar -->
   <div class="filter-bar" id="filter-bar">
-    <button class="filter-icon-btn" id="filter-icon-btn" title="Filter by tag">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-    </button>
-    <div class="filter-input-wrap" id="filter-input-wrap">
+    <div class="filter-chips-wrap">
       <div class="filter-chips" id="filter-chips"></div>
-      <input id="filter-input" type="text" placeholder="Filter by tag…" autocomplete="off" />
-      <button class="filter-clear" id="filter-clear" title="Clear filter">×</button>
     </div>
-    <div class="filter-dropdown" id="filter-dropdown"></div>
+    <button class="filter-clear" id="filter-clear" title="Clear filter">×</button>
   </div>
+
+  <!-- Filter dropdown (outside filter-bar for positioning) -->
+  <div class="filter-dropdown" id="filter-dropdown"></div>
 
   <!-- Notes list -->
   <div class="notes" id="notes"></div>

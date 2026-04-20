@@ -93,8 +93,6 @@ const subscriptionSuccessEl = document.getElementById('subscription-success');
 const planMonthlyEl = document.getElementById('plan-monthly');
 const planLifetimeEl = document.getElementById('plan-lifetime');
 const filterIconBtn = document.getElementById('filter-icon-btn');
-const filterInputWrap = document.getElementById('filter-input-wrap');
-const filterInputEl = document.getElementById('filter-input');
 const filterClearEl = document.getElementById('filter-clear');
 const filterBarEl = document.getElementById('filter-bar');
 const filterDropdownEl = document.getElementById('filter-dropdown');
@@ -247,29 +245,16 @@ function showToast(msg) {
 }
 
 // ── Tag Filter ──────────────────────────────────────
-function showFilterInput() {
-  filterInputWrap.style.display = 'flex';
-  filterIconBtn.classList.add('active');
-  filterInputEl.focus();
-}
-
-function hideFilterInput() {
-  filterInputWrap.style.display = 'none';
-  filterIconBtn.classList.remove('active');
-  filterDropdownEl.classList.remove('open');
-  filterInputEl.value = '';
-}
-
 function renderFilterChips() {
   if (activeTags.size === 0) {
+    filterBarEl.style.display = 'none';
     filterClearEl.classList.remove('visible');
     filterChipsEl.innerHTML = '';
-    filterInputEl.placeholder = 'Filter by tag…';
     return;
   }
 
+  filterBarEl.style.display = 'flex';
   filterClearEl.classList.add('visible');
-  filterInputEl.placeholder = '…';
 
   filterChipsEl.innerHTML = [...activeTags].map(tag => {
     const c = colorOf(tag);
@@ -291,13 +276,11 @@ function renderFilterChips() {
 
 function clearFilter() {
   activeTags.clear();
-  filterInputEl.value = '';
+  filterBarEl.style.display = 'none';
   filterClearEl.classList.remove('visible');
   filterChipsEl.innerHTML = '';
-  filterInputEl.placeholder = 'Filter by tag…';
   filterIconBtn.classList.remove('active');
   filterDropdownEl.classList.remove('open');
-  hideFilterInput();
   renderNotes();
 }
 
@@ -311,14 +294,8 @@ function toggleTagFilter(tag) {
   renderNotes();
 }
 
-function renderTagDropdown(query) {
-  let matches;
-  if (!query) {
-    matches = allTags;
-  } else {
-    const q = query.toLowerCase();
-    matches = allTags.filter(tag => labelOf(tag).toLowerCase().includes(q));
-  }
+function renderTagDropdown() {
+  const matches = allTags;
 
   if (matches.length === 0) {
     filterDropdownEl.innerHTML = '<div class="filter-dropdown-empty">No tags found</div>';
@@ -339,7 +316,6 @@ function renderTagDropdown(query) {
   filterDropdownEl.querySelectorAll('.filter-dropdown-item').forEach(item => {
     item.addEventListener('click', () => {
       toggleTagFilter(item.dataset.tag);
-      renderTagDropdown(filterInputEl.value.trim());
     });
   });
 }
@@ -514,6 +490,8 @@ function renderNotes() {
   });
 
   attachCardEventListeners();
+
+  notesEl.innerHTML = '';
 
   const existingCards = new Map();
   notesEl.querySelectorAll('.card').forEach(card => {
@@ -816,30 +794,18 @@ clearSearchEl.addEventListener('click', () => {
 });
 
 // ── Filter Bar Events ────────────────────────────────
-filterBarEl.addEventListener('click', () => {
-  if (filterInputWrap.style.display === 'none') {
-    showFilterInput();
-    renderTagDropdown('');
-  }
-});
-
 filterIconBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  showFilterInput();
-  renderTagDropdown('');
-});
-
-filterInputEl.addEventListener('click', (e) => {
-  e.stopPropagation();
-  renderTagDropdown(filterInputEl.value.trim());
-});
-
-filterInputEl.addEventListener('input', () => {
-  renderTagDropdown(filterInputEl.value.trim());
-});
-
-filterInputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') hideFilterInput();
+  filterIconBtn.classList.toggle('active');
+  if (filterIconBtn.classList.contains('active')) {
+    const rect = filterIconBtn.getBoundingClientRect();
+    filterDropdownEl.style.top = `${rect.bottom + 4}px`;
+    filterDropdownEl.style.left = '14px';
+    filterDropdownEl.style.right = '14px';
+    renderTagDropdown();
+  } else {
+    filterDropdownEl.classList.remove('open');
+  }
 });
 
 filterClearEl.addEventListener('click', (e) => {
@@ -848,8 +814,9 @@ filterClearEl.addEventListener('click', (e) => {
 });
 
 document.addEventListener('click', (e) => {
-  if (!filterBarEl.contains(e.target) && filterDropdownEl.classList.contains('open')) {
+  if (!filterIconBtn.contains(e.target) && !filterDropdownEl.contains(e.target) && filterDropdownEl.classList.contains('open')) {
     filterDropdownEl.classList.remove('open');
+    filterIconBtn.classList.remove('active');
   }
 });
 
@@ -1543,7 +1510,7 @@ function updateSelectedCard() {
 function handleKeyboard(e) {
   const activeEl = document.activeElement;
   const isInputFocused = activeEl === inputText || activeEl === inputNote || 
-                         activeEl === searchEl || activeEl === filterInputEl ||
+                         activeEl === searchEl ||
                          activeEl.tagName === 'INPUT' ||
                          activeEl.tagName === 'TEXTAREA';
   
