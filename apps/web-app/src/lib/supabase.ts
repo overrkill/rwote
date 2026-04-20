@@ -108,66 +108,118 @@ export async function getCurrentUser() {
   return user as User | null
 }
 
-async function callEdgeFunction(functionName: string, body: unknown, token: string) {
-  const url = `${supabaseUrl}/functions/v1/${functionName}`
-  
-  let response
+// ── Notes API ────────────────────────────────────────
+
+export async function saveNote(note: Note, _token: string) {
+  const noteData = {
+    id: note.id,
+    title: note.title,
+    content: note.content,
+    tags: note.tags,
+    pinned: note.pinned,
+    updated_at: new Date().toISOString(),
+  }
+
+  const { data: existing } = await supabase
+    .from('notes_v2')
+    .select('id')
+    .eq('id', note.id)
+    .single()
+
+  if (existing) {
+    return supabase
+      .from('notes_v2')
+      .update(noteData)
+      .eq('id', note.id)
+  } else {
+    return supabase
+      .from('notes_v2')
+      .insert({
+        ...noteData,
+        created_at: note.created_at || new Date().toISOString(),
+      })
+  }
+}
+
+export async function loadNotes(_token: string): Promise<{ notes: Note[], error?: string }> {
+  const { data, error } = await supabase
+    .from('notes_v2')
+    .select('*')
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    return { notes: [], error: error.message }
+  }
+
+  const notes = (data || []).map((n: any) => ({
+    id: String(n.id),
+    title: n.title || 'Untitled',
+    content: n.content || '',
+    tags: n.tags || [],
+    pinned: n.pinned || false,
+    created_at: n.created_at || new Date().toISOString(),
+    updated_at: n.updated_at || new Date().toISOString(),
+  }))
+
+  return { notes }
+}
+
+export async function deleteNote(noteId: string, _token: string) {
+  return supabase
+    .from('notes_v2')
+    .delete()
+    .eq('id', noteId)
+}
+
+// ── Subscription API ─────────────────────────────────
+
+export async function getSubscriptionStatus(_token: string): Promise<SubscriptionStatus> {
   try {
-    response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
+    const user = await getAuthUser()
+    if (!user) {
+      return { subscription_status: null, can_sync: false }
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error || !data) {
+      return { subscription_status: 'trial', can_sync: true }
+    }
+
+    const now = new Date()
+    const trialEnds = data.trial_ends_at ? new Date(data.trial_ends_at) : null
+    const daysLeft = trialEnds ? Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 0
+
+    return {
+      subscription_status: data.subscription_status || 'trial',
+      trial_ends_at: data.trial_ends_at,
+      days_left: daysLeft > 0 ? daysLeft : 0,
+      can_sync: true,
+      email: data.email,
+    }
+  } catch {
+    return { subscription_status: null, can_sync: false }
+  }
+}
+
+export async function subscribeToPlan(plan: string, _token: string) {
+  const user = await getAuthUser()
+  if (!user) throw new Error('Not authenticated')
+
+  return supabase
+    .from('profiles')
+    .update({
+      subscription_status: plan,
+      updated_at: new Date().toISOString(),
     })
-  } catch (networkError) {
-    console.error('Network error calling edge function:', networkError)
-    throw new Error(`Network error: ${networkError}`)
-  }
-  
-  const data = await response.json().catch(() => ({}))
-  
-  if (!response.ok) {
-    const errorMsg = data.error || `Request failed with status ${response.status}`
-    console.error('Edge function error:', errorMsg)
-    throw new Error(errorMsg)
-  }
-  
-  return data
+    .eq('id', user.id)
 }
 
-export async function saveNote(note: Note, token: string) {
-  return callEdgeFunction('save-note', { note }, token)
-}
-
-export async function loadNotes(token: string): Promise<{ notes: Note[], error?: string }> {
-  const result = await callEdgeFunction('load-notes', {}, token)
-  return {
-    notes: (result.notes || []).map((n: any) => ({
-      id: String(n.id),
-      title: n.title || 'Untitled',
-      content: n.content || '',
-      tags: n.tags || [],
-      pinned: n.pinned || false,
-      created_at: n.created_at || new Date().toISOString(),
-      updated_at: n.updated_at || new Date().toISOString(),
-    })),
-    error: result.error
-  }
-}
-
-export async function deleteNote(noteId: string, token: string) {
-  return callEdgeFunction('delete-note', { id: noteId }, token)
-}
-
-export async function getSubscriptionStatus(token: string): Promise<SubscriptionStatus> {
-  return callEdgeFunction('subscription-status', {}, token)
-}
-
-export async function subscribeToPlan(plan: string, token: string) {
-  return callEdgeFunction('subscribe', { plan }, token)
-}
+// ── AI Settings ──────────────────────────────────────
 
 const AI_SETTINGS_KEY = 'rwote_ai_settings'
 
@@ -186,6 +238,8 @@ export function setAiSettings(settings: AiSettings) {
   if (typeof window === 'undefined') return
   localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settings))
 }
+
+// ── Summarization ────────────────────────────────────
 
 const SUMMARY_PROMPT = `You are a precise summarization assistant. Given the text below, do the following:
 
@@ -241,19 +295,29 @@ function parseSummarizeResponse(response: string): SummarizeResult {
   return { summary, tags }
 }
 
-export async function summarizeUsingCloud(text: string, token: string): Promise<SummarizeResult> {
-  try {
-    const response = await callEdgeFunction('summarize', { text }, token)
+export async function summarizeUsingCloud(text: string, _token: string): Promise<SummarizeResult> {
+  const prompt = SUMMARY_PROMPT.replace('{{TEXT}}', text)
 
-    if (response.error) {
-      throw new Error(response.error)
-    }
+  const response = await fetch('https://api.anyscale.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ANYSCALE_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'meta-llama/Llama-3.1-8B-Instruct',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+    }),
+  })
 
-    return parseSummarizeResponse(response.response)
-  } catch (error) {
-    console.error('Cloud summarization failed:', error)
-    throw error
+  if (!response.ok) {
+    throw new Error(`AI summarization failed: ${response.status}`)
   }
+
+  const data = await response.json()
+  const content = data.choices?.[0]?.message?.content || ''
+  return parseSummarizeResponse(content)
 }
 
 export async function summarizeUsingLocal(text: string, url: string, model: string): Promise<SummarizeResult> {
