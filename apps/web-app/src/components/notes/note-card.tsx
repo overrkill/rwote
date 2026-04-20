@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Note } from '@/lib/types'
+import { Pin, Copy, Pencil, X } from 'lucide-react'
 
 interface NoteCardProps {
   note: Note
@@ -103,9 +104,7 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
               }}
               title={note.pinned ? 'Unpin' : 'Pin'}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill={note.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-              </svg>
+              <Pin size={16} fill={note.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.75} />
             </button>
             <button
               onClick={() => {
@@ -121,10 +120,7 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
               }}
               title="Copy"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
+              <Copy size={16} strokeWidth={1.75} />
             </button>
             <button
               onClick={() => onEdit?.(note)}
@@ -137,10 +133,7 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
               }}
               title="Edit"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
+              <Pencil size={16} strokeWidth={1.75} />
             </button>
             <button
               onClick={() => onDelete?.(note.id)}
@@ -153,10 +146,7 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
               }}
               title="Delete"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
+              <X size={16} strokeWidth={1.75} />
             </button>
           </div>
         </div>
