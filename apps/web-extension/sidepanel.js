@@ -433,7 +433,7 @@ function noteCardHTML(n, realIndex) {
   return `
   <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
     <div class="card-body">
-      <span class="card-tag" ${tagBadgeStyle(n.tags ? n.tags[0] : 'general')}>${escHtml(labelOf(n.tags ? n.tags[0] : 'general'))}</span>
+      <div class="card-tags">${(n.tags && n.tags.length > 0 ? n.tags : ['uncategorized']).map(tag => `<span class="card-tag" ${tagBadgeStyle(tag)}>${escHtml(labelOf(tag))}</span>`).join('')}</div>
       <div class="card-text">${processNoteText(n.title || '', searchQuery)}</div>
       ${n.content ? `<div class="card-note">${processNoteText(n.content, searchQuery)}</div>` : ''}
       <div class="card-meta"><span class="card-date">${n.created_at ? new Date(n.created_at).toLocaleDateString() : ''}</span></div>
@@ -535,13 +535,10 @@ function renderNotes() {
       existingCard.className = `card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}`;
       existingCard.dataset.index = realIndex;
       
-      const tagEl = existingCard.querySelector('.card-tag');
-      if (tagEl) {
-        const firstTag = n.tags ? n.tags[0] : 'general';
-        const c = colorOf(firstTag);
-        tagEl.style.background = c.bg;
-        tagEl.style.color = c.text;
-        tagEl.textContent = labelOf(firstTag);
+      const tagsContainer = existingCard.querySelector('.card-tags');
+      if (tagsContainer) {
+        const tags = n.tags && n.tags.length > 0 ? n.tags : ['uncategorized'];
+        tagsContainer.innerHTML = tags.map(tag => `<span class="card-tag" ${tagBadgeStyle(tag)}>${escHtml(labelOf(tag))}</span>`).join('');
       }
       
       const textEl = existingCard.querySelector('.card-text');

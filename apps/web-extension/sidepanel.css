@@ -1090,6 +1090,17 @@ body {
   text-transform: uppercase;
 }
 
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.card-tags .card-tag {
+  margin-bottom: 0;
+}
+
 .card-text {
   font-size: 1em;
   color: var(--text-primary);
