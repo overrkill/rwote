@@ -71,7 +71,7 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
 
   return (
     <div 
-      className="rounded-lg p-3.5 flex gap-3 transition-all"
+      className="rounded-lg p-3.5 flex gap-3 transition-all break-inside-avoid min-w-[280px]"
       style={{ 
         backgroundColor: 'var(--surface)',
         border: '1px solid var(--border)',

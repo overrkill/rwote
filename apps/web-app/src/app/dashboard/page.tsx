@@ -310,7 +310,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
       <header className="px-4 py-3 sticky top-0 z-30" style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <h1 className="text-2xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>Rwote</h1>
           <div className="flex items-center gap-2 relative">
             {syncStatus === 'syncing' && (
@@ -459,7 +459,7 @@ export default function DashboardPage() {
 
       {subscription?.subscription_status === 'trial' && subscription.days_left !== undefined && subscription.days_left > 0 && (
         <div className="px-4 py-2" style={{ backgroundColor: '#fef3c7', borderBottom: '1px solid #fcd34d' }}>
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
+<div className="max-w-7xl mx-auto flex items-center justify-between">
             <p className="text-sm" style={{ color: '#92400e' }}>
               ⏳ Trial period — {subscription.days_left} day{subscription.days_left !== 1 ? 's' : ''} remaining
             </p>
@@ -474,7 +474,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex gap-3 mb-6">
           <div className="flex-1">
             <SearchBar value={searchQuery} onChange={setSearchQuery} />

@@ -68,7 +68,7 @@ export default function NoteList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 space-y-3">
       {filteredNotes.map((note) => (
         <NoteCard
           key={note.id}
