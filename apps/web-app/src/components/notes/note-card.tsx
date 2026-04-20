@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Note } from '@/lib/types'
 import { Pin, Copy, Pencil, X } from 'lucide-react'
+import MarkdownView from '@/components/ui/markdown-view'
 
 interface NoteCardProps {
   note: Note
@@ -86,8 +87,8 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
           <p className="text-xs ml-2 shrink-0" style={{ color: 'var(--text-tertiary)' }}>{formatDate(note.created_at)}</p>
         </div>
         {note.content && (
-          <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
-            {note.content}
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <MarkdownView content={note.content} />
           </p>
         )}
         <div className="flex justify-between items-center">
