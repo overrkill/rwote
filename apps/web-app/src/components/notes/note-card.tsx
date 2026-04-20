@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { Note } from '@/lib/types'
 import { Pin, Copy, Pencil, X } from 'lucide-react'
 import MarkdownView from '@/components/ui/markdown-view'
+import Tooltip from '@/components/ui/tooltip'
 
 interface NoteCardProps {
   note: Note
@@ -107,61 +108,65 @@ export default function NoteCard({ note, onEdit, onDelete, onTogglePin, onCopy }
             ))}
           </div>
           <div className="flex gap-1">
-            <button
-              onClick={() => onTogglePin?.(note.id)}
-              onMouseEnter={() => setHoveredBtn('pin')}
-              onMouseLeave={() => setHoveredBtn(null)}
-              style={{
-                ...btnBase,
-                background: hoveredBtn === 'pin' ? 'var(--surface-alt)' : 'none',
-                color: note.pinned ? 'var(--accent)' : (hoveredBtn === 'pin' ? 'var(--text-primary)' : 'var(--text-tertiary)'),
-              }}
-              title={note.pinned ? 'Unpin' : 'Pin'}
-            >
-              <Pin size={16} fill={note.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.75} />
-            </button>
-            <button
-              onClick={() => {
-                handleCopy()
-                onCopy?.(note)
-              }}
-              onMouseEnter={() => setHoveredBtn('copy')}
-              onMouseLeave={() => setHoveredBtn(null)}
-              style={{
-                ...btnBase,
-                background: hoveredBtn === 'copy' ? 'var(--surface-alt)' : 'none',
-                color: hoveredBtn === 'copy' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              }}
-              title="Copy"
-            >
-              <Copy size={16} strokeWidth={1.75} />
-            </button>
-            <button
-              onClick={() => onEdit?.(note)}
-              onMouseEnter={() => setHoveredBtn('edit')}
-              onMouseLeave={() => setHoveredBtn(null)}
-              style={{
-                ...btnBase,
-                background: hoveredBtn === 'edit' ? 'var(--surface-alt)' : 'none',
-                color: hoveredBtn === 'edit' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              }}
-              title="Edit"
-            >
-              <Pencil size={16} strokeWidth={1.75} />
-            </button>
-            <button
-              onClick={() => onDelete?.(note.id)}
-              onMouseEnter={() => setHoveredBtn('delete')}
-              onMouseLeave={() => setHoveredBtn(null)}
-              style={{
-                ...btnBase,
-                background: hoveredBtn === 'delete' ? 'var(--surface-alt)' : 'none',
-                color: hoveredBtn === 'delete' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              }}
-              title="Delete"
-            >
-              <X size={16} strokeWidth={1.75} />
-            </button>
+            <Tooltip content={note.pinned ? 'Unpin' : 'Pin'}>
+              <button
+                onClick={() => onTogglePin?.(note.id)}
+                onMouseEnter={() => setHoveredBtn('pin')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                style={{
+                  ...btnBase,
+                  background: hoveredBtn === 'pin' ? 'var(--surface-alt)' : 'none',
+                  color: note.pinned ? 'var(--accent)' : (hoveredBtn === 'pin' ? 'var(--text-primary)' : 'var(--text-tertiary)'),
+                }}
+              >
+                <Pin size={16} fill={note.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.75} />
+              </button>
+            </Tooltip>
+            <Tooltip content="Copy">
+              <button
+                onClick={() => {
+                  handleCopy()
+                  onCopy?.(note)
+                }}
+                onMouseEnter={() => setHoveredBtn('copy')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                style={{
+                  ...btnBase,
+                  background: hoveredBtn === 'copy' ? 'var(--surface-alt)' : 'none',
+                  color: hoveredBtn === 'copy' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                }}
+              >
+                <Copy size={16} strokeWidth={1.75} />
+              </button>
+            </Tooltip>
+            <Tooltip content="Edit">
+              <button
+                onClick={() => onEdit?.(note)}
+                onMouseEnter={() => setHoveredBtn('edit')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                style={{
+                  ...btnBase,
+                  background: hoveredBtn === 'edit' ? 'var(--surface-alt)' : 'none',
+                  color: hoveredBtn === 'edit' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                }}
+              >
+                <Pencil size={16} strokeWidth={1.75} />
+              </button>
+            </Tooltip>
+            <Tooltip content="Delete">
+              <button
+                onClick={() => onDelete?.(note.id)}
+                onMouseEnter={() => setHoveredBtn('delete')}
+                onMouseLeave={() => setHoveredBtn(null)}
+                style={{
+                  ...btnBase,
+                  background: hoveredBtn === 'delete' ? 'var(--surface-alt)' : 'none',
+                  color: hoveredBtn === 'delete' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                }}
+              >
+                <X size={16} strokeWidth={1.75} />
+              </button>
+            </Tooltip>
           </div>
         </div>
       </div>

@@ -28,6 +28,7 @@ import NoteModal from '@/components/ui/note-modal'
 import AiSettingsModal from '@/components/ui/ai-settings-modal'
 import { useTheme } from '@/components/providers/theme-provider'
 import { Cloud, AlertCircle, Menu, Layers, Sun, Download, LogOut, X } from 'lucide-react'
+import Tooltip from '@/components/ui/tooltip'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -349,9 +350,10 @@ export default function DashboardPage() {
                   ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
                 }
               }}
-              title={aiEnabled ? 'AI Summarization ON' : 'AI Summarization OFF'}
-            >
-              <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
+              >
+              <Tooltip content={aiEnabled ? 'AI Summarization ON' : 'AI Summarization OFF'} position="bottom">
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
+              </Tooltip>
             </button>
             <button
               onClick={(e) => {
@@ -366,9 +368,10 @@ export default function DashboardPage() {
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
               }}
-              title="Menu"
-            >
-              <Menu size={18} strokeWidth={1.75} />
+              >
+              <Tooltip content="Menu" position="bottom">
+                <Menu size={18} strokeWidth={1.75} />
+              </Tooltip>
             </button>
             <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 rounded-lg shadow-lg ${menuOpen ? 'block' : 'hidden'}`} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
               <div className="p-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
