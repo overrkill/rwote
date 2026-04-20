@@ -1,14 +1,33 @@
 // background.js — Service Worker (Manifest V3)
-// Business logic hub: Imports modules, handles message routing
+// Business logic hub: Auth, Storage, API, AI, Message Routing
 
 // ── Constants ────────────────────────────────────────
 const SUPABASE_URL = 'https://joqxsbboxmkpcizasdbc.supabase.co';
 
+const STORAGE_KEYS = {
+  NOTES: 'rwote_v1',
+  TAGS: 'rwote_tags_v1',
+  AUTH: 'rwote_auth_v1',
+  AUTH_REFRESH: 'rwote_auth_refresh_v1',
+  SETTINGS: 'rwote_settings_v1',
+  ONBOARD: 'rwote_onboard_v1',
+  MODE: 'rwote_mode_v1',
+  PENDING_SELECTION: 'pendingSelection',
+  LAST_SYNCED: 'rwote_last_sync_v1',
+  OPERATION_QUEUE: 'rwote_op_queue_v1'
+};
+
 const SYNC_INTERVAL_MINUTES = 2;
+const MAX_RETRY_ATTEMPTS = 3;
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // Refresh if < 5 min left
-const REFRESH_COOLDOWN_MS = 30 * 1000; // Don't retry refresh for 30s after failure
 
 const DEFAULT_TAGS = ['note', 'general', 'research', 'uncategorized'];
+
+// ── Token Validity Cache ──────────────────────────────
+// Caches token expiry to avoid decoding JWT on every operation
+let cachedTokenExpiry = null;
+let lastRefreshAttempt = 0;
+const REFRESH_COOLDOWN_MS = 30 * 1000; // Don't retry refresh for 30s after failure
 
 const DEFAULT_SETTINGS = {
   theme: 'dark',
@@ -19,9 +38,140 @@ const DEFAULT_SETTINGS = {
   groqModel: 'llama-3.1-8b-instant'
 };
 
-// Token Validity Cache
-let cachedTokenExpiry = null;
-let lastRefreshAttempt = 0;
+// ── Storage Wrapper ─────────────────────────────────
+const storage = {
+  get(keys) {
+    return new Promise(resolve => chrome.storage.local.get(keys, resolve));
+  },
+  set(obj) {
+    return new Promise(resolve => chrome.storage.local.set(obj, resolve));
+  },
+  remove(keys) {
+    return new Promise(resolve => chrome.storage.local.remove(keys, resolve));
+  },
+  clear() {
+    return new Promise(resolve => chrome.storage.local.clear(resolve));
+  },
+  sessionGet(keys) {
+    return new Promise(resolve => chrome.storage.session.get(keys, resolve));
+  },
+  sessionSet(obj) {
+    return new Promise(resolve => chrome.storage.session.set(obj, resolve));
+  },
+  sessionRemove(keys) {
+    return new Promise(resolve => chrome.storage.session.remove(keys, resolve));
+  },
+  sessionClear() {
+    return new Promise(resolve => chrome.storage.session.clear(resolve));
+  }
+};
+
+// ── Operation Queue ──────────────────────────────────
+// Queue operations for background sync with retry logic
+async function getQueue() {
+  const res = await storage.get(STORAGE_KEYS.OPERATION_QUEUE);
+  return res[STORAGE_KEYS.OPERATION_QUEUE] || [];
+}
+
+async function saveQueue(queue) {
+  await storage.set({ [STORAGE_KEYS.OPERATION_QUEUE]: queue });
+}
+
+async function addToQueue(operation) {
+  const queue = await getQueue();
+  const op = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    ...operation,
+    attempts: 0,
+    createdAt: Date.now()
+  };
+  queue.push(op);
+  await saveQueue(queue);
+  return op;
+}
+
+async function removeFromQueue(opId) {
+  const queue = await getQueue();
+  const filtered = queue.filter(op => op.id !== opId);
+  await saveQueue(filtered);
+}
+
+async function updateQueueItem(opId, updates) {
+  const queue = await getQueue();
+  const idx = queue.findIndex(op => op.id === opId);
+  if (idx !== -1) {
+    queue[idx] = { ...queue[idx], ...updates };
+    await saveQueue(queue);
+  }
+}
+
+async function processQueue() {
+  const mode = await getMode();
+  if (mode !== 'cloud') return;
+
+  const auth = await ensureValidToken();
+  if (!auth?.token) {
+    console.log('Auth invalid or expired, queue will retry later');
+    return; // Don't process, don't logout - retry in next periodic sync
+  }
+
+  const queue = await getQueue();
+  if (queue.length === 0) return;
+
+  console.log(`Processing ${queue.length} queued operations`);
+
+  const failedOps = [];
+
+  for (const op of queue) {
+    try {
+      let success = false;
+
+      switch (op.type) {
+        case 'sync_note':
+          await syncNoteToCloud(op.note, auth.token);
+          success = true;
+          break;
+        case 'delete_note':
+          await cloudDeleteNote(op.noteId, auth.token);
+          success = true;
+          break;
+      }
+
+      if (success) {
+        await removeFromQueue(op.id);
+        console.log(`Queue op ${op.id} completed`);
+      }
+    } catch (e) {
+      const newAttempts = op.attempts + 1;
+      console.error(`Queue op ${op.id} failed (attempt ${newAttempts}):`, e.message);
+
+      if (newAttempts >= MAX_RETRY_ATTEMPTS) {
+        await removeFromQueue(op.id);
+        failedOps.push({ ...op, error: e.message });
+        console.log(`Queue op ${op.id} permanently failed after ${MAX_RETRY_ATTEMPTS} attempts`);
+      } else {
+        await updateQueueItem(op.id, { attempts: newAttempts });
+        failedOps.push(op);
+      }
+    }
+  }
+
+  // Notify sidepanel of permanently failed operations
+  if (failedOps.length > 0) {
+    broadcastQueueFailures(failedOps);
+  }
+}
+
+async function broadcastQueueFailures(failedOps) {
+  chrome.runtime.sendMessage({
+    type: 'SYNC_FAILED',
+    operations: failedOps.map(op => ({
+      type: op.type,
+      noteId: op.note?.id || op.noteId,
+      error: op.error
+    }))
+  }).catch(() => {});
+}
 
 // ── API Helpers ──────────────────────────────────────
 async function apiRequest(method, endpoint, body = null, token = null) {
