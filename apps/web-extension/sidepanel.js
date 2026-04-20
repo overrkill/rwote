@@ -217,6 +217,20 @@ function formatSyncTime(timestamp) {
   return `${days}d ago`;
 }
 
+// ── Loading Overlay ────────────────────────────────
+function showLoadingOverlay(parent, message = 'Saving...') {
+  const overlay = document.createElement('div');
+  overlay.className = 'loading-overlay';
+  overlay.innerHTML = `<div class="loading-content"><div class="spinner-large"></div><span class="loading-message">${message}</span></div>`;
+  parent.style.position = 'relative';
+  parent.appendChild(overlay);
+  return overlay;
+}
+
+function hideLoadingOverlay(overlay) {
+  overlay.remove();
+}
+
 // ── Toast ───────────────────────────────────────────
 let toastTimer;
 function showToast(msg) {
@@ -451,7 +465,10 @@ function attachCardEventListeners() {
     const id = String(btn.dataset.id);
     
     if (btn.classList.contains('del')) {
+      const card = btn.closest('.card');
+      const cardOverlay = showLoadingOverlay(card, 'Deleting...');
       const res = await sendMessage({ type: 'DELETE_NOTE', id });
+      hideLoadingOverlay(cardOverlay);
       if (res.ok) await refreshState();
       renderNotes();
     } else if (btn.classList.contains('copy')) {
@@ -600,6 +617,11 @@ function showEditModal(id) {
   const closeEditModal = () => overlay.remove();
   
   editSaveEl.addEventListener('click', async () => {
+    editSaveEl.disabled = true;
+    editSaveEl.textContent = 'Saving...';
+    const modalContent = overlay.querySelector('.edit-modal') || overlay;
+    const loadOverlay = showLoadingOverlay(modalContent, 'Saving...');
+    
     const res = await sendMessage({
       type: 'UPDATE_NOTE',
       id,
@@ -610,6 +632,9 @@ function showEditModal(id) {
       await refreshState();
       renderAll();
     }
+    hideLoadingOverlay(loadOverlay);
+    editSaveEl.disabled = false;
+    editSaveEl.textContent = 'Save';
     closeEditModal();
   });
   
@@ -716,6 +741,9 @@ saveBtn.addEventListener('click', async () => {
     }
   }
   
+  saveBtn.disabled = true;
+  const overlay = showLoadingOverlay(notesEl.parentElement, 'Saving...');
+  
   const res = await sendMessage({ type: 'ADD_NOTE', text: finalText, noteText: '' });
   if (res.ok) {
     await refreshState();
@@ -723,6 +751,8 @@ saveBtn.addEventListener('click', async () => {
     showToast('Saved');
   }
   
+  hideLoadingOverlay(overlay);
+  saveBtn.disabled = false;
   inputText.value = '';
   inputText.focus();
 });
@@ -1576,12 +1606,17 @@ function handleKeyboard(e) {
     e.preventDefault();
     const note = filtered[selectedNoteIndex];
     if (note) {
-      sendMessage({ type: 'DELETE_NOTE', id: note.id }).then(async (res) => {
-        if (res.ok) {
-          await refreshState();
-          renderAll();
-        }
-      });
+      const selectedCard = notesEl.querySelector(`.card[data-index="${selectedNoteIndex}"]`);
+      if (selectedCard) {
+        const cardOverlay = showLoadingOverlay(selectedCard, 'Deleting...');
+        sendMessage({ type: 'DELETE_NOTE', id: note.id }).then(async (res) => {
+          hideLoadingOverlay(cardOverlay);
+          if (res.ok) {
+            await refreshState();
+            renderAll();
+          }
+        });
+      }
     }
     return;
   }

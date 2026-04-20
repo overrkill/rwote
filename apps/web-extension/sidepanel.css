@@ -1999,13 +1999,40 @@ body {
   width: 32px;
   height: 32px;
   border: 3px solid var(--border);
-  border-top-color: #8b5cf6;
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--surface);
+  opacity: 0.95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  z-index: 10;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-message {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 /* ── Settings Modal ───────────────────────────────── */
