@@ -20,10 +20,11 @@ import {
 } from '@/lib/supabase'
 import Avatar from '@/components/ui/avatar'
 import type { Note, SubscriptionStatus, User, AiSettings } from '@/lib/types'
-import { NoteList, NoteForm } from '@/components/notes'
+import { NoteList } from '@/components/notes'
 import SearchBar from '@/components/notes/search-bar'
 import TagFilter from '@/components/notes/tag-filter'
 import SubscriptionModal from '@/components/ui/subscription-modal'
+import NoteModal from '@/components/ui/note-modal'
 import AiSettingsModal from '@/components/ui/ai-settings-modal'
 import { useTheme } from '@/components/providers/theme-provider'
 import { Cloud, AlertCircle, Menu, Layers, Sun, Download, LogOut, X } from 'lucide-react'
@@ -485,27 +486,13 @@ export default function DashboardPage() {
           />
         </div>
 
-        {(showForm || editingNote) && (
-          <div className="mb-6">
-            <NoteForm
-              note={editingNote || undefined}
-              onSave={handleSaveNote}
-              onCancel={() => {
-                setShowForm(false)
-                setEditingNote(null)
-              }}
-            />
-          </div>
-        )}
-
-        {!showForm && !editingNote && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="w-full mb-6 py-3 text-center border-2 border-dashed border-border-light dark:border-border-dark rounded-lg text-secondary-light dark:text-secondary-dark hover:border-border-focus-light dark:hover:border-border-focus-dark transition-colors"
-          >
-            + Add Note
-          </button>
-        )}
+        <button
+          onClick={() => setShowForm(true)}
+          className="w-full mb-6 py-3 text-center border-2 border-dashed rounded-lg transition-colors"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+        >
+          + Add Note
+        </button>
 
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -522,7 +509,7 @@ export default function DashboardPage() {
           activeTags={activeTags}
           onEdit={(note) => {
             setEditingNote(note)
-            setShowForm(false)
+            setShowForm(true)
           }}
           onDelete={handleDelete}
           onTogglePin={handleTogglePin}
@@ -598,6 +585,17 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {(showForm || editingNote) && (
+        <NoteModal
+          note={editingNote}
+          onSave={handleSaveNote}
+          onClose={() => {
+            setShowForm(false)
+            setEditingNote(null)
+          }}
+        />
       )}
     </div>
   )
