@@ -3,23 +3,6 @@
 /* global applyTheme, getTheme */
 
 // ── Constants ────────────────────────────────────────
-const COLOR_POOL = [
-  { bg: '#deeef7', text: '#3a6f8f' },
-  { bg: '#e2f0e2', text: '#3a7040' },
-  { bg: '#fce8f3', text: '#8f3a72' },
-  { bg: '#fdeee2', text: '#8f5a2a' },
-  { bg: '#ede8fb', text: '#5c3a8f' },
-  { bg: '#faf0d7', text: '#8a6520' },
-  { bg: '#e8f3ee', text: '#2a6e52' },
-  { bg: '#fde8e8', text: '#8f3a3a' },
-  { bg: '#e8eef8', text: '#3a4e8f' },
-  { bg: '#f3f0e8', text: '#7a6840' },
-  { bg: '#e8f0f8', text: '#3a608f' },
-  { bg: '#f8e8f0', text: '#8f3a60' },
-  { bg: '#e8f8f5', text: '#2a7a6a' },
-  { bg: '#f0ede8', text: '#6b6158' },
-];
-
 const DEFAULT_TAGS = ['note', 'general', 'research', 'uncategorized'];
 
 const ROLE_TAGS = {
@@ -147,8 +130,11 @@ function labelOf(slug) {
 function colorOf(slug) {
   if (tagColors[slug]) return tagColors[slug];
   let hash = 0;
-  for (let i = 0; i < slug.length; i++) hash = (hash * 31 + slug.charCodeAt(i)) & 0xffff;
-  const color = COLOR_POOL[hash % COLOR_POOL.length];
+  for (let i = 0; i < slug.length; i++) {
+    hash = slug.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  const color = { bg: `hsl(${hue}, 70%, 85%)`, text: `hsl(${hue}, 70%, 25%)` };
   tagColors[slug] = color;
   return color;
 }
