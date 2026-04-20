@@ -115,11 +115,13 @@ export default function NoteDetailScreen() {
       if (accessToken && note) {
         try {
           const result = await supabase.saveNote(accessToken, {
-            id: note.id,
-            title: cleanedTitle,
-            content: cleanedContent,
-            tags: finalTags,
-            updated_at:note.updated_at,
+            local_id: note.id,
+            text: cleanedTitle,
+            note: cleanedContent,
+            tag: finalTags.join(','),
+            date: note.created_at,
+            pinned: note.pinned,
+            updated_at: new Date().toISOString(),
           });
           if (result?.id) {
             updateNote(id!, { cloud_id: result.id, synced: true });
