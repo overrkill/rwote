@@ -561,7 +561,7 @@ export default function DashboardPage() {
                 <X size={18} strokeWidth={2} />
               </button>
             </div>
-            <div className="p-4 max-h-80 overflow-y-auto">
+            <div className="p-4">
               <div className="grid grid-cols-2 gap-3">
                 {themeList.map((t) => (
                   <button
