@@ -561,12 +561,17 @@ function extractTags(text) {
   return [...new Set(matches.map(m => slugify(m.slice(1))))];
 }
 
+function cleanTagsFromText(text) {
+  return text.replace(/#\w+\s*/g, '').trim();
+}
+
 async function addNote(text, noteText = '') {
   const notes = await getNotes();
   const tagsData = await getTags();
   const mode = await getMode();
   
   const noteTags = extractTags(text);
+  const cleanText = cleanTagsFromText(text);
   const tag = noteTags[0] || 'uncategorized';
   
   if (!tagsData.tags.includes(tag)) {
@@ -576,7 +581,7 @@ async function addNote(text, noteText = '') {
   
   const newNote = {
     id: crypto.randomUUID(),
-    title: text.trim(),
+    title: cleanText,
     content: noteText.trim(),
     tags: noteTags,
     pinned: false,
@@ -596,7 +601,7 @@ async function addNote(text, noteText = '') {
   return { ok: true, note: newNote };
 }
 
-async function updateNote(id, text, noteText = '') {
+async function updateNote(id, text, noteText = '', providedTags = null) {
   const notes = await getNotes();
   const tagsData = await getTags();
   const mode = await getMode();
@@ -604,22 +609,35 @@ async function updateNote(id, text, noteText = '') {
   const note = notes.find(n => n.id === id);
   if (!note) return { ok: false, error: 'Note not found' };
   
-  const oldTags = note.tags || [];
-  note.title = text.trim();
-  note.content = noteText.trim();
+  const cleanText = cleanTagsFromText(text);
   
-  const newTags = extractTags(text);
-  const allNewTags = [...new Set([...oldTags, ...newTags])];
+  if (providedTags !== null) {
+    note.title = cleanText;
+    note.tags = providedTags;
+    
+    providedTags.forEach(t => {
+      if (!tagsData.tags.includes(t)) {
+        tagsData.tags.push(t);
+      }
+    });
+    await setTags(tagsData);
+  } else {
+    const oldTags = note.tags || [];
+    note.title = cleanText;
+    note.content = noteText.trim();
+    
+    const newTags = extractTags(text);
+    const allNewTags = [...new Set([...oldTags, ...newTags])];
+    
+    allNewTags.forEach(t => {
+      if (!tagsData.tags.includes(t)) {
+        tagsData.tags.push(t);
+      }
+    });
+    
+    note.tags = allNewTags;
+  }
   
-  allNewTags.forEach(t => {
-    if (!tagsData.tags.includes(t)) {
-      tagsData.tags.push(t);
-    }
-  });
-  
-  await setTags(tagsData);
-  
-  note.tags = allNewTags;
   note.updated_at = new Date().toISOString();
   await setNotes(notes);
   
@@ -1030,7 +1048,7 @@ async function handleMessage(message) {
       return await addNote(message.text, message.noteText);
     
     case 'UPDATE_NOTE':
-      return await updateNote(message.id, message.text, message.noteText);
+      return await updateNote(message.id, message.text, message.noteText, message.tags);
     
     case 'DELETE_NOTE':
       return await deleteNote(message.id);

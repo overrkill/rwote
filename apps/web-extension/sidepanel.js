@@ -409,7 +409,7 @@ function noteCardHTML(n, realIndex) {
   return `
   <div class="card${isMatch ? ' chat-match' : ''}${n.pinned ? ' pinned' : ''}" data-id="${n.id}" data-index="${realIndex}">
     <div class="card-body">
-      <div class="card-tags">${(n.tags && n.tags.length > 0 ? n.tags : ['uncategorized']).map(tag => `<span class="card-tag" ${tagBadgeStyle(tag)}>${escHtml(labelOf(tag))}</span>`).join('')}</div>
+      <div class="card-tags">${(n.tags && n.tags.length > 0 ? n.tags : []).map(tag => `<span class="card-tag" ${tagBadgeStyle(tag)}>#${escHtml(labelOf(tag))}</span>`).join('')}</div>
       <div class="card-text">${processNoteText(n.title || '', searchQuery)}</div>
       ${n.content ? `<div class="card-note">${processNoteText(n.content, searchQuery)}</div>` : ''}
       <div class="card-meta"><span class="card-date">${n.created_at ? new Date(n.created_at).toLocaleDateString() : ''}</span></div>
@@ -518,8 +518,8 @@ function renderNotes() {
       
       const tagsContainer = existingCard.querySelector('.card-tags');
       if (tagsContainer) {
-        const tags = n.tags && n.tags.length > 0 ? n.tags : ['uncategorized'];
-        tagsContainer.innerHTML = tags.map(tag => `<span class="card-tag" ${tagBadgeStyle(tag)}>${escHtml(labelOf(tag))}</span>`).join('');
+        const tags = n.tags && n.tags.length > 0 ? n.tags : [];
+        tagsContainer.innerHTML = tags.map(tag => `<span class="card-tag" ${tagBadgeStyle(tag)}>#${escHtml(labelOf(tag))}</span>`).join('');
       }
       
       const textEl = existingCard.querySelector('.card-text');
@@ -567,6 +567,17 @@ function showEditModal(id) {
   const note = notes.find(n => n.id === id);
   if (!note) return;
   
+  const noteTags = note.tags || [];
+  const tagsHtml = noteTags.map(tag => {
+    const c = colorOf(tag);
+    return `<span class="edit-tag" data-tag="${tag}" style="background:${c.bg};color:${c.text}">
+      #${escHtml(labelOf(tag))}
+      <span class="edit-tag-remove">×</span>
+    </span>`;
+  }).join('');
+  
+  const fullText = note.content ? `${note.title || ''}\n\n${note.content}` : (note.title || '');
+  
   const html = `<div class="modal-overlay edit-modal-overlay" id="edit-modal-overlay">
     <div class="modal-content edit-modal">
       <div class="modal-header">
@@ -574,8 +585,10 @@ function showEditModal(id) {
         <button class="modal-close" id="edit-modal-close">×</button>
       </div>
       <div class="edit-modal-body">
-        <textarea id="edit-text" placeholder="Your note…" rows="4">${escHtml(note.title || '')}</textarea>
-        <textarea id="edit-note" placeholder="Extra context (optional)…" rows="2">${escHtml(note.content || '')}</textarea>
+        <textarea id="edit-text" placeholder="Your note…" rows="6">${escHtml(fullText)}</textarea>
+        <div class="edit-tags-wrap">
+          <div class="edit-tags" id="edit-tags">${tagsHtml}</div>
+        </div>
         <div class="edit-modal-actions">
           <button class="edit-cancel" id="edit-cancel">Cancel</button>
           <button class="edit-save" id="edit-save">Save</button>
@@ -589,8 +602,17 @@ function showEditModal(id) {
   document.body.appendChild(overlay);
   
   const editTextEl = document.getElementById('edit-text');
-  const editNoteEl = document.getElementById('edit-note');
   const editSaveEl = document.getElementById('edit-save');
+  const editTagsEl = document.getElementById('edit-tags');
+  let currentTags = [...noteTags];
+  
+  editTagsEl.querySelectorAll('.edit-tag-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tag = e.target.closest('.edit-tag').dataset.tag;
+      currentTags = currentTags.filter(t => t !== tag);
+      e.target.closest('.edit-tag').remove();
+    });
+  });
   
   const closeEditModal = () => overlay.remove();
   
@@ -600,11 +622,13 @@ function showEditModal(id) {
     const modalContent = overlay.querySelector('.edit-modal') || overlay;
     const loadOverlay = showLoadingOverlay(modalContent, 'Saving...');
     
+    const text = editTextEl.value;
     const res = await sendMessage({
       type: 'UPDATE_NOTE',
       id,
-      text: editTextEl.value,
-      noteText: editNoteEl.value
+      text: text,
+      noteText: '',
+      tags: currentTags
     });
     if (res.ok) {
       await refreshState();
