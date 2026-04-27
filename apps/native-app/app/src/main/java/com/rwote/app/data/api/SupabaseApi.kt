@@ -172,6 +172,7 @@ object SupabaseApi {
         refreshTokenIfNeeded()
         val note = NoteRequest(UUID.randomUUID().toString(), uid, title, content, tags)
         val resp = client.post("$BASE_URL/rest/v1/notes_v2") {
+            header("apikey", ANON_KEY)
             headers { authHeaders().forEach { (k, v) -> append(k, v) } }
             contentType(ContentType.Application.Json)
             setBody(note)
@@ -183,6 +184,7 @@ object SupabaseApi {
         val uid = userId ?: throw Exception("Not authenticated")
         refreshTokenIfNeeded()
         val resp = client.get("$BASE_URL/rest/v1/notes_v2") {
+            header("apikey", ANON_KEY)
             headers { authHeaders().forEach { (k, v) -> append(k, v) } }
             parameter("user_id", "eq.$uid")
             parameter("order", "created_at.desc")
@@ -194,6 +196,7 @@ object SupabaseApi {
     suspend fun deleteNote(id: String) {
         refreshTokenIfNeeded()
         client.delete("$BASE_URL/rest/v1/notes_v2") {
+            header("apikey", ANON_KEY)
             headers { authHeaders().forEach { (k, v) -> append(k, v) } }
             parameter("id", "eq.$id")
         }
@@ -203,6 +206,7 @@ object SupabaseApi {
         refreshTokenIfNeeded()
         val body = mapOf("title" to title, "content" to content, "updated_at" to java.time.Instant.now().toString())
         client.patch("$BASE_URL/rest/v1/notes_v2") {
+            header("apikey", ANON_KEY)
             headers { authHeaders().forEach { (k, v) -> append(k, v) } }
             contentType(ContentType.Application.Json)
             parameter("id", "eq.$id")
