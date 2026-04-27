@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -46,13 +48,33 @@ fun NotesScreen(
     onSearchQueryChange: (String) -> Unit = {},
     onNoteClick: (Note) -> Unit,
     onAddClick: () -> Unit,
-    onSearchClick: () -> Unit,
+    onSearchClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
+    onNoteSaved: (String, String) -> Unit = { _, _ -> },
+    onNoteDeleted: (String) -> Unit = {},
+    selectedNote: Note? = null,
+    isEditMode: Boolean = false,
+    onDismissSheet: () -> Unit = {},
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val grouped = remember(notes) { groupNotesByDate(notes) }
     val gridState = rememberLazyStaggeredGridState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismissSheet,
+        sheetState = sheetState,
+        containerColor = Color.White
+    ) {
+        NoteDetailSheet(
+            note = selectedNote,
+            isEditMode = isEditMode,
+            onToggleMode = { /* handled in parent */ },
+            onSave = onNoteSaved,
+            onDelete = { id -> onNoteDeleted(id); onDismissSheet() }
+        )
+    }
 
     Scaffold(
         modifier = modifier,
@@ -387,5 +409,116 @@ fun formatCardTime(isoString: String): String {
         date.format(DateTimeFormatter.ofPattern("h:mm a"))
     } catch (e: Exception) {
         ""
+    }
+}
+
+@Composable
+fun NoteDetailSheet(
+    note: Note?,
+    isEditMode: Boolean,
+    onToggleMode: () -> Unit,
+    onSave: (String, String) -> Unit,
+    onDelete: (String) -> Unit
+) {
+    var title by remember(note) { mutableStateOf(note?.title ?: "") }
+    var content by remember(note) { mutableStateOf(note?.content ?: "") }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val isNewNote = note == null
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (isNewNote) "New Note" else if (isEditMode) "Edit Note" else "Note",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!isNewNote && !isEditMode) {
+                    IconButton(onClick = onToggleMode) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    }
+                    IconButton(onClick = { showDeleteConfirm = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                    }
+                } else if (isEditMode || isNewNote) {
+                    TextButton(onClick = {
+                        onSave(title, content)
+                    }) {
+                        Text("Save")
+                    }
+                }
+            }
+        }
+
+        if (isEditMode || isNewNote) {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Title") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = content,
+                onValueChange = { content = it },
+                label = { Text("Content") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                maxLines = 10
+            )
+        } else {
+            Text(
+                text = note?.title ?: "",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = note?.content ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+            )
+            note?.createdAt?.let {
+                Text(
+                    text = formatCardTime(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
+        }
+
+        if (showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                title = { Text("Delete Note?") },
+                text = { Text("This cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        note?.let { onDelete(it.id) }
+                        showDeleteConfirm = false
+                    }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirm = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 }

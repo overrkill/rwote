@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rwote.app.data.model.Note
 import com.rwote.app.ui.screens.NotesScreen
 import com.rwote.app.ui.theme.RwoteTheme
 import com.rwote.app.viewmodel.MainViewModel
@@ -35,6 +36,8 @@ class MainActivity : ComponentActivity() {
                     val isLoading by viewModel.isLoading.collectAsState()
 
                     var searchQuery by remember { mutableStateOf("") }
+                    var selectedNote by remember { mutableStateOf<Note?>(null) }
+                    var isEditMode by remember { mutableStateOf(false) }
 
                     val filteredNotes = remember(notes, searchQuery) {
                         if (searchQuery.isBlank()) notes
@@ -61,11 +64,33 @@ class MainActivity : ComponentActivity() {
                             notes = filteredNotes,
                             searchQuery = searchQuery,
                             onSearchQueryChange = { searchQuery = it },
-                            onNoteClick = { /* TODO */ },
-                            onAddClick = { /* TODO */ },
+                            onNoteClick = { note ->
+                                selectedNote = note
+                                isEditMode = false
+                            },
+                            onAddClick = {
+                                selectedNote = null
+                                isEditMode = true
+                            },
                             onSearchClick = { /* toggle search */ },
                             onLogoutClick = {
                                 viewModel.signOut()
+                            },
+                            onNoteSaved = { title, content ->
+                                if (selectedNote != null) {
+                                    viewModel.updateNote(selectedNote!!.id, title, content)
+                                } else {
+                                    viewModel.createNote(title, content)
+                                }
+                            },
+                            onNoteDeleted = { id ->
+                                viewModel.deleteNote(id)
+                            },
+                            selectedNote = selectedNote,
+                            isEditMode = isEditMode,
+                            onDismissSheet = {
+                                selectedNote = null
+                                isEditMode = false
                             },
                             isLoading = isLoading,
                             modifier = Modifier.fillMaxSize()

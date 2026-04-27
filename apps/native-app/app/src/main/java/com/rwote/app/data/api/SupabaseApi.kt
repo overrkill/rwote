@@ -251,6 +251,17 @@ object SupabaseApi {
         request("DELETE", "/rest/v1/notes_v2?id=eq.$id")
     }
 
+    suspend fun updateNote(id: String, title: String, content: String) {
+        val body = """
+            {
+                "title":"${escapeJson(title)}",
+                "content":"${escapeJson(content)}",
+                "updated_at":"${java.time.Instant.now()}"
+            }
+        """.trimIndent()
+        request("PATCH", "/rest/v1/notes_v2?id=eq.$id", body)
+    }
+
     private fun parseNoteId(json: String): String {
         val regex = """"id"\s*:\s*"([^"]+)"""".toRegex()
 
