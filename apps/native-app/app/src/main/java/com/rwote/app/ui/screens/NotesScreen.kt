@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,9 +20,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rwote.app.data.model.Note
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -43,32 +41,25 @@ fun tintForNote(note: Note): Color {
 @Composable
 fun NotesScreen(
     notes: List<Note>,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
     onNoteClick: (Note) -> Unit,
     onAddClick: () -> Unit,
     onSearchClick: () -> Unit,
-    isLoadingMore: Boolean = false,
-    onLoadMore: () -> Unit = {},
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val grouped = remember(notes) { groupNotesByDate(notes) }
     val gridState = rememberLazyStaggeredGridState()
 
-    LaunchedEffect(gridState) {
-        snapshotFlow {
-            val last = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val total = gridState.layoutInfo.totalItemsCount
-            last >= total - 4
-        }
-        .map { it }
-        .distinctUntilChanged()
-        .filter { it }
-        .collect { onLoadMore() }
-    }
-
     Scaffold(
         modifier = modifier,
         topBar = {
-            NotesTopBar(onSearchClick = onSearchClick)
+            NotesTopBar(
+                searchQuery = searchQuery,
+                onSearchQueryChange = onSearchQueryChange,
+                onSearchClick = onSearchClick
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -84,6 +75,18 @@ fun NotesScreen(
     ) { padding ->
         if (notes.isEmpty()) {
             EmptyNotesState(modifier = Modifier.padding(padding))
+            return@Scaffold
+        }
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF1A1A1A))
+            }
             return@Scaffold
         }
 
@@ -115,7 +118,7 @@ fun NotesScreen(
                 }
             }
 
-            if (isLoadingMore) {
+            if (isLoading) {
                 item(span = StaggeredGridItemSpan.FullLine) {
                     Box(
                         modifier = Modifier
@@ -137,21 +140,44 @@ fun NotesScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotesTopBar(onSearchClick: () -> Unit) {
+fun NotesTopBar(
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
+    onSearchClick: () -> Unit
+) {
+    var showSearch by remember { mutableStateOf(false) }
+
     TopAppBar(
         title = {
-            Text(
-                text = "Rwote",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A1A),
-                letterSpacing = (-0.5).sp
-            )
+            if (showSearch) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    placeholder = { Text("Search notes...", fontSize = 14.sp) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent
+                    )
+                )
+            } else {
+                Text(
+                    text = "Rwote",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1A1A),
+                    letterSpacing = (-0.5).sp
+                )
+            }
         },
         actions = {
-            IconButton(onClick = onSearchClick) {
+            IconButton(onClick = {
+                showSearch = !showSearch
+                if (!showSearch) onSearchQueryChange("")
+            }) {
                 Icon(
-                    Icons.Default.Search,
+                    if (showSearch) Icons.Default.Close else Icons.Default.Search,
                     contentDescription = "Search",
                     tint = Color(0xFF1A1A1A)
                 )

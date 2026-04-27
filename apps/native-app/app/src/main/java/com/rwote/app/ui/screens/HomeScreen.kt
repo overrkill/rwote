@@ -121,11 +121,12 @@ fun HomeScreen(
 
             NotesScreen(
                 notes = filteredNotes,
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
                 onNoteClick = { /* TODO: open note detail */ },
                 onAddClick = { showAddDialog = true },
                 onSearchClick = { showSearch = !showSearch },
-                isLoadingMore = isLoading,
-                onLoadMore = { /* TODO: pagination */ },
+                isLoading = isLoading,
                 modifier = Modifier.weight(1f)
             )
         }
