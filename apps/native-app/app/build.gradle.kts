@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -61,6 +62,13 @@ dependencies {
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.animation:animation")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+    implementation("io.ktor:ktor-client-core:2.3.8")
+    implementation("io.ktor:ktor-client-android:2.3.8")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.8")
+    implementation("io.ktor:ktor-client-auth:2.3.8")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.8")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
