@@ -184,38 +184,49 @@ object SupabaseApi {
     }
 
     private fun parseAccessToken(json: String): String {
-        val regex = """"access_token"\s*:\s*"([^"]+)"""".toRegex()
-        return regex.find(json)?.groupValues?.get(1) ?: throw Exception("No access token")
+        return try {
+            JSONObject(json).getString("access_token")
+        } catch (e: Exception) {
+            throw Exception("No access token")
+        }
     }
 
     private fun parseRefreshToken(json: String): String {
-        val regex = """"refresh_token"\s*:\s*"([^"]+)"""".toRegex()
-        return regex.find(json)?.groupValues?.get(1) ?: ""
+        return try {
+            JSONObject(json).getString("refresh_token")
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     private fun parseExpiresIn(json: String): Int {
-        val regex = """"expires_in"\s*:\s*(\d+)"""".toRegex()
-        return regex.find(json)?.groupValues?.get(1)?.toIntOrNull() ?: 3600
+        return try {
+            JSONObject(json).getInt("expires_in")
+        } catch (e: Exception) {
+            3600
+        }
     }
 
     private fun parseUserId(token: String, json: String): String {
-        // Decode JWT to get user_id from claims
-        try {
+        return try {
             val parts = token.split(".")
             if (parts.size >= 2) {
                 val payload = String(Base64.getDecoder().decode(parts[1]))
-                val idRegex = """"sub"\s*:\s*"([^"]+)"""".toRegex()
-                return idRegex.find(payload)?.groupValues?.get(1) ?: parseUserIdJson(json)
+                JSONObject(payload).getString("sub")
+            } else {
+                JSONObject(json).getString("id")
             }
-            return parseUserIdJson(json)
         } catch (e: Exception) {
-            return parseUserIdJson(json)
+            JSONObject(json).getString("id")
         }
     }
 
     private fun parseUserIdJson(json: String): String {
-        val regex = """"id"\s*:\s*"([^"]+)"""".toRegex()
-        return regex.find(json)?.groupValues?.get(1) ?: throw Exception("No user id")
+        return try {
+            JSONObject(json).getString("id")
+        } catch (e: Exception) {
+            throw Exception("No user id")
+        }
     }
 
     suspend fun createNote(title: String, content: String, tags: List<String> = emptyList()): String {
@@ -263,9 +274,11 @@ object SupabaseApi {
     }
 
     private fun parseNoteId(json: String): String {
-        val regex = """"id"\s*:\s*"([^"]+)"""".toRegex()
-
-        return regex.find(json)?.groupValues?.get(1) ?: throw Exception("No note id")
+        return try {
+            JSONObject(json).getString("id")
+        } catch (e: Exception) {
+            throw Exception("No note id")
+        }
     }
 
     private fun parseNotes(json: String): List<NoteData> {
