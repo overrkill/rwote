@@ -150,16 +150,16 @@ val DarkColorScheme = darkColorScheme(
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF121212),
-    onBackground = Color(0xFFE6E1E5),
-    surface = Color(0xFF1E1E1E),
-    onSurface = Color(0xFFE6E1E5),
-    surfaceVariant = Color(0xFF2D2D2D),
-    onSurfaceVariant = Color(0xFFCAC4D0),
-    outline = Color(0xFF938F99),
-    outlineVariant = Color(0xFF49454F),
-    inverseSurface = Color(0xFFE6E1E5),
-    inverseOnSurface = Color(0xFF313030),
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFE8E8E8),
+    surface = Color(0xFF0A0A0A),
+    onSurface = Color(0xFFE8E8E8),
+    surfaceVariant = Color(0xFF1A1A1A),
+    onSurfaceVariant = Color(0xFFA0A0A0),
+    outline = Color(0xFF505050),
+    outlineVariant = Color(0xFF303030),
+    inverseSurface = Color(0xFFE8E8E8),
+    inverseOnSurface = Color(0xFF0A0A0A),
     inversePrimary = Color(0xFF6750A4)
 )
 
@@ -180,24 +180,25 @@ val LightColorScheme = lightColorScheme(
     errorContainer = Color(0xFFFFDAD6),
     onError = Color.White,
     onErrorContainer = Color(0xFF410002),
-    background = Color(0xFFFEFBFF),
-    onBackground = Color(0xFF1C1B1F),
-    surface = Color(0xFFFEFBFF),
-    onSurface = Color(0xFF1C1B1F),
-    surfaceVariant = Color(0xFFE7E0EC),
-    onSurfaceVariant = Color(0xFF49454F),
-    outline = Color(0xFF79747E),
-    outlineVariant = Color(0xFFCAC4D1),
-    inverseSurface = Color(0xFF313030),
+    background = Color(0xFFFAFAFA),
+    onBackground = Color(0xFF2A2A2A),
+    surface = Color(0xFFFAFAFA),
+    onSurface = Color(0xFF2A2A2A),
+    surfaceVariant = Color(0xFFEEEEEE),
+    onSurfaceVariant = Color(0xFF6B6B6B),
+    outline = Color(0xFFB0B0B0),
+    outlineVariant = Color(0xFFE0E0E0),
+    inverseSurface = Color(0xFF2A2A2A),
     inverseOnSurface = Color(0xFFF4EFF4),
     inversePrimary = Color(0xFFD0BCFF)
 )
 
 @Composable
 fun RwoteTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    val systemDark = isSystemInDarkTheme()
+    val darkTheme = ThemeManager.getDarkThemeFromSystem(systemDark)
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     val view = LocalView.current

@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     val isLoggedIn = (authState as? UiState.Success)?.data?.isLoggedIn == true
+                    val userEmail = (authState as? UiState.Success)?.data?.email ?: ""
 
                     LaunchedEffect(isLoggedIn) {
                         if (isLoggedIn) {
@@ -93,7 +94,8 @@ class MainActivity : ComponentActivity() {
                                 isEditMode = false
                             },
                             isLoading = isLoading,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            userEmail = userEmail
                         )
                     } else {
                         LoginScreen(

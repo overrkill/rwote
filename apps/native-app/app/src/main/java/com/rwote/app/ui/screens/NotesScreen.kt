@@ -1,6 +1,7 @@
 package com.rwote.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.*
@@ -10,7 +11,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rwote.app.data.model.Note
+import com.rwote.app.ui.theme.ThemeManager
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -56,11 +57,21 @@ fun NotesScreen(
     isEditMode: Boolean = false,
     onDismissSheet: () -> Unit = {},
     isLoading: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    userEmail: String = ""
 ) {
     val grouped = remember(notes) { groupNotesByDate(notes) }
     val gridState = rememberLazyStaggeredGridState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showDrawer by remember { mutableStateOf(false) }
+
+    if (showDrawer) {
+        SettingsDrawer(
+            userEmail = userEmail,
+            onDismiss = { showDrawer = false },
+            onLogout = onLogoutClick
+        )
+    }
 
     Scaffold(
         modifier = modifier,
@@ -69,20 +80,21 @@ fun NotesScreen(
                 searchQuery = searchQuery,
                 onSearchQueryChange = onSearchQueryChange,
                 onSearchClick = onSearchClick,
-                onLogoutClick = onLogoutClick
+                onProfileClick = { showDrawer = true },
+                userEmail = userEmail
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddClick,
-                containerColor = Color(0xFF1A1A1A),
-                contentColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add note")
             }
         },
-        containerColor = Color(0xFFF8F8F6)
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (notes.isEmpty()) {
             EmptyNotesState(modifier = Modifier.padding(padding))
@@ -96,7 +108,7 @@ fun NotesScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Color(0xFF1A1A1A))
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
             return@Scaffold
         }
@@ -144,16 +156,16 @@ fun NotesScreen(
                         )
                     }
                 }
-            }
-        }
+}
     }
+}
 
-    // Bottom sheet - only shows when needed
+
     if (selectedNote != null || isEditMode) {
         ModalBottomSheet(
             onDismissRequest = onDismissSheet,
             sheetState = sheetState,
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
             NoteDetailSheet(
                 note = selectedNote,
@@ -172,7 +184,8 @@ fun NotesTopBar(
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
     onSearchClick: () -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    userEmail: String = ""
 ) {
     var showSearch by remember { mutableStateOf(false) }
 
@@ -195,7 +208,7 @@ fun NotesTopBar(
                     text = "Rwote",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A),
+                    color = MaterialTheme.colorScheme.onSurface,
                     letterSpacing = (-0.5).sp
                 )
             }
@@ -208,21 +221,40 @@ fun NotesTopBar(
                 Icon(
                     if (showSearch) Icons.Default.Close else Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = Color(0xFF1A1A1A)
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
-            IconButton(onClick = onLogoutClick) {
-                Icon(
-                    Icons.Default.ExitToApp,
-                    contentDescription = "Logout",
-                    tint = Color(0xFF1A1A1A)
-                )
-            }
+            UserAvatar(email = userEmail, onClick = onProfileClick)
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color(0xFFF8F8F6)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     )
+}
+
+@Composable
+fun UserAvatar(
+    email: String,
+    onClick: () -> Unit
+) {
+    val initial = email.firstOrNull()?.uppercaseChar() ?: '?'
+    
+    IconButton(onClick = onClick) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = initial.toString(),
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
 }
 
 @Composable
@@ -246,13 +278,15 @@ fun NoteCard(
     note: Note,
     onClick: () -> Unit
 ) {
-    val tint = tintForNote(note)
+    val colorScheme = MaterialTheme.colorScheme
+    val tint = remember(note.id) { tintForNote(note) }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(tint)
+            .background(colorScheme.surface)
+            .border(1.dp, tint, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -265,7 +299,7 @@ fun NoteCard(
             text = note.content ?: note.title,
             fontSize = 13.sp,
             lineHeight = 18.sp,
-            color = Color(0xFF2A2A2A),
+            color = colorScheme.onSurface,
             maxLines = 8,
             overflow = TextOverflow.Ellipsis
         )
@@ -278,7 +312,7 @@ fun NoteCard(
             Text(
                 text = formatCardTime(created),
                 fontSize = 10.sp,
-                color = Color(0xFFAAAAAA),
+                color = colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
         }
@@ -287,6 +321,7 @@ fun NoteCard(
 
 @Composable
 fun SourceBadge(url: String) {
+    val colorScheme = MaterialTheme.colorScheme
     val domain = remember(url) {
         url.removePrefix("https://")
             .removePrefix("http://")
@@ -298,13 +333,13 @@ fun SourceBadge(url: String) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(4.dp))
-            .background(Color(0x15000000))
+            .background(colorScheme.surfaceVariant)
             .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
         Text(
             text = domain,
             fontSize = 10.sp,
-            color = Color(0xFF666666),
+            color = colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -322,13 +357,13 @@ fun TagsRow(tags: List<String>) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0x20000000))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = "#$tag",
                     fontSize = 10.sp,
-                    color = Color(0xFF555555),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }
