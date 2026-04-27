@@ -62,24 +62,6 @@ fun NotesScreen(
     val gridState = rememberLazyStaggeredGridState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val showSheet = selectedNote != null || isEditMode
-
-    if (showSheet) {
-        ModalBottomSheet(
-            onDismissRequest = onDismissSheet,
-            sheetState = sheetState,
-            containerColor = Color.White
-        ) {
-            NoteDetailSheet(
-                note = selectedNote,
-                isEditMode = isEditMode,
-                onToggleMode = { /* handled in parent */ },
-                onSave = onNoteSaved,
-                onDelete = { id -> onNoteDeleted(id); onDismissSheet() }
-            )
-        }
-    }
-
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -163,6 +145,23 @@ fun NotesScreen(
                     }
                 }
             }
+        }
+    }
+
+    // Bottom sheet - only shows when needed
+    if (selectedNote != null || isEditMode) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissSheet,
+            sheetState = sheetState,
+            containerColor = Color.White
+        ) {
+            NoteDetailSheet(
+                note = selectedNote,
+                isEditMode = isEditMode,
+                onToggleMode = { /* handled in parent */ },
+                onSave = onNoteSaved,
+                onDelete = { id -> onNoteDeleted(id); onDismissSheet() }
+            )
         }
     }
 }
