@@ -16,14 +16,18 @@ import java.util.UUID
 private const val TAG = "SupabaseApi"
 private const val PREFS_NAME = "rwote_prefs"
 private const val KEY_TOKEN = "access_token"
+private const val KEY_REFRESH_TOKEN = "refresh_token"
 private const val KEY_USER_ID = "user_id"
+private const val KEY_TOKEN_EXPIRY = "token_expiry"
 
 object SupabaseApi {
     private const val BASE_URL = "https://joqxsbboxmkpcizasdbc.supabase.co"
     private const val ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvcXhzYmJveG1rcGNpemFzZGJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjI2ODgsImV4cCI6MjA5MTQzODY4OH0.AlJh4bvWk_aMxHnWFg4xqZhY3UzbUclcKtLvkBARAQo"
 
     private var accessToken: String? = null
+    private var refreshToken: String? = null
     private var userId: String? = null
+    private var tokenExpiry: Long = 0L
     private var prefs: SharedPreferences? = null
 
     fun init(context: Context) {
@@ -34,48 +38,70 @@ object SupabaseApi {
     private fun loadToken() {
         prefs?.let { p ->
             accessToken = p.getString(KEY_TOKEN, null)
+            refreshToken = p.getString(KEY_REFRESH_TOKEN, null)
             userId = p.getString(KEY_USER_ID, null)
-            Log.d(TAG, "loadToken: token=${accessToken != null}, uid=$userId")
+            tokenExpiry = p.getLong(KEY_TOKEN_EXPIRY, 0L)
+            Log.d(TAG, "loadToken: token=${accessToken != null}, uid=$userId, exp=$tokenExpiry")
         }
     }
 
-    private fun saveToken(token: String?, uid: String?) {
+    private fun saveToken(token: String?, refresh: String?, uid: String?, expiry: Long) {
         prefs?.edit()?.apply {
             if (token != null) putString(KEY_TOKEN, token) else remove(KEY_TOKEN)
+            if (refresh != null) putString(KEY_REFRESH_TOKEN, refresh) else remove(KEY_REFRESH_TOKEN)
             if (uid != null) putString(KEY_USER_ID, uid) else remove(KEY_USER_ID)
+            putLong(KEY_TOKEN_EXPIRY, expiry)
             apply()
         }
     }
 
     fun clearToken() {
         accessToken = null
+        refreshToken = null
         userId = null
-        saveToken(null, null)
+        tokenExpiry = 0L
+        saveToken(null, null, null, 0L)
     }
 
     fun isLoggedIn(): Boolean = accessToken != null && userId != null
 
     fun getUserId(): String? = userId
 
-    fun setToken(token: String?, uid: String? = null) {
+    fun setToken(token: String?, refresh: String?, uid: String?, expiresIn: Int = 3600) {
         accessToken = token
+        refreshToken = refresh
         userId = uid
-        saveToken(token, uid)
-        Log.d(TAG, "setToken called: token=${token != null}, uid=$uid")
+        tokenExpiry = System.currentTimeMillis() + (expiresIn * 1000L)
+        saveToken(token, refresh, uid, tokenExpiry)
+        Log.d(TAG, "setToken: exp=$tokenExpiry")
     }
 
     private suspend fun request(
         method: String,
         endpoint: String,
-        body: String? = null
+        body: String? = null,
+        retryRefresh: Boolean = true
     ): String = withContext(Dispatchers.IO) {
+        var token = accessToken
+
+        // Check if token expired or about to expire (within 60 seconds)
+        if (token != null && tokenExpiry > 0 && System.currentTimeMillis() > tokenExpiry - 60000) {
+            Log.d(TAG, "Token expiring soon, attempting refresh")
+            try {
+                refreshAccessToken()
+                token = accessToken
+            } catch (e: Exception) {
+                Log.w(TAG, "Token refresh failed", e)
+            }
+        }
+
         val url = URL("$BASE_URL$endpoint")
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = method
         conn.setRequestProperty("apikey", ANON_KEY)
         conn.setRequestProperty("Content-Type", "application/json")
         conn.setRequestProperty("Accept", "application/json")
-        accessToken?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
+        token?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
 
         if (body != null) {
             conn.doOutput = true
@@ -107,12 +133,25 @@ object SupabaseApi {
             val body = """{"email":"$email","password":"$password"}"""
             val response = request("POST", "/auth/v1/signup", body)
             val token = parseAccessToken(response)
+            val refresh = parseRefreshToken(response)
+            val expiresIn = parseExpiresIn(response)
             val uid = parseUserId(token, response)
-            setToken(token, uid)
+            setToken(token, refresh, uid, expiresIn)
             AuthResult.Success(token, uid, email)
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Sign up failed")
         }
+    }
+
+    private suspend fun refreshAccessToken(): String {
+        val refresh = refreshToken ?: throw Exception("No refresh token")
+        val body = """{"refresh_token":"$refresh"}"""
+        val response = request("POST", "/auth/v1/token?grant_type=refresh_token", body, retryRefresh = false)
+        val newToken = parseAccessToken(response)
+        val newRefresh = parseRefreshToken(response)
+        val expiresIn = parseExpiresIn(response)
+        setToken(newToken, newRefresh, userId, expiresIn)
+        return newToken
     }
 
     suspend fun signIn(email: String, password: String): AuthResult {
@@ -122,9 +161,11 @@ object SupabaseApi {
             val response = request("POST", "/auth/v1/token?grant_type=password", body)
             Log.d(TAG, "signIn response: ${response.take(200)}")
             val token = parseAccessToken(response)
+            val refresh = parseRefreshToken(response)
+            val expiresIn = parseExpiresIn(response)
             val uid = parseUserId(token, response)
             Log.d(TAG, "parsed token, uid: $uid")
-            setToken(token, uid)
+            setToken(token, refresh, uid, expiresIn)
             AuthResult.Success(token, uid, email)
         } catch (e: Exception) {
             Log.e(TAG, "signIn failed", e)
@@ -134,14 +175,27 @@ object SupabaseApi {
 
     suspend fun signOut() {
         try {
-            request("POST", "/auth/v1/logout")
+            refreshToken?.let { rt ->
+                val body = """{"refresh_token":"$rt"}"""
+                request("POST", "/auth/v1/logout", body)
+            }
         } catch (_: Exception) { }
-        setToken(null, null)
+        setToken(null, null, null, 0)
     }
 
     private fun parseAccessToken(json: String): String {
         val regex = """"access_token"\s*:\s*"([^"]+)"""".toRegex()
         return regex.find(json)?.groupValues?.get(1) ?: throw Exception("No access token")
+    }
+
+    private fun parseRefreshToken(json: String): String {
+        val regex = """"refresh_token"\s*:\s*"([^"]+)"""".toRegex()
+        return regex.find(json)?.groupValues?.get(1) ?: ""
+    }
+
+    private fun parseExpiresIn(json: String): Int {
+        val regex = """"expires_in"\s*:\s*(\d+)"""".toRegex()
+        return regex.find(json)?.groupValues?.get(1)?.toIntOrNull() ?: 3600
     }
 
     private fun parseUserId(token: String, json: String): String {

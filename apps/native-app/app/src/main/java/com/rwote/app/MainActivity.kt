@@ -5,6 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -62,6 +64,9 @@ class MainActivity : ComponentActivity() {
                             onNoteClick = { /* TODO */ },
                             onAddClick = { /* TODO */ },
                             onSearchClick = { /* toggle search */ },
+                            onLogoutClick = {
+                                viewModel.signOut()
+                            },
                             isLoading = isLoading,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -103,6 +108,7 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isSignUp by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier.padding(24.dp),
@@ -118,7 +124,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Sign in to continue",
+            text = if (isSignUp) "Create account" else "Sign in to continue",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
@@ -156,7 +162,10 @@ fun LoginScreen(
         }
 
         Button(
-            onClick = { onSignIn(email, password) },
+            onClick = {
+                if (isSignUp) onSignUp(email, password)
+                else onSignIn(email, password)
+            },
             enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
@@ -166,8 +175,17 @@ fun LoginScreen(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
-                Text("Sign In")
+                Text(if (isSignUp) "Sign Up" else "Sign In")
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextButton(onClick = { isSignUp = !isSignUp }) {
+            Text(
+                text = if (isSignUp) "Already have an account? Sign In"
+                else "Don't have an account? Sign Up"
+            )
         }
     }
 }

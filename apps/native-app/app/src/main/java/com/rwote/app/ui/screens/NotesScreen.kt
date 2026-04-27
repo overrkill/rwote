@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,6 +47,7 @@ fun NotesScreen(
     onNoteClick: (Note) -> Unit,
     onAddClick: () -> Unit,
     onSearchClick: () -> Unit,
+    onLogoutClick: () -> Unit = {},
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -58,7 +60,8 @@ fun NotesScreen(
             NotesTopBar(
                 searchQuery = searchQuery,
                 onSearchQueryChange = onSearchQueryChange,
-                onSearchClick = onSearchClick
+                onSearchClick = onSearchClick,
+                onLogoutClick = onLogoutClick
             )
         },
         floatingActionButton = {
@@ -143,7 +146,8 @@ fun NotesScreen(
 fun NotesTopBar(
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
 ) {
     var showSearch by remember { mutableStateOf(false) }
 
@@ -179,6 +183,13 @@ fun NotesTopBar(
                 Icon(
                     if (showSearch) Icons.Default.Close else Icons.Default.Search,
                     contentDescription = "Search",
+                    tint = Color(0xFF1A1A1A)
+                )
+            }
+            IconButton(onClick = onLogoutClick) {
+                Icon(
+                    Icons.Default.ExitToApp,
+                    contentDescription = "Logout",
                     tint = Color(0xFF1A1A1A)
                 )
             }
