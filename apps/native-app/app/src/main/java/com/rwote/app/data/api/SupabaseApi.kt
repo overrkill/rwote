@@ -171,13 +171,15 @@ object SupabaseApi {
         val uid = userId ?: throw Exception("Not authenticated")
         refreshTokenIfNeeded()
         val note = NoteRequest(UUID.randomUUID().toString(), uid, title, content, tags)
-        val resp = client.post("$BASE_URL/rest/v1/notes_v2") {
+        val noteId = note.id
+        client.post("$BASE_URL/rest/v1/notes_v2") {
             header("apikey", ANON_KEY)
+            header("Accept", "application/json")
             headers { authHeaders().forEach { (k, v) -> append(k, v) } }
             contentType(ContentType.Application.Json)
             setBody(note)
         }
-        return resp.body<NoteResponse>().id
+        return noteId
     }
 
     suspend fun fetchNotes(): List<NoteData> {
