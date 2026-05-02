@@ -122,7 +122,7 @@ fun NoteDetailPage(
                             onBack()
                         }
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -221,27 +221,41 @@ fun NoteDetailPage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 12.dp)
         ) {
             if (isEditMode || isNewNote) {
-                OutlinedTextField(
+                TextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
+                    placeholder = { Text("Title", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    maxLines = 3,
+                    colors = TextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
 
-                OutlinedTextField(
+                TextField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { Text("Content") },
+                    placeholder = { Text("Content", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    maxLines = Int.MAX_VALUE
+                    colors = TextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent
+                    )
                 )
 
                 if (summarizeError.isNotEmpty()) {
@@ -270,7 +284,14 @@ fun NoteDetailPage(
                     fontWeight = FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                HorizontalDivider(
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = note?.content ?: "",
@@ -294,7 +315,7 @@ fun NoteDetailPage(
                 }
 
                 note?.createdAt?.let {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = formatCardTime(it),
                         style = MaterialTheme.typography.bodySmall,
@@ -303,7 +324,7 @@ fun NoteDetailPage(
                 }
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(48.dp))
         }
         
         if (showDeleteConfirm) {
