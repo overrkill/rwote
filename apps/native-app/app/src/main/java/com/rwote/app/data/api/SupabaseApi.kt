@@ -313,7 +313,7 @@ data class SignUpRequest(val email: String, val password: String)
 data class SignInRequest(val email: String, val password: String, val grantType: String = "password")
 
 @Serializable
-data class RefreshRequest(val refreshToken: String)
+data class RefreshRequest(@SerialName("refresh_token") val refreshToken: String)
 
 @Serializable
 data class AuthResponse(

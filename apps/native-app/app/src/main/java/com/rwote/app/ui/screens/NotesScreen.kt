@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -52,7 +53,7 @@ fun tintForNote(note: Note): Color {
     return cardTints[note.id.hashCode().and(0x7FFFFFFF) % cardTints.size]
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NoteDetailPage(
     note: Note?,
@@ -97,11 +98,16 @@ fun NoteDetailPage(
     val coroutineScope = rememberCoroutineScope()
 
     // Handle system back button
-    BackHandler(enabled = isEditMode || isNewNote) {
-        if (hasChanges) {
-            showDiscardDialog = true
+    val isEditOrNew = isEditMode || isNewNote
+    BackHandler(enabled = true) {
+        if (isEditOrNew) {
+            if (hasChanges) {
+                showDiscardDialog = true
+            } else {
+                onToggleEditMode() // Edit mode with no changes → view mode
+            }
         } else {
-            onBack()
+            onBack() // View mode → notes list
         }
     }
 
@@ -117,10 +123,14 @@ fun NoteDetailPage(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        if (hasChanges) {
-                            showDiscardDialog = true
+                        if (isEditOrNew) {
+                            if (hasChanges) {
+                                showDiscardDialog = true
+                            } else {
+                                onToggleEditMode() // Edit mode → view mode
+                            }
                         } else {
-                            onBack()
+                            onBack() // View mode → notes list
                         }
                     }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -161,6 +171,12 @@ fun NoteDetailPage(
                                                     if (builder.isNotEmpty()) builder.append("\n\n")
                                                     summarizeResponse?.keyPoints?.forEach { point ->
                                                         builder.append("\n- $point")
+                                                    }
+                                                }
+                                                if (summarizeResponse?.tags?.isNotEmpty() == true) {
+                                                    if (builder.isNotEmpty()) builder.append("\n\n")
+                                                    summarizeResponse?.tags?.forEach { tag ->
+                                                        builder.append("$tag ")
                                                     }
                                                 }
                                                 content = builder.toString().trim()
@@ -217,114 +233,133 @@ fun NoteDetailPage(
             )
         },
         containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 12.dp)
-        ) {
-            if (isEditMode || isNewNote) {
-                TextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    placeholder = { Text("Title", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3,
-                    colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedIndicatorColor = MaterialTheme.colorScheme.primary
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 12.dp)
+            ) {
+                if (isEditMode || isNewNote) {
+                    TextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = { Text("Title", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3,
+                        colors = TextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant,
+                            focusedIndicatorColor = MaterialTheme.colorScheme.primary
+                        )
                     )
-                )
 
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
-
-                TextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    placeholder = { Text("Content", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
-                )
 
-                if (summarizeError.isNotEmpty()) {
-                    Text(
-                        text = summarizeError,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        TextField(
+                            value = content,
+                            onValueChange = { content = it },
+                            placeholder = { Text("Content", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent
+                            )
+                        )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (detectedTags.isNotEmpty()) {
-                    TagsEditor(
-                        tags = detectedTags,
-                        onRemoveTag = { removed ->
-                            val word = "#$removed"
-                            content = content.replace(word, "").replace("  ", " ").trim()
+                        if (summarizeError.isNotEmpty()) {
+                            Text(
+                                text = summarizeError,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        if (detectedTags.isNotEmpty()) {
+                            TagsEditor(
+                                tags = detectedTags,
+                                onRemoveTag = { removed ->
+                                    val word = "#$removed"
+                                    content = content.replace(word, "").replace("  ", " ").trim()
+                                }
+                            )
+                        }
+
+                        note?.createdAt?.let {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = formatCardTime(it),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = note?.title ?: "",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
                     )
-                }
-            } else {
-                Text(
-                    text = note?.title ?: "",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                MarkdownText(
-                    markdown = note?.content ?: "",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                )
-
-                if (note?.tags?.isNotEmpty() == true) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        note.tags.forEach { tag ->
-                            SuggestionChip(
-                                onClick = { },
-                                label = { Text("#$tag", style = MaterialTheme.typography.labelSmall) }
+
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        MarkdownText(
+                            markdown = note?.content ?: "",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                            )
+                        )
+
+                        if (note?.tags?.isNotEmpty() == true) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                note.tags.forEach { tag ->
+                                    SuggestionChip(
+                                        onClick = { },
+                                        label = { Text("#$tag", style = MaterialTheme.typography.labelSmall) }
+                                    )
+                                }
+                            }
+                        }
+
+                        note?.createdAt?.let {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = formatCardTime(it),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                             )
                         }
                     }
                 }
-
-                note?.createdAt?.let {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = formatCardTime(it),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(48.dp))
         }
@@ -358,7 +393,7 @@ fun NoteDetailPage(
                 confirmButton = {
                     TextButton(onClick = {
                         showDiscardDialog = false
-                        onBack()
+                        if (isEditOrNew) onToggleEditMode() else onBack()
                     }) {
                         Text("Discard", color = MaterialTheme.colorScheme.error)
                     }
@@ -722,6 +757,7 @@ fun parseTags(text: String): List<String> {
     return matches.map { it.groupValues[1].lowercase() }.distinct().take(4).toList()
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TagsEditor(
     tags: List<String>,
@@ -729,8 +765,9 @@ fun TagsEditor(
 ) {
     if (tags.isEmpty()) return
 
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         tags.forEach { tag ->
