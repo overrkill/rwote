@@ -4,24 +4,17 @@ const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const SUMMARY_PROMPT = `You are a precise summarization assistant. Given the text below, do the following:
 
-1. Summarize the content into **4-5 concise bullet points** using markdown formatting.
+1. Summarize the content into **4-5 concise bullet points**.
 2. Each bullet point should capture a distinct key idea — no repetition.
-3. At the end, add **1-4 relevant hashtags** that best represent the topic or theme of the text.
+3. Extract **1-4 relevant hashtags** that best represent the topic or theme of the text.
 
-Respond ONLY in this format:
-
-**Summary:**
-- bullet point 1
-- bullet point 2
-- bullet point 3
-- bullet point 4
-- bullet point 5 (if needed)
-
-**Tags:** #tag1 #tag2 #tag3
-
----
-Text:
-{{TEXT}}`;
+Respond ONLY in this JSON format (no markdown, no code blocks):
+{
+  "summary": "A brief 2-3 sentence summary of the text",
+  "keyPoints": ["key point 1", "key point 2", "key point 3", "key point 4"],
+  "tags":["tag1","tag2","tag3","tag4"],
+}
+`;
 
 Deno.serve(async (req) => {
   try {
@@ -44,6 +37,7 @@ Deno.serve(async (req) => {
     }
 
     const prompt = SUMMARY_PROMPT.replace("{{TEXT}}", text);
+    const originalWordCount = text.trim().split(/\s+/).filter(w => w.length > 0).length;
 
     const response = await fetch(GROQ_API_URL, {
       method: "POST",
@@ -73,12 +67,44 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json();
-    const summary = data.choices?.[0]?.message?.content || "";
+    const content = data.choices?.[0]?.message?.content || "";
 
-    return new Response(JSON.stringify({ response: summary }), {
+    // Try to parse JSON from the response
+    let result;
+    try {
+		console.log(content)
+      // Extract JSON from potential markdown code blocks
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) ||
+                       content.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+      result = JSON.parse(jsonStr.trim());
+    } catch (e) {
+      // If JSON parsing fails, create a structured response from the raw text
+      console.error("Failed to parse JSON from Groq response:", e);
+      const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length;
+      result = {
+        summary: content,
+        keyPoints: [],
+        wordCount: wordCount,
+        originalLength: originalWordCount
+      };
+    }
+
+    // Ensure all fields exist
+    const responseBody = {
+      summary: result.summary || content,
+      keyPoints: result.keyPoints || [],
+      wordCount: result.wordCount || 0,
+      originalLength: result.originalLength || originalWordCount
+    };
+
+    console.log("Summarize response:", JSON.stringify(responseBody));
+
+    return new Response(JSON.stringify(responseBody), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error("Summarize error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

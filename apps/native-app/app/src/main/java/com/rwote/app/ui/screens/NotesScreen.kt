@@ -27,6 +27,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rwote.app.data.model.Note
+import com.rwote.app.data.api.SupabaseApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -62,12 +66,23 @@ fun NoteDetailPage(
         mutableStateOf(note?.content?.replace(Regex("#\\w+"), "")?.replace("  ", " ")?.trim() ?: "")
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showSummarizeConfirm by remember { mutableStateOf(false) }
+    var originalContent by remember { mutableStateOf("") }
+    var summarizeResponse by remember { mutableStateOf<com.rwote.app.data.api.SupabaseApi.SummarizeResponse?>(null) }
+    var isSummarizing by remember { mutableStateOf(false) }
+    var summarizeError by remember { mutableStateOf("") }
 
     val detectedTags = remember(title, content, note?.tags) {
         (note?.tags ?: emptyList()) + parseTags("$title $content")
     }.distinct()
 
     val isNewNote = note == null
+
+    LaunchedEffect(note) {
+        originalContent = note?.content ?: ""
+    }
+
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         modifier = modifier,
@@ -110,6 +125,51 @@ fun NoteDetailPage(
                 )
             )
         },
+        floatingActionButton = {
+            if (isEditMode || isNewNote) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    if (isSummarizing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(56.dp),
+                            strokeWidth = 3.dp
+                        )
+                    } else {
+                        FloatingActionButton(
+                            onClick = {
+                                if (content.isNotBlank()) {
+                                    isSummarizing = true
+                                    summarizeError = ""
+                                    val contentToSummarize = content
+                                    android.util.Log.d("NoteDetailPage", "Summarize clicked, content length: ${contentToSummarize.length}")
+                                    coroutineScope.launch {
+                                        try {
+                                            android.util.Log.d("content original",content)
+                                            android.util.Log.d("content",contentToSummarize)
+                                            summarizeResponse = SupabaseApi.summarizeContent(contentToSummarize)
+                                            android.util.Log.d("NoteDetailPage", "Summarize success, summary length: ${summarizeResponse?.summary?.length}")
+                                            originalContent = content
+                                            showSummarizeConfirm = true
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("NoteDetailPage", "Summarize error", e)
+                                            summarizeError = e.message ?: "Failed to summarize"
+                                        } finally {
+                                            isSummarizing = false
+                                        }
+                                    }
+                                }
+                            },
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary
+                        ) {
+                            Text("Sum", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
@@ -117,8 +177,6 @@ fun NoteDetailPage(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (isEditMode || isNewNote) {
                 OutlinedTextField(
@@ -129,15 +187,27 @@ fun NoteDetailPage(
                     singleLine = true
                 )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
                 OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
                     label = { Text("Content") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 200.dp),
-                    minLines = 8
+                        .weight(1f),
+                    maxLines = Int.MAX_VALUE
                 )
+
+                if (summarizeError.isNotEmpty()) {
+                    Text(
+                        text = summarizeError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 if (detectedTags.isNotEmpty()) {
                     TagsEditor(
@@ -155,10 +225,15 @@ fun NoteDetailPage(
                     fontWeight = FontWeight.SemiBold
                 )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
                     text = note?.content ?: "",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
                 )
 
                 if (note?.tags?.isNotEmpty() == true) {
@@ -183,7 +258,7 @@ fun NoteDetailPage(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(80.dp))
         }
 
         if (showDeleteConfirm) {
@@ -202,6 +277,70 @@ fun NoteDetailPage(
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirm = false }) {
                         Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showSummarizeConfirm) {
+            AlertDialog(
+                onDismissRequest = { showSummarizeConfirm = false },
+                title = { Text("Apply Summary?") },
+                text = {
+                    Column {
+                        summarizeResponse?.let { resp ->
+                            if (resp.summary != null) {
+                                Text("Summary:", fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = resp.summary,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            if (resp.keyPoints.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Key Points:", fontWeight = FontWeight.Bold)
+                                resp.keyPoints.forEach { point ->
+                                    Text("• $point", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                            if (resp.wordCount != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Word count: ${resp.wordCount} (original: ${resp.originalLength ?: "?"})",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        summarizeResponse?.let { resp ->
+                            val builder = StringBuilder()
+                            resp.summary?.let { summary ->
+                                builder.append(summary)
+                            }
+                            if (resp.keyPoints.isNotEmpty()) {
+                                if (builder.isNotEmpty()) builder.append("\n\n")
+                                resp.keyPoints.forEach { point ->
+                                    builder.append("\n- $point")
+                                }
+                            }
+                            content = builder.toString().trim()
+                        }
+                        showSummarizeConfirm = false
+                    }) {
+                        Text("Apply")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        content = originalContent
+                        showSummarizeConfirm = false
+                    }) {
+                        Text("Revert")
                     }
                 }
             )

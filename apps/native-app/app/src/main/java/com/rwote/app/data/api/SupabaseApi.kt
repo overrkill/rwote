@@ -97,6 +97,7 @@ object SupabaseApi {
 
     private suspend fun tryRefreshToken(): Boolean {
         return try {
+            refreshToken?.let { Log.d(TAG,it) }
             val resp = client.post("$BASE_URL/auth/v1/token?grant_type=refresh_token") {
                 header("apikey", ANON_KEY)
                 contentType(ContentType.Application.Json)
@@ -259,6 +260,40 @@ object SupabaseApi {
             contentType(ContentType.Application.Json)
             parameter("id", "eq.$id")
             setBody(body)
+        }
+    }
+
+    @Serializable
+    data class SummarizeResponse(
+        val summary: String? = null,
+        val keyPoints: List<String> = emptyList(),
+        val tags: List<String> = emptyList(),
+        val wordCount: Int? = null,
+        val originalLength: Int? = null
+    )
+
+    suspend fun summarizeContent(content: String): SummarizeResponse {
+        if (!refreshTokenIfNeeded()) throw Exception("Session expired")
+        Log.d(TAG, "Summarizing content of length: ${content.length}")
+        try {
+            val resp = client.post("$BASE_URL/functions/v1/summarize") {
+                header("apikey", ANON_KEY)
+                headers { authHeaders().forEach { (k, v) -> append(k, v) } }
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("text" to content))
+            }
+            Log.d(TAG, "Summarize response status: ${resp.status.value}")
+            val responseBody = resp.body<String>()
+            Log.d(TAG, "Summarize response body: $responseBody")
+            if (!resp.status.isSuccess()) {
+                throw Exception("Summarize failed with status ${resp.status.value}: $responseBody")
+            }
+            val result: SummarizeResponse = Json.decodeFromString(responseBody)
+            Log.d(TAG, "Summarize success, summary length: ${result.summary?.length}")
+            return result
+        } catch (e: Exception) {
+            Log.e(TAG, "Summarize error", e)
+            throw e
         }
     }
 
