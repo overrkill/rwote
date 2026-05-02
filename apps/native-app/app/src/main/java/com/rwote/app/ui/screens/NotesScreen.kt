@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.jeziellago.compose.markdowntext.MarkdownText 
 import com.rwote.app.data.model.Note
 import com.rwote.app.data.api.SupabaseApi
 import kotlinx.coroutines.CoroutineScope
@@ -293,10 +294,11 @@ fun NoteDetailPage(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = note?.content ?: "",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                MarkdownText(
+                    markdown = note?.content ?: "",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    ),
                     modifier = Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())

@@ -63,6 +63,8 @@ dependencies {
     implementation("androidx.compose.animation:animation")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 
+    implementation("com.github.jeziellago:compose-markdown:0.7.1")
+
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
     implementation("io.ktor:ktor-client-core:2.3.8")
     implementation("io.ktor:ktor-client-android:2.3.8")
