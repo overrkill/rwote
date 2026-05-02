@@ -40,8 +40,6 @@ class MainActivity : ComponentActivity() {
                     var selectedNote by remember { mutableStateOf<Note?>(null) }
                     var isEditMode by remember { mutableStateOf(false) }
                     var showNoteDetail by remember { mutableStateOf(false) }
-                    var showDiscardDialog by remember { mutableStateOf(false) }
-                    var pendingBackNote by remember { mutableStateOf<Note?>(null) }
 
                     val filteredNotes = remember(notes, searchQuery) {
                         if (searchQuery.isBlank()) notes
@@ -89,13 +87,9 @@ class MainActivity : ComponentActivity() {
                                     isEditMode = false
                                 },
                                 onBack = {
-                                    if (isEditMode || selectedNote == null) {
-                                        showDiscardDialog = true
-                                        pendingBackNote = selectedNote
-                                    } else {
-                                        showNoteDetail = false
-                                        isEditMode = false
-                                    }
+                                    showNoteDetail = false
+                                    selectedNote = null
+                                    isEditMode = false
                                 },
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -129,29 +123,6 @@ class MainActivity : ComponentActivity() {
                             onSignIn = viewModel::signIn,
                             onSignUp = viewModel::signUp,
                             modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    if (showDiscardDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showDiscardDialog = false },
-                            title = { Text("Discard changes?") },
-                            text = { Text("You have unsaved changes that will be lost.") },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    showDiscardDialog = false
-                                    showNoteDetail = false
-                                    selectedNote = null
-                                    isEditMode = false
-                                }) {
-                                    Text("Discard", color = MaterialTheme.colorScheme.error)
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showDiscardDialog = false }) {
-                                    Text("Keep editing")
-                                }
-                            }
                         )
                     }
                 }

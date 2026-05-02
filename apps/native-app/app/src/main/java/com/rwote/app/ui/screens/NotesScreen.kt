@@ -12,10 +12,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,12 +32,12 @@ import androidx.compose.ui.unit.sp
 import com.rwote.app.data.model.Note
 import com.rwote.app.data.api.SupabaseApi
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.activity.compose.BackHandler
 
 val cardTints = listOf(
     Color(0xFFFFFBF0),
@@ -66,11 +69,13 @@ fun NoteDetailPage(
         mutableStateOf(note?.content?.replace(Regex("#\\w+"), "")?.replace("  ", " ")?.trim() ?: "")
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
     var originalTitle by remember { mutableStateOf("") }
     var originalContent by remember { mutableStateOf("") }
     var summarizeResponse by remember { mutableStateOf<com.rwote.app.data.api.SupabaseApi.SummarizeResponse?>(null) }
     var isSummarizing by remember { mutableStateOf(false) }
     var summarizeError by remember { mutableStateOf("") }
+    var summarizeApplied by remember { mutableStateOf(false) }
 
     val detectedTags = remember(title, content, note?.tags) {
         (note?.tags ?: emptyList()) + parseTags("$title $content")
@@ -78,12 +83,26 @@ fun NoteDetailPage(
 
     val isNewNote = note == null
 
+    val hasChanges = remember(title, content, originalTitle, originalContent) {
+        title != originalTitle || content != originalContent
+    }
+
     LaunchedEffect(note) {
         originalTitle = note?.title ?: ""
         originalContent = note?.content ?: ""
+        summarizeApplied = false
     }
 
     val coroutineScope = rememberCoroutineScope()
+
+    // Handle system back button
+    BackHandler(enabled = isEditMode || isNewNote) {
+        if (hasChanges) {
+            showDiscardDialog = true
+        } else {
+            onBack()
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -91,13 +110,19 @@ fun NoteDetailPage(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (isNewNote) "New Note" else if (isEditMode) "Edit Note" else "Note",
+                        text = if (isNewNote) "New Note" else if (isEditMode) "Edit" else "Note",
                         fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.Close, contentDescription = "Back")
+                    IconButton(onClick = {
+                        if (hasChanges) {
+                            showDiscardDialog = true
+                        } else {
+                            onBack()
+                        }
+                    }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -138,6 +163,7 @@ fun NoteDetailPage(
                                                     }
                                                 }
                                                 content = builder.toString().trim()
+                                                summarizeApplied = true
                                             } catch (e: Exception) {
                                                 android.util.Log.e("NoteDetailPage", "Summarize error", e)
                                                 summarizeError = e.message ?: "Failed to summarize"
@@ -155,20 +181,24 @@ fun NoteDetailPage(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        TextButton(
+                        // Undo button - enabled only after summarize
+                        IconButton(
                             onClick = {
-                                // Restore original state
+                                // Restore original state (before summarize)
                                 title = originalTitle
                                 content = originalContent
+                                summarizeApplied = false
                                 summarizeError = ""
-                            }
+                            },
+                            enabled = summarizeApplied
                         ) {
-                            Text("Discard")
+                            Icon(Icons.Default.Refresh, contentDescription = "Undo summarize")
                         }
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        TextButton(onClick = {
+                        // Save button with check icon
+                        IconButton(onClick = {
                             val contentTags = parseTags("$title $content")
                             val previousTags = note?.tags ?: emptyList()
                             val finalTags = (previousTags + contentTags).distinct()
@@ -176,7 +206,7 @@ fun NoteDetailPage(
                             val cleanContent = content.replace(Regex("#\\w+"), "").replace("  ", " ").trim()
                             onSave(cleanTitle, cleanContent, finalTags)
                         }) {
-                            Text("Save")
+                            Icon(Icons.Default.Check, contentDescription = "Save")
                         }
                     }
                 },
@@ -275,7 +305,7 @@ fun NoteDetailPage(
 
             Spacer(modifier = Modifier.height(80.dp))
         }
-
+        
         if (showDeleteConfirm) {
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
@@ -297,6 +327,27 @@ fun NoteDetailPage(
             )
         }
 
+        if (showDiscardDialog) {
+            AlertDialog(
+                onDismissRequest = { showDiscardDialog = false },
+                title = { Text("Discard changes?") },
+                text = { Text("You have unsaved changes that will be lost.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDiscardDialog = false
+                        onBack()
+                    }) {
+                        Text("Discard", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDiscardDialog = false }) {
+                        Text("Keep editing")
+                    }
+                }
+            )
+        }
+        
     }
 }
 
