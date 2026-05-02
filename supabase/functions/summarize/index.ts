@@ -12,15 +12,17 @@ Respond ONLY in this JSON format (no markdown, no code blocks):
 {
   "summary": "A brief 2-3 sentence summary of the text",
   "keyPoints": ["key point 1", "key point 2", "key point 3", "key point 4"],
-  "tags":["tag1","tag2","tag3","tag4"],
+  "tags":["tag1","tag2","tag3","tag4"]
 }
+
+-----
+{{TEXT}}
 `;
 
 Deno.serve(async (req) => {
   try {
     const groqModel = Deno.env.get("GROQ_MODEL") || "llama-3.1-8b-instant";
     const { text, model } = await req.json();
-
     if (!text) {
       return new Response(JSON.stringify({ error: "Text is required" }), {
         status: 400,
@@ -72,33 +74,19 @@ Deno.serve(async (req) => {
     // Try to parse JSON from the response
     let result;
     try {
-		console.log(content)
       // Extract JSON from potential markdown code blocks
-      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) ||
-                       content.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+      const jsonStr = content || "";
       result = JSON.parse(jsonStr.trim());
     } catch (e) {
       // If JSON parsing fails, create a structured response from the raw text
       console.error("Failed to parse JSON from Groq response:", e);
-      const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length;
-      result = {
-        summary: content,
-        keyPoints: [],
-        wordCount: wordCount,
-        originalLength: originalWordCount
-      };
+      result = content || "";
     }
 
     // Ensure all fields exist
-    const responseBody = {
-      summary: result.summary || content,
-      keyPoints: result.keyPoints || [],
-      wordCount: result.wordCount || 0,
-      originalLength: result.originalLength || originalWordCount
-    };
+    const responseBody = result;
 
-    console.log("Summarize response:", JSON.stringify(responseBody));
+    console.log("Summarize response:", responseBody);
 
     return new Response(JSON.stringify(responseBody), {
       headers: { "Content-Type": "application/json" },

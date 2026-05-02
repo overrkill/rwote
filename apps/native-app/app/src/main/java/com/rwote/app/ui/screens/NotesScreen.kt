@@ -66,7 +66,7 @@ fun NoteDetailPage(
         mutableStateOf(note?.content?.replace(Regex("#\\w+"), "")?.replace("  ", " ")?.trim() ?: "")
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showSummarizeConfirm by remember { mutableStateOf(false) }
+    var originalTitle by remember { mutableStateOf("") }
     var originalContent by remember { mutableStateOf("") }
     var summarizeResponse by remember { mutableStateOf<com.rwote.app.data.api.SupabaseApi.SummarizeResponse?>(null) }
     var isSummarizing by remember { mutableStateOf(false) }
@@ -79,6 +79,7 @@ fun NoteDetailPage(
     val isNewNote = note == null
 
     LaunchedEffect(note) {
+        originalTitle = note?.title ?: ""
         originalContent = note?.content ?: ""
     }
 
@@ -108,6 +109,65 @@ fun NoteDetailPage(
                             Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
                         }
                     } else if (isEditMode || isNewNote) {
+                        if (isSummarizing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            TextButton(
+                                onClick = {
+                                    if (content.isNotBlank()) {
+                                        isSummarizing = true
+                                        summarizeError = ""
+                                        val contentToSummarize = content
+                                        android.util.Log.d("NoteDetailPage", "Summarize clicked, content length: ${contentToSummarize.length}")
+                                        coroutineScope.launch {
+                                            try {
+                                                summarizeResponse = SupabaseApi.summarizeContent(contentToSummarize)
+                                                android.util.Log.d("NoteDetailPage", "Summarize success")
+                                                // Populate content directly
+                                                val builder = StringBuilder()
+                                                summarizeResponse?.summary?.let { summary ->
+                                                    builder.append(summary)
+                                                }
+                                                if (summarizeResponse?.keyPoints?.isNotEmpty() == true) {
+                                                    if (builder.isNotEmpty()) builder.append("\n\n")
+                                                    summarizeResponse?.keyPoints?.forEach { point ->
+                                                        builder.append("\n- $point")
+                                                    }
+                                                }
+                                                content = builder.toString().trim()
+                                            } catch (e: Exception) {
+                                                android.util.Log.e("NoteDetailPage", "Summarize error", e)
+                                                summarizeError = e.message ?: "Failed to summarize"
+                                            } finally {
+                                                isSummarizing = false
+                                            }
+                                        }
+                                    }
+                                },
+                                enabled = content.isNotBlank()
+                            ) {
+                                Text("Summarize")
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        TextButton(
+                            onClick = {
+                                // Restore original state
+                                title = originalTitle
+                                content = originalContent
+                                summarizeError = ""
+                            }
+                        ) {
+                            Text("Discard")
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
                         TextButton(onClick = {
                             val contentTags = parseTags("$title $content")
                             val previousTags = note?.tags ?: emptyList()
@@ -124,51 +184,6 @@ fun NoteDetailPage(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        },
-        floatingActionButton = {
-            if (isEditMode || isNewNote) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalAlignment = Alignment.End
-                ) {
-                    if (isSummarizing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(56.dp),
-                            strokeWidth = 3.dp
-                        )
-                    } else {
-                        FloatingActionButton(
-                            onClick = {
-                                if (content.isNotBlank()) {
-                                    isSummarizing = true
-                                    summarizeError = ""
-                                    val contentToSummarize = content
-                                    android.util.Log.d("NoteDetailPage", "Summarize clicked, content length: ${contentToSummarize.length}")
-                                    coroutineScope.launch {
-                                        try {
-                                            android.util.Log.d("content original",content)
-                                            android.util.Log.d("content",contentToSummarize)
-                                            summarizeResponse = SupabaseApi.summarizeContent(contentToSummarize)
-                                            android.util.Log.d("NoteDetailPage", "Summarize success, summary length: ${summarizeResponse?.summary?.length}")
-                                            originalContent = content
-                                            showSummarizeConfirm = true
-                                        } catch (e: Exception) {
-                                            android.util.Log.e("NoteDetailPage", "Summarize error", e)
-                                            summarizeError = e.message ?: "Failed to summarize"
-                                        } finally {
-                                            isSummarizing = false
-                                        }
-                                    }
-                                }
-                            },
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = MaterialTheme.colorScheme.onSecondary
-                        ) {
-                            Text("Sum", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -282,69 +297,6 @@ fun NoteDetailPage(
             )
         }
 
-        if (showSummarizeConfirm) {
-            AlertDialog(
-                onDismissRequest = { showSummarizeConfirm = false },
-                title = { Text("Apply Summary?") },
-                text = {
-                    Column {
-                        summarizeResponse?.let { resp ->
-                            if (resp.summary != null) {
-                                Text("Summary:", fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = resp.summary,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            if (resp.keyPoints.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Key Points:", fontWeight = FontWeight.Bold)
-                                resp.keyPoints.forEach { point ->
-                                    Text("• $point", style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                            if (resp.wordCount != null) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    "Word count: ${resp.wordCount} (original: ${resp.originalLength ?: "?"})",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        summarizeResponse?.let { resp ->
-                            val builder = StringBuilder()
-                            resp.summary?.let { summary ->
-                                builder.append(summary)
-                            }
-                            if (resp.keyPoints.isNotEmpty()) {
-                                if (builder.isNotEmpty()) builder.append("\n\n")
-                                resp.keyPoints.forEach { point ->
-                                    builder.append("\n- $point")
-                                }
-                            }
-                            content = builder.toString().trim()
-                        }
-                        showSummarizeConfirm = false
-                    }) {
-                        Text("Apply")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        content = originalContent
-                        showSummarizeConfirm = false
-                    }) {
-                        Text("Revert")
-                    }
-                }
-            )
-        }
     }
 }
 
