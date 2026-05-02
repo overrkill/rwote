@@ -21,6 +21,7 @@ private const val KEY_TOKEN = "access_token"
 private const val KEY_REFRESH = "refresh_token"
 private const val KEY_USER_ID = "user_id"
 private const val KEY_EXPIRY = "token_expiry"
+private const val KEY_EMAIL = "email"
 
 object SupabaseApi {
     private const val BASE_URL = "https://joqxsbboxmkpcizasdbc.supabase.co"
@@ -30,6 +31,7 @@ object SupabaseApi {
     private var accessToken: String? = null
     private var refreshToken: String? = null
     private var userId: String? = null
+    private var userEmail: String? = null
     private var tokenExpiry: Long = 0L
 
     private val json = Json {
@@ -50,14 +52,16 @@ object SupabaseApi {
         accessToken = prefs.getString(KEY_TOKEN, null)
         refreshToken = prefs.getString(KEY_REFRESH, null)
         userId = prefs.getString(KEY_USER_ID, null)
+        userEmail = prefs.getString(KEY_EMAIL, null)
         tokenExpiry = prefs.getLong(KEY_EXPIRY, 0L)
     }
 
-    private fun saveToken(token: String?, refresh: String?, uid: String?, expiry: Long) {
+    private fun saveToken(token: String?, refresh: String?, uid: String?, email: String?, expiry: Long) {
         prefs.edit().apply {
             if (token != null) putString(KEY_TOKEN, token) else remove(KEY_TOKEN)
             if (refresh != null) putString(KEY_REFRESH, refresh) else remove(KEY_REFRESH)
             if (uid != null) putString(KEY_USER_ID, uid) else remove(KEY_USER_ID)
+            if (email != null) putString(KEY_EMAIL, email) else remove(KEY_EMAIL)
             putLong(KEY_EXPIRY, expiry)
         }.apply()
     }
@@ -66,29 +70,69 @@ object SupabaseApi {
         accessToken = null
         refreshToken = null
         userId = null
+        userEmail = null
         tokenExpiry = 0L
-        saveToken(null, null, null, 0)
+        saveToken(null, null, null, null, 0)
     }
 
     fun isLoggedIn() = accessToken != null && userId != null
     fun getUserId() = userId
+    fun getEmail() = userEmail
 
-    private suspend fun refreshTokenIfNeeded() {
-        if (refreshToken != null && tokenExpiry > 0 && System.currentTimeMillis() > tokenExpiry - 60000) {
-            try {
-                val resp = client.post("$BASE_URL/auth/v1/token?grant_type=refresh_token") {
-                    header("apikey", ANON_KEY)
-                    contentType(ContentType.Application.Json)
-                    setBody(RefreshRequest(refreshToken!!))
-                }
-                val data = resp.body<AuthResponse>()
-                accessToken = data.accessToken
-                refreshToken = data.refreshToken
-                tokenExpiry = System.currentTimeMillis() + (data.expiresIn * 1000L)
-                saveToken(data.accessToken, data.refreshToken, userId, tokenExpiry)
-            } catch (e: Exception) {
-                Log.w(TAG, "Token refresh failed", e)
+    private suspend fun refreshTokenIfNeeded(): Boolean {
+        if (refreshToken == null || tokenExpiry <= 0) return false
+
+        if (System.currentTimeMillis() < tokenExpiry - 5000) return true
+
+        Log.d(TAG, "Attempting token refresh")
+
+        // First attempt
+        var result = tryRefreshToken()
+        if (result) return true
+
+        // Retry once on network failure
+        result = tryRefreshToken()
+        return result
+    }
+
+    private suspend fun tryRefreshToken(): Boolean {
+        return try {
+            val resp = client.post("$BASE_URL/auth/v1/token?grant_type=refresh_token") {
+                header("apikey", ANON_KEY)
+                contentType(ContentType.Application.Json)
+                setBody(RefreshRequest(refreshToken!!))
             }
+
+            // Check HTTP status before parsing
+            if (!resp.status.isSuccess()) {
+                val errorBody = try { resp.body<AuthErrorResponse>() } catch (_: Exception) { null }
+                val isAuthError = resp.status.value == 401 || errorBody?.error == "invalid_grant"
+
+                Log.w(TAG, "Token refresh failed with status ${resp.status.value}, isAuthError=$isAuthError")
+
+                if (isAuthError) {
+                    clearToken()
+                }
+                return false
+            }
+
+            val data = resp.body<AuthResponse>()
+            accessToken = data.accessToken
+
+            // Handle null refresh token - keep existing if not provided
+            val newRefreshToken = data.refreshToken ?: refreshToken
+            if (newRefreshToken != null) {
+                refreshToken = newRefreshToken
+            }
+
+            tokenExpiry = System.currentTimeMillis() + (data.expiresIn * 1000L)
+            saveToken(data.accessToken, newRefreshToken, userId, userEmail, tokenExpiry)
+
+            Log.d(TAG, "Token refresh successful, new expiry in ${data.expiresIn}s")
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "Token refresh exception: ${e.message}")
+            false
         }
     }
 
@@ -112,7 +156,8 @@ object SupabaseApi {
             refreshToken = data.refreshToken
             tokenExpiry = System.currentTimeMillis() + (data.expiresIn * 1000L)
             userId = data.user?.id ?: parseUserId(data.accessToken)
-            saveToken(data.accessToken, data.refreshToken, userId, tokenExpiry)
+            userEmail = email
+            saveToken(data.accessToken, data.refreshToken, userId, userEmail, tokenExpiry)
             AuthResult.Success(data.accessToken, userId!!, email)
         } catch (e: Exception) {
             AuthResult.Error(e.message ?: "Sign up failed")
@@ -133,7 +178,8 @@ object SupabaseApi {
             refreshToken = data.refreshToken
             tokenExpiry = System.currentTimeMillis() + (data.expiresIn * 1000L)
             userId = data.user?.id ?: parseUserId(data.accessToken)
-            saveToken(data.accessToken, data.refreshToken, userId, tokenExpiry)
+            userEmail = email
+            saveToken(data.accessToken, data.refreshToken, userId, userEmail, tokenExpiry)
             AuthResult.Success(data.accessToken, userId!!, email)
         } catch (e: Exception) {
             Log.e(TAG, "signIn failed", e)
@@ -167,10 +213,10 @@ object SupabaseApi {
         }
     }
 
-    suspend fun createNote(title: String, content: String, tags: List<String> = emptyList()): String {
+    suspend fun createNote(title: String, content: String, tags: List<String> = emptyList(), sourceUrl: String? = null): String {
         val uid = userId ?: throw Exception("Not authenticated")
-        refreshTokenIfNeeded()
-        val note = NoteRequest(UUID.randomUUID().toString(), uid, title, content, tags)
+        if (!refreshTokenIfNeeded()) throw Exception("Session expired")
+        val note = NoteRequest(UUID.randomUUID().toString(), uid, title, content, tags, sourceUrl)
         val noteId = note.id
         client.post("$BASE_URL/rest/v1/notes_v2") {
             header("apikey", ANON_KEY)
@@ -184,7 +230,7 @@ object SupabaseApi {
 
     suspend fun fetchNotes(): List<NoteData> {
         val uid = userId ?: throw Exception("Not authenticated")
-        refreshTokenIfNeeded()
+        if (!refreshTokenIfNeeded()) throw Exception("Session expired")
         val resp = client.get("$BASE_URL/rest/v1/notes_v2") {
             header("apikey", ANON_KEY)
             headers { authHeaders().forEach { (k, v) -> append(k, v) } }
@@ -196,7 +242,7 @@ object SupabaseApi {
     }
 
     suspend fun deleteNote(id: String) {
-        refreshTokenIfNeeded()
+        if (!refreshTokenIfNeeded()) throw Exception("Session expired")
         client.delete("$BASE_URL/rest/v1/notes_v2") {
             header("apikey", ANON_KEY)
             headers { authHeaders().forEach { (k, v) -> append(k, v) } }
@@ -204,9 +250,9 @@ object SupabaseApi {
         }
     }
 
-    suspend fun updateNote(id: String, title: String, content: String) {
-        refreshTokenIfNeeded()
-        val body = mapOf("title" to title, "content" to content, "updated_at" to java.time.Instant.now().toString())
+    suspend fun updateNote(id: String, title: String, content: String, tags: List<String> = emptyList()) {
+        if (!refreshTokenIfNeeded()) throw Exception("Session expired")
+        val body = NoteUpdateRequest(title, content, tags, java.time.Instant.now().toString())
         client.patch("$BASE_URL/rest/v1/notes_v2") {
             header("apikey", ANON_KEY)
             headers { authHeaders().forEach { (k, v) -> append(k, v) } }
@@ -215,6 +261,14 @@ object SupabaseApi {
             setBody(body)
         }
     }
+
+    @Serializable
+    data class NoteUpdateRequest(
+        val title: String,
+        val content: String,
+        val tags: List<String>,
+        val updated_at: String
+    )
 }
 
 @Serializable
@@ -235,6 +289,12 @@ data class AuthResponse(
 )
 
 @Serializable
+data class AuthErrorResponse(
+    val error: String? = null,
+    val errorDescription: String? = null
+)
+
+@Serializable
 data class UserInfo(val id: String)
 
 @Serializable
@@ -243,7 +303,8 @@ data class NoteRequest(
     @SerialName("user_id") val userId: String,
     val title: String,
     val content: String? = null,
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    @SerialName("source_url") val sourceUrl: String? = null
 )
 
 @Serializable

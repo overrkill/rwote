@@ -125,7 +125,6 @@ fun HomeScreen(
                 onSearchQueryChange = { searchQuery = it },
                 onNoteClick = { /* TODO: open note detail */ },
                 onAddClick = { showAddDialog = true },
-                onSearchClick = { showSearch = !showSearch },
                 isLoading = isLoading,
                 modifier = Modifier.weight(1f)
             )

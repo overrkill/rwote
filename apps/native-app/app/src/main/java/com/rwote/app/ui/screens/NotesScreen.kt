@@ -1,11 +1,15 @@
 package com.rwote.app.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.staggeredgrid.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -23,7 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rwote.app.data.model.Note
-import com.rwote.app.ui.theme.ThemeManager
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -43,26 +46,184 @@ fun tintForNote(note: Note): Color {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun NoteDetailPage(
+    note: Note?,
+    isEditMode: Boolean,
+    onToggleEditMode: () -> Unit,
+    onSave: (String, String, List<String>) -> Unit,
+    onDelete: (String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var title by remember(note) {
+        mutableStateOf(note?.title?.replace(Regex("#\\w+"), "")?.replace("  ", " ")?.trim() ?: "")
+    }
+    var content by remember(note) {
+        mutableStateOf(note?.content?.replace(Regex("#\\w+"), "")?.replace("  ", " ")?.trim() ?: "")
+    }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val detectedTags = remember(title, content, note?.tags) {
+        (note?.tags ?: emptyList()) + parseTags("$title $content")
+    }.distinct()
+
+    val isNewNote = note == null
+
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = if (isNewNote) "New Note" else if (isEditMode) "Edit Note" else "Note",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.Close, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (!isNewNote && !isEditMode) {
+                        IconButton(onClick = onToggleEditMode) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        }
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        }
+                    } else if (isEditMode || isNewNote) {
+                        TextButton(onClick = {
+                            val contentTags = parseTags("$title $content")
+                            val previousTags = note?.tags ?: emptyList()
+                            val finalTags = (previousTags + contentTags).distinct()
+                            val cleanTitle = title.replace(Regex("#\\w+"), "").replace("  ", " ").trim()
+                            val cleanContent = content.replace(Regex("#\\w+"), "").replace("  ", " ").trim()
+                            onSave(cleanTitle, cleanContent, finalTags)
+                        }) {
+                            Text("Save")
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (isEditMode || isNewNote) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it },
+                    label = { Text("Content") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 200.dp),
+                    minLines = 8
+                )
+
+                if (detectedTags.isNotEmpty()) {
+                    TagsEditor(
+                        tags = detectedTags,
+                        onRemoveTag = { removed ->
+                            val word = "#$removed"
+                            content = content.replace(word, "").replace("  ", " ").trim()
+                        }
+                    )
+                }
+            } else {
+                Text(
+                    text = note?.title ?: "",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = note?.content ?: "",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                )
+
+                if (note?.tags?.isNotEmpty() == true) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        note.tags.forEach { tag ->
+                            SuggestionChip(
+                                onClick = { },
+                                label = { Text("#$tag", style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                }
+
+                note?.createdAt?.let {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = formatCardTime(it),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        if (showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                title = { Text("Delete Note?") },
+                text = { Text("This cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        note?.let { onDelete(it.id) }
+                        showDeleteConfirm = false
+                    }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirm = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun NotesScreen(
     notes: List<Note>,
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
     onNoteClick: (Note) -> Unit,
     onAddClick: () -> Unit,
-    onSearchClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
-    onNoteSaved: (String, String) -> Unit = { _, _ -> },
-    onNoteDeleted: (String) -> Unit = {},
-    selectedNote: Note? = null,
-    isEditMode: Boolean = false,
-    onDismissSheet: () -> Unit = {},
     isLoading: Boolean = false,
     modifier: Modifier = Modifier,
     userEmail: String = ""
 ) {
     val grouped = remember(notes) { groupNotesByDate(notes) }
-    val gridState = rememberLazyStaggeredGridState()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val gridState = rememberLazyListState()
     var showDrawer by remember { mutableStateOf(false) }
 
     if (showDrawer) {
@@ -79,7 +240,6 @@ fun NotesScreen(
             NotesTopBar(
                 searchQuery = searchQuery,
                 onSearchQueryChange = onSearchQueryChange,
-                onSearchClick = onSearchClick,
                 onProfileClick = { showDrawer = true },
                 userEmail = userEmail
             )
@@ -113,8 +273,7 @@ fun NotesScreen(
             return@Scaffold
         }
 
-        LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Fixed(2),
+        LazyColumn(
             state = gridState,
             modifier = Modifier
                 .fillMaxSize()
@@ -124,17 +283,13 @@ fun NotesScreen(
                 end = 12.dp,
                 top = 8.dp,
                 bottom = 80.dp
-            ),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalItemSpacing = 8.dp
+            )
         ) {
             grouped.forEach { (label, sectionNotes) ->
-                item(span = StaggeredGridItemSpan.FullLine) {
-                    SectionHeader(label = label)
-                }
+                item { SectionHeader(label = label) }
 
                 items(sectionNotes, key = { it.id }) { note ->
-                    NoteCard(
+                    NoteListItemWithDivider(
                         note = note,
                         onClick = { onNoteClick(note) }
                     )
@@ -142,7 +297,7 @@ fun NotesScreen(
             }
 
             if (isLoading) {
-                item(span = StaggeredGridItemSpan.FullLine) {
+                item {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -151,29 +306,11 @@ fun NotesScreen(
                     ) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                            color = Color(0xFF1A1A1A)
+                            strokeWidth = 2.dp
                         )
                     }
                 }
-}
-    }
-}
-
-
-    if (selectedNote != null || isEditMode) {
-        ModalBottomSheet(
-            onDismissRequest = onDismissSheet,
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.surface
-        ) {
-            NoteDetailSheet(
-                note = selectedNote,
-                isEditMode = isEditMode,
-                onToggleMode = { /* handled in parent */ },
-                onSave = onNoteSaved,
-                onDelete = { id -> onNoteDeleted(id); onDismissSheet() }
-            )
+            }
         }
     }
 }
@@ -183,7 +320,6 @@ fun NotesScreen(
 fun NotesTopBar(
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
-    onSearchClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     userEmail: String = ""
 ) {
@@ -238,12 +374,12 @@ fun UserAvatar(
     onClick: () -> Unit
 ) {
     val initial = email.firstOrNull()?.uppercaseChar() ?: '?'
-    
+
     IconButton(onClick = onClick) {
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .clip(androidx.compose.foundation.shape.CircleShape)
+                .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center
         ) {
@@ -259,122 +395,80 @@ fun UserAvatar(
 
 @Composable
 fun SectionHeader(label: String) {
-    Text(
-        text = label.uppercase(),
-        fontSize = 10.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 1.5.sp,
-        color = Color(0xFF999999),
-        modifier = Modifier.padding(
-            start = 4.dp,
-            top = 12.dp,
-            bottom = 4.dp
+    Column(
+        modifier = Modifier.padding(start = 4.dp, top = 12.dp, bottom = 4.dp)
+    ) {
+        Text(
+            text = label.uppercase(),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.5.sp,
+            color = Color(0xFF999999)
         )
-    )
+    }
 }
 
 @Composable
-fun NoteCard(
+fun NoteListItem(
     note: Note,
     onClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val tint = remember(note.id) { tintForNote(note) }
 
-    Column(
+    val timeText = remember(note.createdAt) { note.createdAt?.let { formatCardTime(it) } ?: "" }
+    val displayText = remember(note.id, note.title, note.content, note.tags) {
+        val title = note.title.take(50)
+        val content = note.content ?: ""
+        val tags = note.tags.take(2).joinToString(" ") { "#$it" }
+        buildString {
+            if (title.contains(":") || content.isEmpty()) append("$title $content".take(100))
+            else append("$title: $content".take(100))
+            if (tags.isNotEmpty()) append(" $tags")
+        }
+    }
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(colorScheme.surface)
-            .border(1.dp, tint, RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
     ) {
-        if (!note.sourceUrl.isNullOrEmpty()) {
-            SourceBadge(url = note.sourceUrl)
-        }
-
         Text(
-            text = note.content ?: note.title,
+            text = displayText,
             fontSize = 13.sp,
             lineHeight = 18.sp,
             color = colorScheme.onSurface,
-            maxLines = 8,
-            overflow = TextOverflow.Ellipsis
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
 
-        if (note.tags.isNotEmpty()) {
-            TagsRow(tags = note.tags)
-        }
-
-        note.createdAt?.let { created ->
+        if (timeText.isNotEmpty()) {
             Text(
-                text = formatCardTime(created),
+                text = timeText,
                 fontSize = 10.sp,
                 color = colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Medium
+                modifier = Modifier.padding(start = 8.dp)
             )
         }
     }
 }
 
 @Composable
-fun SourceBadge(url: String) {
+fun NoteListItemWithDivider(
+    note: Note,
+    onClick: () -> Unit
+) {
     val colorScheme = MaterialTheme.colorScheme
-    val domain = remember(url) {
-        url.removePrefix("https://")
-            .removePrefix("http://")
-            .removePrefix("www.")
-            .substringBefore("/")
-            .take(30)
-    }
 
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(colorScheme.surfaceVariant)
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-    ) {
-        Text(
-            text = domain,
-            fontSize = 10.sp,
-            color = colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+    Column {
+        NoteListItem(note = note, onClick = onClick)
+        HorizontalDivider(
+            color = colorScheme.outlineVariant,
+            thickness = 0.5.dp
         )
-    }
-}
-
-@Composable
-fun TagsRow(tags: List<String>) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        tags.take(2).forEach { tag ->
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = "#$tag",
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-        if (tags.size > 2) {
-            Text(
-                text = "+${tags.size - 2}",
-                fontSize = 10.sp,
-                color = Color(0xFFAAAAAA)
-            )
-        }
     }
 }
 
@@ -443,118 +537,48 @@ fun formatCardTime(isoString: String): String {
     return try {
         val instant = Instant.parse(isoString)
         val zone = ZoneId.systemDefault()
-        val date = instant.atZone(zone)
-        date.format(DateTimeFormatter.ofPattern("h:mm a"))
+        val dateTime = instant.atZone(zone)
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+        val noteDate = dateTime.toLocalDate()
+
+        when {
+            noteDate == today -> dateTime.format(DateTimeFormatter.ofPattern("h:mm a"))
+            noteDate == yesterday -> "Yesterday"
+            else -> dateTime.format(DateTimeFormatter.ofPattern("MMM d"))
+        }
     } catch (e: Exception) {
         ""
     }
 }
 
+fun parseTags(text: String): List<String> {
+    val matches = Regex("#(\\w+)").findAll(text)
+    return matches.map { it.groupValues[1].lowercase() }.distinct().take(4).toList()
+}
+
 @Composable
-fun NoteDetailSheet(
-    note: Note?,
-    isEditMode: Boolean,
-    onToggleMode: () -> Unit,
-    onSave: (String, String) -> Unit,
-    onDelete: (String) -> Unit
+fun TagsEditor(
+    tags: List<String>,
+    onRemoveTag: (String) -> Unit
 ) {
-    var title by remember(note) { mutableStateOf(note?.title ?: "") }
-    var content by remember(note) { mutableStateOf(note?.content ?: "") }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    if (tags.isEmpty()) return
 
-    val isNewNote = note == null
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = if (isNewNote) "New Note" else if (isEditMode) "Edit Note" else "Note",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (!isNewNote && !isEditMode) {
-                    IconButton(onClick = onToggleMode) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit")
-                    }
-                    IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
-                    }
-                } else if (isEditMode || isNewNote) {
-                    TextButton(onClick = {
-                        onSave(title, content)
-                    }) {
-                        Text("Save")
-                    }
-                }
-            }
-        }
-
-        if (isEditMode || isNewNote) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value = content,
-                onValueChange = { content = it },
-                label = { Text("Content") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                maxLines = 10
-            )
-        } else {
-            Text(
-                text = note?.title ?: "",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = note?.content ?: "",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-            )
-            note?.createdAt?.let {
-                Text(
-                    text = formatCardTime(it),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-            }
-        }
-
-        if (showDeleteConfirm) {
-            AlertDialog(
-                onDismissRequest = { showDeleteConfirm = false },
-                title = { Text("Delete Note?") },
-                text = { Text("This cannot be undone.") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        note?.let { onDelete(it.id) }
-                        showDeleteConfirm = false
-                    }) {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteConfirm = false }) {
-                        Text("Cancel")
-                    }
+        tags.forEach { tag ->
+            InputChip(
+                selected = false,
+                onClick = { onRemoveTag(tag) },
+                label = { Text("#$tag", style = MaterialTheme.typography.labelSmall) },
+                trailingIcon = {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Remove",
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             )
         }

@@ -33,8 +33,19 @@ class MainViewModel : ViewModel() {
 
     private fun checkExistingAuth() {
         if (SupabaseApi.isLoggedIn()) {
-            _authState.value = UiState.Success(AuthState(userId = SupabaseApi.getUserId(), isLoggedIn = true))
+            _authState.value = UiState.Success(AuthState(
+                userId = SupabaseApi.getUserId(),
+                email = SupabaseApi.getEmail(),
+                isLoggedIn = true
+            ))
+            loadCachedNotes()
             fetchNotes()
+        }
+    }
+
+    private fun loadCachedNotes() {
+        viewModelScope.launch {
+            NotesRepository.loadCached()
         }
     }
 
@@ -88,11 +99,11 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun createNote(title: String, content: String, tags: List<String> = emptyList()) {
+    fun createNote(title: String, content: String, tags: List<String> = emptyList(), sourceUrl: String? = null) {
         viewModelScope.launch {
             _isLoading.value = true
             Log.d(TAG, "createNote VM: title='$title'")
-            val result = NotesRepository.createNote(title, content, tags)
+            val result = NotesRepository.createNote(title, content, tags, sourceUrl)
             Log.d(TAG, "createNote VM result: ${result.isSuccess}")
             _isLoading.value = false
         }
@@ -104,14 +115,14 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun updateNote(id: String, title: String, content: String) {
+    fun updateNote(id: String, title: String, content: String, tags: List<String> = emptyList()) {
         viewModelScope.launch {
-            NotesRepository.updateNote(id, title, content)
+            NotesRepository.updateNote(id, title, content, tags)
         }
     }
 
-    fun handleSharedText(text: String) {
+    fun handleSharedText(text: String, sourceUrl: String? = null) {
         val title = text.take(50).let { if (text.length > 50) "$it..." else it }
-        createNote(title, text)
+        createNote(title, text, emptyList(), sourceUrl)
     }
 }

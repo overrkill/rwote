@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rwote.app.data.model.Note
 import com.rwote.app.ui.screens.NotesScreen
+import com.rwote.app.ui.screens.NoteDetailPage
 import com.rwote.app.ui.theme.RwoteTheme
 import com.rwote.app.viewmodel.MainViewModel
 import com.rwote.app.viewmodel.UiState
@@ -38,6 +39,9 @@ class MainActivity : ComponentActivity() {
                     var searchQuery by remember { mutableStateOf("") }
                     var selectedNote by remember { mutableStateOf<Note?>(null) }
                     var isEditMode by remember { mutableStateOf(false) }
+                    var showNoteDetail by remember { mutableStateOf(false) }
+                    var showDiscardDialog by remember { mutableStateOf(false) }
+                    var pendingBackNote by remember { mutableStateOf<Note?>(null) }
 
                     val filteredNotes = remember(notes, searchQuery) {
                         if (searchQuery.isBlank()) notes
@@ -47,8 +51,10 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    handleIntent(intent) { sharedText ->
-                        viewModel.handleSharedText(sharedText)
+                    LaunchedEffect(intent) {
+                        handleIntent(intent) { text, url ->
+                            viewModel.handleSharedText(text, url)
+                        }
                     }
 
                     val isLoggedIn = (authState as? UiState.Success)?.data?.isLoggedIn == true
@@ -61,42 +67,61 @@ class MainActivity : ComponentActivity() {
                     }
 
                     if (isLoggedIn) {
-                        NotesScreen(
-                            notes = filteredNotes,
-                            searchQuery = searchQuery,
-                            onSearchQueryChange = { searchQuery = it },
-                            onNoteClick = { note ->
-                                selectedNote = note
-                                isEditMode = false
-                            },
-                            onAddClick = {
-                                selectedNote = null
-                                isEditMode = true
-                            },
-                            onSearchClick = { /* toggle search */ },
-                            onLogoutClick = {
-                                viewModel.signOut()
-                            },
-                            onNoteSaved = { title, content ->
-                                if (selectedNote != null) {
-                                    viewModel.updateNote(selectedNote!!.id, title, content)
-                                } else {
-                                    viewModel.createNote(title, content)
-                                }
-                            },
-                            onNoteDeleted = { id ->
-                                viewModel.deleteNote(id)
-                            },
-                            selectedNote = selectedNote,
-                            isEditMode = isEditMode,
-                            onDismissSheet = {
-                                selectedNote = null
-                                isEditMode = false
-                            },
-                            isLoading = isLoading,
-                            modifier = Modifier.fillMaxSize(),
-                            userEmail = userEmail
-                        )
+                        if (showNoteDetail) {
+                            NoteDetailPage(
+                                note = selectedNote,
+                                isEditMode = isEditMode,
+                                onToggleEditMode = { isEditMode = !isEditMode },
+                                onSave = { title, content, tags ->
+                                    if (selectedNote != null) {
+                                        viewModel.updateNote(selectedNote!!.id, title, content, tags)
+                                    } else {
+                                        viewModel.createNote(title, content, tags)
+                                    }
+                                    showNoteDetail = false
+                                    selectedNote = null
+                                    isEditMode = false
+                                },
+                                onDelete = { id ->
+                                    viewModel.deleteNote(id)
+                                    showNoteDetail = false
+                                    selectedNote = null
+                                    isEditMode = false
+                                },
+                                onBack = {
+                                    if (isEditMode || selectedNote == null) {
+                                        showDiscardDialog = true
+                                        pendingBackNote = selectedNote
+                                    } else {
+                                        showNoteDetail = false
+                                        isEditMode = false
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            NotesScreen(
+                                notes = filteredNotes,
+                                searchQuery = searchQuery,
+                                onSearchQueryChange = { searchQuery = it },
+                                onNoteClick = { note ->
+                                    selectedNote = note
+                                    isEditMode = false
+                                    showNoteDetail = true
+                                },
+                                onAddClick = {
+                                    selectedNote = null
+                                    isEditMode = true
+                                    showNoteDetail = true
+                                },
+                                onLogoutClick = {
+                                    viewModel.signOut()
+                                },
+                                isLoading = isLoading,
+                                modifier = Modifier.fillMaxSize(),
+                                userEmail = userEmail
+                            )
+                        }
                     } else {
                         LoginScreen(
                             isLoading = isLoading,
@@ -106,20 +131,53 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize()
                         )
                     }
+
+                    if (showDiscardDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDiscardDialog = false },
+                            title = { Text("Discard changes?") },
+                            text = { Text("You have unsaved changes that will be lost.") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showDiscardDialog = false
+                                    showNoteDetail = false
+                                    selectedNote = null
+                                    isEditMode = false
+                                }) {
+                                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDiscardDialog = false }) {
+                                    Text("Keep editing")
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        handleIntent(intent) { }
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        // Handled via BackHandler in Compose
     }
 
-    private fun handleIntent(intent: Intent?, onText: (String) -> Unit) {
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent) { _, _ -> }
+    }
+
+    private fun handleIntent(intent: Intent?, onText: (String, String?) -> Unit) {
         intent?.let {
             if (it.action == Intent.ACTION_SEND && it.type == "text/plain") {
-                it.getStringExtra(Intent.EXTRA_TEXT)?.let(onText)
+                it.getStringExtra(Intent.EXTRA_TEXT)?.let { text ->
+                    val urlRegex = Regex("https?://[^\\s]+")
+                    val url = urlRegex.find(text)?.value
+                    val cleanText = url?.let { u -> text.replace(u, "").replace("  ", " ").trim() } ?: text
+                    onText(cleanText, url)
+                }
             }
         }
     }

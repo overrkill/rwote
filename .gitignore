@@ -108,3 +108,9 @@ bun.lockb
 pnpm-debug.log
 pnpm-lock.yaml
 apps/web-app/next-env.d.ts
+*/.gradle/
+*/.idea/
+*/.kotlin/
+gradle
+gradle.properties
+local.properties
