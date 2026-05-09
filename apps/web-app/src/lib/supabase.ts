@@ -270,24 +270,27 @@ export async function loadUserSettings(): Promise<UserSettings> {
   }
 
   try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      return getStoredUserSettings() || defaults
+    }
+
     const { data, error } = await supabase
-      .rpc('get_user_settings')
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single()
 
     if (error || !data) {
       return getStoredUserSettings() || defaults
     }
 
-    const row = Array.isArray(data) ? data[0] : data
-    if (!row) {
-      return getStoredUserSettings() || defaults
-    }
-
     const settings: UserSettings = {
-      theme: row.theme || defaults.theme,
-      aiProvider: row.ai_provider || defaults.aiProvider,
-      aiOllamaUrl: row.ai_ollama_url || defaults.aiOllamaUrl,
-      aiOllamaModel: row.ai_ollama_model || defaults.aiOllamaModel,
-      fontSize: row.font_size || defaults.fontSize,
+      theme: data.theme || defaults.theme,
+      aiProvider: (data.ai_provider as UserSettings['aiProvider']) || defaults.aiProvider,
+      aiOllamaUrl: data.ai_ollama_url || defaults.aiOllamaUrl,
+      aiOllamaModel: data.ai_ollama_model || defaults.aiOllamaModel,
+      fontSize: (data.font_size as UserSettings['fontSize']) || defaults.fontSize,
     }
 
     if (typeof window !== 'undefined') {
@@ -309,13 +312,20 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
   }
 
   try {
-    await supabase.rpc('update_user_settings', {
-      p_theme: settings.theme,
-      p_ai_provider: settings.aiProvider,
-      p_ai_ollama_url: settings.aiOllamaUrl,
-      p_ai_ollama_model: settings.aiOllamaModel,
-      p_font_size: settings.fontSize,
-    })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return
+
+    const updates: Record<string, unknown> = {}
+    if (settings.theme !== undefined) updates.theme = settings.theme
+    if (settings.aiProvider !== undefined) updates.ai_provider = settings.aiProvider
+    if (settings.aiOllamaUrl !== undefined) updates.ai_ollama_url = settings.aiOllamaUrl
+    if (settings.aiOllamaModel !== undefined) updates.ai_ollama_model = settings.aiOllamaModel
+    if (settings.fontSize !== undefined) updates.font_size = settings.fontSize
+
+    await supabase
+      .from('user_settings')
+      .update(updates)
+      .eq('user_id', session.user.id)
   } catch (error) {
     console.error('Failed to save user settings to DB:', error)
   }
