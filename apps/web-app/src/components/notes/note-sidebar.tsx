@@ -152,7 +152,7 @@ export default function NoteSidebar({
                 </div>
                 {note.tags && note.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
-                    {note.tags.slice(0, 3).map((tag) => (
+                    {note.tags.slice(0, 1).map((tag) => (
                       <span
                         key={tag}
                         className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full"
