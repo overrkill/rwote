@@ -58,8 +58,26 @@ export default function NoteSidebar({
   return (
     <div
       className="h-full flex flex-col"
-      style={{ backgroundColor: 'var(--surface)', borderRight: '1px solid var(--border)' }}
+      style={{ 
+        backgroundColor: 'var(--surface)', 
+        borderRight: '1px solid var(--border)',
+      }}
     >
+      <style jsx>{`
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background: var(--border);
+          border-radius: 2px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background: var(--text-tertiary);
+        }
+      `}</style>
       <div className="p-3 flex items-center gap-2 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
         <button
           onClick={onNew}
@@ -91,7 +109,7 @@ export default function NoteSidebar({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto sidebar-scroll">
         {sortedNotes.length === 0 ? (
           <div className="p-4 text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>
             {searchQuery ? 'No notes match' : 'No notes yet'}

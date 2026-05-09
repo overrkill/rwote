@@ -23,10 +23,9 @@ import type { Note, SubscriptionStatus, User, AiSettings } from '@/lib/types'
 import NoteSidebar from '@/components/notes/note-sidebar'
 import NoteDetail from '@/components/notes/note-detail'
 import SubscriptionModal from '@/components/ui/subscription-modal'
-import AiSettingsModal from '@/components/ui/ai-settings-modal'
+import SettingsPanel from '@/components/ui/settings-panel'
 import { useTheme } from '@/components/providers/theme-provider'
-import { Cloud, AlertCircle, Menu, Layers, Sun, Download, LogOut, X } from 'lucide-react'
-import Tooltip from '@/components/ui/tooltip'
+import { Cloud, AlertCircle } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -39,13 +38,14 @@ export default function DashboardPage() {
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
-  const [showThemeModal, setShowThemeModal] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(getStoredUser())
   const [aiSettings, setAiSettingsState] = useState<AiSettings>({ provider: 'disabled', ollamaUrl: 'http://localhost:11434', ollamaModel: 'llama3.2' })
   const [aiEnabled, setAiEnabled] = useState(false)
-  const [showAiSettings, setShowAiSettings] = useState(false)
   const [aiSummarizing, setAiSummarizing] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(280)
+  const [isResizing, setIsResizing] = useState(false)
 
   const themeList = [
     { id: 'paper_dark', name: 'Paper Dark' },
@@ -70,6 +70,32 @@ export default function DashboardPage() {
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [menuOpen])
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return
+      const newWidth = Math.min(Math.max(e.clientX, 200), 500)
+      setSidebarWidth(newWidth)
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'ew-resize'
+      document.body.style.userSelect = 'none'
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizing])
 
   useEffect(() => {
     const { data: { subscription: authSubscription } } = onAuthStateChange((user) => {
@@ -324,93 +350,18 @@ export default function DashboardPage() {
           </button>
           
           <button
-            onClick={() => setShowAiSettings(true)}
-            className="p-2 rounded-md transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            title="AI Settings"
-          >
-            <Layers size={16} strokeWidth={2} />
-          </button>
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setMenuOpen(!menuOpen)
-            }}
-            className="p-2 rounded-md transition-colors"
+            onClick={() => setSettingsOpen(true)}
+            className="p-1 rounded-md transition-colors"
             style={{ color: 'var(--text-primary)' }}
+            title="Settings"
           >
-            <Menu size={18} strokeWidth={1.75} />
+            <Avatar user={user} size={28} />
           </button>
-
-          <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 rounded-lg shadow-lg z-50 ${menuOpen ? 'block' : 'hidden'}`} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <div className="p-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
-              <Avatar user={user} size={36} />
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
-                <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }} title={user?.email}>
-                  {user?.email}
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => { setShowSubscriptionModal(true); setMenuOpen(false) }}
-              className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <Cloud size={18} strokeWidth={1.75} />
-              <span style={{ 
-                color: subscription?.subscription_status === 'paid' ? '#22c55e' : 
-                       subscription?.subscription_status === 'trial' ? '#f59e0b' : 
-                       subscription?.subscription_status === 'expired' ? '#ef4444' : 'var(--text-secondary)'
-              }}>
-                {subscription?.subscription_status === 'paid' && 'Pro'}
-                {subscription?.subscription_status === 'trial' && `Trial: ${subscription.days_left}d`}
-                {subscription?.subscription_status === 'expired' && 'Expired'}
-              </span>
-            </button>
-            <button
-              onClick={() => { setMenuOpen(false); setShowThemeModal(true) }}
-              className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <Sun size={18} strokeWidth={1.75} />
-              <span>Theme</span>
-            </button>
-            <button
-              onClick={() => {
-                setMenuOpen(false)
-                const data = JSON.stringify(notes, null, 2)
-                const blob = new Blob([data], { type: 'application/json' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `rwote-backup-${new Date().toISOString().split('T')[0]}.json`
-                a.click()
-                URL.revokeObjectURL(url)
-              }}
-              className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              <Download size={18} strokeWidth={2} />
-              <span>Export</span>
-            </button>
-            <div style={{ borderTop: '1px solid var(--border)' }}>
-              <button
-                onClick={() => { handleSignOut(); setMenuOpen(false) }}
-                className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <LogOut size={18} strokeWidth={2} />
-                <span>Sign Out</span>
-              </button>
-            </div>
-          </div>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-72 shrink-0">
+        <div style={{ width: sidebarWidth, flexShrink: 0, position: 'relative' }}>
           <NoteSidebar
             notes={notes}
             selectedId={selectedNoteId}
@@ -418,6 +369,16 @@ export default function DashboardPage() {
             onNew={handleNewNote}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+          />
+          <div
+            className="absolute top-0 right-0 h-full w-1 cursor-ew-resize transition-colors"
+            style={{
+              backgroundColor: isResizing ? 'var(--accent)' : 'transparent',
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              setIsResizing(true)
+            }}
           />
         </div>
 
@@ -450,63 +411,33 @@ export default function DashboardPage() {
         onSubscribe={handleSubscribe}
       />
 
-      <AiSettingsModal
-        isOpen={showAiSettings}
-        onClose={() => setShowAiSettings(false)}
-        settings={aiSettings}
-        onSave={(settings) => {
+      <SettingsPanel
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        user={user}
+        subscription={subscription}
+        aiSettings={aiSettings}
+        currentTheme={themeId}
+        themeList={themeList}
+        onAiSettingsChange={(settings) => {
           setAiSettings(settings)
           setAiSettingsState(settings)
           setAiEnabled(settings.provider !== 'disabled')
         }}
+        onThemeChange={(themeId) => setTheme(themeId)}
+        onSubscriptionOpen={() => setShowSubscriptionModal(true)}
+        onExport={() => {
+          const data = JSON.stringify(notes, null, 2)
+          const blob = new Blob([data], { type: 'application/json' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `rwote-backup-${new Date().toISOString().split('T')[0]}.json`
+          a.click()
+          URL.revokeObjectURL(url)
+        }}
+        onSignOut={handleSignOut}
       />
-
-      {showThemeModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-          onClick={() => setShowThemeModal(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-xl shadow-xl overflow-hidden"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
-              <h3 className="font-medium" style={{ color: 'var(--text-primary)' }}>Theme</h3>
-              <button
-                onClick={() => setShowThemeModal(false)}
-                className="p-1 rounded hover:bg-black/10"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                <X size={18} strokeWidth={2} />
-              </button>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-3">
-                {themeList.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setTheme(t.id)
-                      setShowThemeModal(false)
-                    }}
-                    className="px-4 py-3 text-sm rounded-lg transition-colors text-left"
-                    style={{
-                      backgroundColor: themeId === t.id ? 'var(--surface-alt)' : 'transparent',
-                      fontWeight: themeId === t.id ? 500 : 400,
-                      color: 'var(--text-primary)',
-                      border: themeId === t.id ? '2px solid var(--accent)' : '1px solid var(--border)'
-                    }}
-                  >
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

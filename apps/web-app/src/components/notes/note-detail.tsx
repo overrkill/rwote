@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import type { Editor } from '@tiptap/react'
 import type { Note } from '@/lib/types'
 import { Pin, Copy, Trash2, X, Check } from 'lucide-react'
+import MarkdownEditor from './markdown-editor'
 
 interface NoteDetailProps {
   note: Note
@@ -35,40 +37,66 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
   const [tags, setTags] = useState<string[]>(note.tags || [])
   const [copied, setCopied] = useState(false)
   const [saved, setSaved] = useState(false)
+  const editorRef = useRef<Editor | null>(null)
 
-  useEffect(() => {
-    setTitle(note.title)
-    setContent(note.content || '')
-    setTags(note.tags || [])
-  }, [note])
+  const titleRef = useRef(title)
+  const contentRef = useRef(content)
+  const tagsRef = useRef(tags)
+
+  useEffect(() => { titleRef.current = title }, [title])
+  useEffect(() => { contentRef.current = content }, [content])
+  useEffect(() => { tagsRef.current = tags }, [tags])
+
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const extractTags = (input: string): string[] => {
     const matches = input.match(/#(\w+)/g)
     return matches ? matches.map((t) => t.slice(1).toLowerCase()) : []
   }
 
-  const save = () => {
-    const currentTags = extractTags(title)
-    const allTags = [...new Set([...tags.filter(t => !currentTags.includes(t)), ...currentTags])]
+  const doSave = useCallback(() => {
+    const currentTags = extractTags(titleRef.current)
+    const allTags = [...new Set([...tagsRef.current.filter(t => !currentTags.includes(t)), ...currentTags])]
     
     onUpdate({
       ...note,
-      title: title.replace(/#\w+/g, '').trim() || 'Untitled',
-      content: content,
+      title: titleRef.current.replace(/#\w+/g, '').trim() || 'Untitled',
+      content: contentRef.current,
       tags: allTags,
       updated_at: new Date().toISOString(),
     })
     
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
-  }
+  }, [note, onUpdate])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault()
-      save()
+  const scheduleSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
     }
-  }
+    saveTimeoutRef.current = setTimeout(() => {
+      doSave()
+      saveTimeoutRef.current = null
+    }, 800)
+  }, [doSave])
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
+    }
+    setTitle(note.title)
+    setContent(note.content || '')
+    setTags(note.tags || [])
+  }, [note])
 
   const handleCopy = () => {
     const text = content ? `${title}\n\n${content}` : title
@@ -85,6 +113,24 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
 
   const removeTag = (tag: string) => {
     setTags(tags.filter(t => t !== tag))
+    doSave()
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' || e.key === 'Enter') {
+      e.preventDefault()
+      editorRef.current?.commands.focus()
+    }
+  }
+
+  const handleEditorCreated = (editor: Editor) => {
+    editorRef.current = editor
+  }
+
+  const handleEditorUpdate = (html: string) => {
+    contentRef.current = html
+    setContent(html)
+    scheduleSave()
   }
 
   return (
@@ -134,10 +180,14 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              scheduleSave()
+            }}
+            onKeyDown={handleTitleKeyDown}
             placeholder="Note title... use #tag for tags"
             className="w-full text-2xl font-bold outline-none mb-4 py-2"
-            style={{ backgroundColor: 'transparent', color: 'var(--text-primary)' }}
+            style={{ backgroundColor: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit' }}
           />
 
           {tags.length > 0 && (
@@ -160,13 +210,13 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
             </div>
           )}
 
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
+          <MarkdownEditor
+            content={content}
+            onChange={handleEditorUpdate}
+            onCreated={handleEditorCreated}
+            onSave={doSave}
+            onInput={() => scheduleSave()}
             placeholder="Start typing..."
-            className="w-full text-base outline-none resize-none min-h-[400px] py-2"
-            style={{ backgroundColor: 'transparent', color: 'var(--text-primary)' }}
           />
         </div>
       </div>
