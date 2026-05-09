@@ -271,7 +271,7 @@ export async function loadUserSettings(): Promise<UserSettings> {
 
   try {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) {
+    if (!session?.user) {
       return getStoredUserSettings() || defaults
     }
 
@@ -281,7 +281,12 @@ export async function loadUserSettings(): Promise<UserSettings> {
       .eq('user_id', session.user.id)
       .single()
 
-    if (error || !data) {
+    if (error) {
+      console.error('loadUserSettings error:', error)
+      return getStoredUserSettings() || defaults
+    }
+
+    if (!data) {
       return getStoredUserSettings() || defaults
     }
 
@@ -298,7 +303,8 @@ export async function loadUserSettings(): Promise<UserSettings> {
     }
 
     return settings
-  } catch {
+  } catch (error) {
+    console.error('loadUserSettings exception:', error)
     return getStoredUserSettings() || defaults
   }
 }
@@ -313,21 +319,25 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
 
   try {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) return
+    if (!session?.user) return
 
-    const updates: Record<string, unknown> = {}
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (settings.theme !== undefined) updates.theme = settings.theme
     if (settings.aiProvider !== undefined) updates.ai_provider = settings.aiProvider
     if (settings.aiOllamaUrl !== undefined) updates.ai_ollama_url = settings.aiOllamaUrl
     if (settings.aiOllamaModel !== undefined) updates.ai_ollama_model = settings.aiOllamaModel
     if (settings.fontSize !== undefined) updates.font_size = settings.fontSize
 
-    await supabase
+    const { error } = await supabase
       .from('user_settings')
       .update(updates)
       .eq('user_id', session.user.id)
+
+    if (error) {
+      console.error('saveUserSettings error:', error)
+    }
   } catch (error) {
-    console.error('Failed to save user settings to DB:', error)
+    console.error('saveUserSettings exception:', error)
   }
 }
 
