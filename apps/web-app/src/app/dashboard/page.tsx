@@ -28,7 +28,7 @@ import NoteDetail from '@/components/notes/note-detail'
 import SubscriptionModal from '@/components/ui/subscription-modal'
 import SettingsPanel from '@/components/ui/settings-panel'
 import { useTheme } from '@/components/providers/theme-provider'
-import { Cloud, AlertCircle } from 'lucide-react'
+import { Cloud, AlertCircle, List } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const [aiSummarizing, setAiSummarizing] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(280)
   const [isResizing, setIsResizing] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const themeList = [
     { id: 'paper_dark', name: 'Paper Dark' },
@@ -199,6 +200,9 @@ export default function DashboardPage() {
 
   const handleSelectNote = (note: Note) => {
     setSelectedNoteId(note.id)
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false)
+    }
   }
 
   const handleUpdateNote = async (updated: Note) => {
@@ -322,6 +326,14 @@ export default function DashboardPage() {
     <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       <header className="px-4 py-2 shrink-0 flex items-center justify-between" style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden p-1.5 rounded-md transition-colors"
+            style={{ color: 'var(--text-primary)', backgroundColor: 'var(--surface-alt)' }}
+            title="Notes"
+          >
+            <List size={18} />
+          </button>
           <h1 className="text-xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>Rwote</h1>
           
           <div className="flex items-center gap-1">
@@ -370,7 +382,7 @@ export default function DashboardPage() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <div style={{ width: sidebarWidth, flexShrink: 0, position: 'relative' }}>
+        <div className="hidden md:block" style={{ width: sidebarWidth, flexShrink: 0, position: 'relative' }}>
           <NoteSidebar
             notes={notes}
             selectedId={selectedNoteId}
@@ -380,7 +392,7 @@ export default function DashboardPage() {
             onSearchChange={setSearchQuery}
           />
           <div
-            className="absolute top-0 right-0 h-full w-1 cursor-ew-resize transition-colors"
+            className="absolute top-0 right-0 h-full w-1 cursor-ew-resize"
             style={{
               backgroundColor: isResizing ? 'var(--accent)' : 'transparent',
             }}
@@ -389,6 +401,31 @@ export default function DashboardPage() {
               setIsResizing(true)
             }}
           />
+        </div>
+
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-30 md:hidden" onClick={() => setSidebarOpen(false)} style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} />
+        )}
+        <div
+          className={`fixed inset-y-0 left-0 z-40 md:hidden transform transition-transform duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+          style={{ width: '280px', backgroundColor: 'var(--surface)' }}
+        >
+          <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid var(--border)' }}>
+            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Notes</span>
+            <button onClick={() => setSidebarOpen(false)} className="p-1 text-xl" style={{ color: 'var(--text-secondary)' }}>
+              ×
+            </button>
+          </div>
+          <div className="h-[calc(100%-57px)]">
+            <NoteSidebar
+              notes={notes}
+              selectedId={selectedNoteId}
+              onSelect={handleSelectNote}
+              onNew={handleNewNote}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+          </div>
         </div>
 
         <div className="flex-1 overflow-hidden">
