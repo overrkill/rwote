@@ -27,8 +27,9 @@ import SubscriptionModal from '@/components/ui/subscription-modal'
 import NoteModal from '@/components/ui/note-modal'
 import AiSettingsModal from '@/components/ui/ai-settings-modal'
 import { useTheme } from '@/components/providers/theme-provider'
-import { Cloud, AlertCircle, Menu, Layers, Sun, Download, LogOut, X } from 'lucide-react'
+import { Cloud, AlertCircle, Menu, Layers, Sun, Download, LogOut, X, Plus } from 'lucide-react'
 import Tooltip from '@/components/ui/tooltip'
+import NotepadDrawer from '@/components/notes/notepad-drawer'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const [showAiSettings, setShowAiSettings] = useState(false)
   const [aiSummarizing, setAiSummarizing] = useState(false)
   const [themeMenuOpen, setThemeMenuOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   function formatSyncTime(timestamp: number | null): string {
     if (!timestamp) return ''
@@ -249,7 +251,7 @@ export default function DashboardPage() {
       setNotes([newNote, ...notes])
       syncToCloud(newNote)
     }
-    setShowForm(false)
+    setDrawerOpen(false)
   }
 
   const handleDelete = async (id: string) => {
@@ -353,6 +355,24 @@ export default function DashboardPage() {
               >
               <Tooltip content={aiEnabled ? 'AI Summarization ON' : 'AI Summarization OFF'} position="bottom">
                 <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
+              </Tooltip>
+            </button>
+            <button
+              onClick={() => {
+                setEditingNote(null)
+                setDrawerOpen(true)
+              }}
+              className="dashboard-btn"
+              style={{ color: 'var(--text-primary)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
+              }}
+            >
+              <Tooltip content="New Note" position="bottom">
+                <Plus size={18} strokeWidth={2} />
               </Tooltip>
             </button>
             <button
@@ -590,16 +610,15 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {(showForm || editingNote) && (
-        <NoteModal
-          note={editingNote}
-          onSave={handleSaveNote}
-          onClose={() => {
-            setShowForm(false)
-            setEditingNote(null)
-          }}
-        />
-      )}
+      <NotepadDrawer
+        isOpen={drawerOpen}
+        note={editingNote}
+        onSave={handleSaveNote}
+        onClose={() => {
+          setDrawerOpen(false)
+          setEditingNote(null)
+        }}
+      />
     </div>
   )
 }
