@@ -139,6 +139,9 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
         <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
             {new Date(note.created_at).toLocaleDateString()}
+            {note.updated_at !== note.created_at && (
+              <span className="ml-1">· edited {new Date(note.updated_at).toLocaleDateString()}</span>
+            )}
           </span>
           {saved && (
             <span className="text-xs flex items-center gap-1" style={{ color: '#22c55e' }}>
@@ -195,9 +198,10 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-md"
+                  className="inline-flex items-center gap-1 text-[8px] font-semibold px-1.5 py-0.5 rounded"
                   style={{
                     backgroundColor: getTagColor(tag),
+						  opacity:0.4,
                     color: getTagTextColor(tag),
                   }}
                 >

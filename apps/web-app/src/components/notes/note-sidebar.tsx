@@ -155,9 +155,10 @@ export default function NoteSidebar({
                     {note.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md shrink-0"
+                        className="inline-flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded shrink-0"
                         style={{
                           backgroundColor: getTagColor(tag),
+						  opacity:0.4,
                           color: getTagTextColor(tag),
                         }}
                       >
