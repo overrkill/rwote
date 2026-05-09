@@ -136,6 +136,17 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
   return (
     <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--bg)' }}>
       <div className="p-3 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+            {new Date(note.created_at).toLocaleDateString()}
+          </span>
+          {saved && (
+            <span className="text-xs flex items-center gap-1" style={{ color: '#22c55e' }}>
+              <Check size={12} />
+              Saved
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => onTogglePin(note.id)}
@@ -161,17 +172,6 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
           >
             <Trash2 size={16} />
           </button>
-        </div>
-        <div className="flex items-center gap-2">
-          {saved && (
-            <span className="text-xs flex items-center gap-1" style={{ color: '#22c55e' }}>
-              <Check size={12} />
-              Saved
-            </span>
-          )}
-          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-            {new Date(note.created_at).toLocaleDateString()}
-          </span>
         </div>
       </div>
 
