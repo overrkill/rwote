@@ -73,8 +73,7 @@ export default function SettingsPanel({
         className="fixed top-0 right-0 h-full w-full max-w-md z-50 flex flex-col transition-transform duration-300 ease-out shadow-2xl overflow-y-auto"
         style={{ backgroundColor: 'var(--surface)', borderLeft: '1px solid var(--border)' }}
       >
-        <div className="p-4 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Settings</h2>
+        <div className="p-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
           <button
             onClick={onClose}
             className="p-2 rounded-md transition-colors hover:bg-black/10"
@@ -82,6 +81,14 @@ export default function SettingsPanel({
           >
             <X size={18} strokeWidth={2} />
           </button>
+        </div>
+
+        <div className="p-4 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
+          <Avatar user={user} size={48} />
+          <div>
+            <div className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user?.email}</div>
+          </div>
         </div>
 
         <div className="p-4 flex-1 space-y-6">
@@ -162,64 +169,20 @@ export default function SettingsPanel({
           </section>
 
           <section>
-            <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>Appearance</h3>
-            <div className="grid grid-cols-2 gap-2">
+            <h3 className="text-xs font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Theme</h3>
+            <select
+              value={currentTheme}
+              onChange={(e) => onThemeChange(e.target.value)}
+              className="w-full px-3 py-2 rounded-md text-sm"
+              style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+            >
               {themeList.map((theme) => (
-                <button
-                  key={theme.id}
-                  onClick={() => onThemeChange(theme.id)}
-                  className="px-3 py-2 text-sm rounded-md text-left transition-colors"
-                  style={{
-                    backgroundColor: currentTheme === theme.id ? 'var(--surface-alt)' : 'transparent',
-                    color: 'var(--text-primary)',
-                    border: currentTheme === theme.id ? '2px solid var(--accent)' : '1px solid var(--border)',
-                    fontWeight: currentTheme === theme.id ? 500 : 400,
-                  }}
-                >
-                  {theme.name}
-                </button>
+                <option key={theme.id} value={theme.id}>{theme.name}</option>
               ))}
-            </div>
+            </select>
           </section>
 
-          <section>
-            <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>Account</h3>
-            <div className="space-y-3">
-              <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--surface-alt)' }}>
-                <div className="flex items-center gap-3 mb-2">
-                  <Avatar user={user} size={32} />
-                  <div>
-                    <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{user?.email}</div>
-                  </div>
-                </div>
-                <button
-                  onClick={onSubscriptionOpen}
-                  className="w-full mt-2 px-3 py-2 text-sm rounded-md flex items-center justify-center gap-2 transition-colors"
-                  style={{
-                    backgroundColor: subscription?.subscription_status === 'paid' ? '#22c55e' : 
-                                   subscription?.subscription_status === 'trial' ? '#f59e0b' : 
-                                   subscription?.subscription_status === 'expired' ? '#ef4444' : 'var(--accent-btn)',
-                    color: 'white',
-                  }}
-                >
-                  <Cloud size={14} />
-                  {subscription?.subscription_status === 'paid' && 'Pro'}
-                  {subscription?.subscription_status === 'trial' && `Trial: ${subscription.days_left}d left`}
-                  {subscription?.subscription_status === 'expired' && 'Expired'}
-                  {(subscription?.subscription_status === 'trial' || subscription?.subscription_status === 'expired') && ' - Upgrade'}
-                </button>
-              </div>
-              <button
-                onClick={onSignOut}
-                className="w-full px-4 py-2 text-sm rounded-md flex items-center justify-center gap-2 transition-colors"
-                style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
-              >
-                <LogOut size={14} />
-                Sign Out
-              </button>
-            </div>
-          </section>
+          
 
           <section>
             <h3 className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>Data</h3>
