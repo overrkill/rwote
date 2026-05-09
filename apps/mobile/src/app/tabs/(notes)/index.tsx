@@ -7,20 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
 import { Note, useNotesStore } from '@/stores/notes-store';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
 
 import Animated, {
-  FadeIn,
-  FadeOut,
   Layout,
   useAnimatedStyle,
   useSharedValue,
@@ -31,6 +19,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonList } from '@/components/ui/skeleton';
 import { Pin, Trash2, Filter, Plus } from 'lucide-react-native';
 import { MarkdownView } from '@/components/markdown-view';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 
 function getTagColor(tag: string): string {
   let hash = 0;
@@ -53,6 +43,74 @@ function formatDate(dateStr: string): string {
   if (days < 30) return `${Math.floor(days / 7)}w ago`;
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+
+const NOTE_ITEM_HEIGHT = 120;
+
+function NoteItem({
+  item,
+  index,
+  theme,
+  spacing,
+  onTogglePin,
+  onDelete,
+  onPress,
+}: {
+  item: Note;
+  index: number;
+  theme: any;
+  spacing: any;
+  onTogglePin: (note: Note) => void;
+  onDelete: (note: Note) => void;
+  onPress: (id: string) => void;
+}) {
+  const delay = Math.min(index, 10) * 50;
+  return (
+    <Animated.View
+      layout={Layout.springify().damping(50).stiffness(400)}
+      style={{ marginBottom: spacing.md }}
+    >
+      <Pressable
+        style={{
+          backgroundColor: theme.colors.surface,
+          borderColor: item.pinned ? theme.colors.accent : theme.colors.border,
+          borderWidth: item.pinned ? 1.5 : 1,
+          borderRadius: 12,
+          padding: spacing.md,
+        }}
+        onPress={() => onPress(item.id)}
+      >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs }}>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.textPrimary, flex: 1 }} numberOfLines={1}>
+            {item.title || 'Untitled'}
+          </Text>
+          <Text style={{ fontSize: 11, color: theme.colors.textTertiary, marginLeft: spacing.sm }}>
+            {formatDate(item.created_at)}
+          </Text>
+        </View>
+        <View style={{ marginBottom: spacing.sm }}>
+          <MarkdownView content={item.content || ''} style={{ fontSize: 13, lineHeight: 18 }} />
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            {(item.tags || []).slice(0, 3).map((tag: string) => (
+              <View key={tag} style={{ backgroundColor: getTagColor(tag), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                <Text style={{ fontSize: 11, color: getTagTextColor(tag) }}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            <Pressable style={{ padding: 4 }} onPress={() => onTogglePin(item)}>
+              <Pin size={18} color={item.pinned ? theme.colors.accent : theme.colors.textTertiary} fill={item.pinned ? theme.colors.accent : undefined} />
+            </Pressable>
+            <Pressable style={{ padding: 4 }} onPress={() => onDelete(item)}>
+              <Trash2 size={18} color={theme.colors.textTertiary} />
+            </Pressable>
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+};
 
 function getTagTextColor(tag: string): string {
   let hash = 0;
@@ -94,6 +152,7 @@ export default function NotesScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set(['all']));
+  const navLockRef = useRef(false);
 
   const fabScale = useSharedValue(1);
 
@@ -116,7 +175,10 @@ export default function NotesScreen() {
 
   const s = theme.spacing;
 
-  const { notes, setNotes, updateNote, deleteNote } = useNotesStore();
+  const notes = useNotesStore(state => state.notes);
+  const setNotes = useNotesStore(state => state.setNotes);
+  const updateNote = useNotesStore(state => state.updateNote);
+  const deleteNote = useNotesStore(state => state.deleteNote);
   const { user, accessToken, initialize } = useAuthStore();
 
   useEffect(() => {
@@ -207,12 +269,25 @@ export default function NotesScreen() {
     }
   };
 
+  const handleNotePress = useCallback((id: string) => {
+    if (navLockRef.current) return;
+    navLockRef.current = true;
+    router.push({
+      pathname: '/tabs/(notes)/note/'+id,
+      params: { animation: 'none' },
+    });
+    setTimeout(() => { navLockRef.current = false; }, 1000);
+  }, [router]);
+
   const uniqueTags = notes.length > 0
     ? [...new Set(notes.flatMap((n) => n.tags || []))]
     : [];
   const filterTags = uniqueTags.length > 0 ? ['all', ...uniqueTags] : [];
 
-  const filteredNotes = getFilteredByTag(notes || [], searchText, selectedTags);
+  const filteredNotes = useMemo(
+    () => getFilteredByTag(notes || [], searchText, selectedTags),
+    [notes, searchText, selectedTags]
+  );
 
   const updateTagsSelection = (tag: string) => {
     setSelectedTags(prev => {
@@ -231,54 +306,11 @@ export default function NotesScreen() {
     });
   };
 
-  const renderNote = ({ item, index }: { item: Note; index: number }) => (
-    <Animated.View
-      entering={FadeIn.delay(index * 50).springify().damping(50).stiffness(400)}
-      exiting={FadeOut.duration(100)}
-      layout={Layout.springify().damping(50).stiffness(400)}
-      style={{ marginBottom: s.md }}
-    >
-      <Pressable
-        style={{
-          backgroundColor: theme.colors.surface,
-          borderColor: item.pinned ? theme.colors.accent : theme.colors.border,
-          borderWidth: item.pinned ? 1.5 : 1,
-          borderRadius: 12,
-          padding: s.md,
-        }}
-        onPress={() => router.push(`/tabs/(notes)/note/${item.id}`)}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: s.xs }}>
-          <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.textPrimary, flex: 1 }} numberOfLines={1}>
-            {item.title || 'Untitled'}
-          </Text>
-          <Text style={{ fontSize: 11, color: theme.colors.textTertiary, marginLeft: s.sm }}>
-            {formatDate(item.created_at)}
-          </Text>
-        </View>
-        <View style={{ marginBottom: s.sm }}>
-          <MarkdownView content={item.content || ''} style={{ fontSize: 13, lineHeight: 18 }} />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', gap: s.xs }}>
-            {(item.tags || []).slice(0, 3).map((tag: string) => (
-              <View key={tag} style={{ backgroundColor: getTagColor(tag), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                <Text style={{ fontSize: 11, color: getTagTextColor(tag) }}>#{tag}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', gap: s.md }}>
-            <Pressable style={{ padding: 4 }} onPress={() => handleTogglePin(item)}>
-              <Pin size={18} color={item.pinned ? theme.colors.accent : theme.colors.textTertiary} fill={item.pinned ? theme.colors.accent : undefined} />
-            </Pressable>
-            <Pressable style={{ padding: 4 }} onPress={() => handleDelete(item)}>
-              <Trash2 size={18} color={theme.colors.textTertiary} />
-            </Pressable>
-          </View>
-        </View>
-      </Pressable>
-    </Animated.View>
-  );
+  const getItemLayout = (_: any, index: number) => ({
+    length: NOTE_ITEM_HEIGHT,
+    offset: NOTE_ITEM_HEIGHT * index,
+    index,
+  });
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg, paddingTop: s.lg }}>
@@ -359,7 +391,17 @@ export default function NotesScreen() {
         <FlatList
           data={filteredNotes}
           keyExtractor={(item) => item.id}
-          renderItem={renderNote}
+          renderItem={({ item, index }) => (
+            <NoteItem
+              item={item}
+              index={index}
+              theme={theme}
+              spacing={s}
+              onTogglePin={handleTogglePin}
+              onDelete={handleDelete}
+              onPress={handleNotePress}
+            />
+          )}
           contentContainerStyle={{ padding: s.lg, paddingBottom: 100 + s.xxl + insets.bottom }}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -369,6 +411,11 @@ export default function NotesScreen() {
               tintColor={theme.colors.accent}
             />
           }
+          getItemLayout={getItemLayout}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={10}
+          removeClippedSubviews={true}
         />
       )}
 

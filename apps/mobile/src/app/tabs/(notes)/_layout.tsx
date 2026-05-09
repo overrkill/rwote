@@ -36,7 +36,7 @@ export default function NotesLayout() {
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.textPrimary,
           headerShadowVisible: false,
-          animation: 'slide_from_bottom',
+          animation: 'none',
         }}
       />
       <Stack.Screen
@@ -47,7 +47,7 @@ export default function NotesLayout() {
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.textPrimary,
           headerShadowVisible: false,
-          animation: 'slide_from_bottom',
+          animation: 'none',
         }}
       />
     </Stack>

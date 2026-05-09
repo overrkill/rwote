@@ -20,27 +20,21 @@ import {
 } from '@/lib/supabase'
 import Avatar from '@/components/ui/avatar'
 import type { Note, SubscriptionStatus, User, AiSettings } from '@/lib/types'
-import { NoteList } from '@/components/notes'
-import SearchBar from '@/components/notes/search-bar'
-import TagFilter from '@/components/notes/tag-filter'
+import NoteSidebar from '@/components/notes/note-sidebar'
+import NoteDetail from '@/components/notes/note-detail'
 import SubscriptionModal from '@/components/ui/subscription-modal'
-import NoteModal from '@/components/ui/note-modal'
 import AiSettingsModal from '@/components/ui/ai-settings-modal'
 import { useTheme } from '@/components/providers/theme-provider'
-import { Cloud, AlertCircle, Menu, Layers, Sun, Download, LogOut, X, Plus } from 'lucide-react'
+import { Cloud, AlertCircle, Menu, Layers, Sun, Download, LogOut, X } from 'lucide-react'
 import Tooltip from '@/components/ui/tooltip'
-import NotepadDrawer from '@/components/notes/notepad-drawer'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { theme, themeId, setTheme } = useTheme()
+  const { themeId, setTheme } = useTheme()
   const [notes, setNotes] = useState<Note[]>([])
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTags, setActiveTags] = useState<string[]>([])
-  const [editingNote, setEditingNote] = useState<Note | null>(null)
-  const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle')
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
@@ -52,23 +46,6 @@ export default function DashboardPage() {
   const [aiEnabled, setAiEnabled] = useState(false)
   const [showAiSettings, setShowAiSettings] = useState(false)
   const [aiSummarizing, setAiSummarizing] = useState(false)
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-
-  function formatSyncTime(timestamp: number | null): string {
-    if (!timestamp) return ''
-    const diff = Date.now() - timestamp
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'just now'
-    if (mins === 1) return '1m ago'
-    if (mins < 60) return `${mins}m ago`
-    const hours = Math.floor(mins / 60)
-    if (hours === 1) return '1h ago'
-    if (hours < 24) return `${hours}h ago`
-    const days = Math.floor(hours / 24)
-    if (days === 1) return '1d ago'
-    return `${days}d ago`
-  }
 
   const themeList = [
     { id: 'paper_dark', name: 'Paper Dark' },
@@ -84,16 +61,10 @@ export default function DashboardPage() {
     { id: 'monokai_light', name: 'Monokai Pro' },
   ]
 
-  const availableTags = useMemo(() => {
-    const tagsFromNotes = notes.flatMap(n => n.tags.filter(t => t.length > 0))
-    return [...new Set(tagsFromNotes)].sort()
-  }, [notes])
-
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuOpen && !(e.target as HTMLElement).closest('.hamburger-menu')) {
         setMenuOpen(false)
-        setThemeMenuOpen(false)
       }
     }
     document.addEventListener('click', handleClickOutside)
@@ -133,33 +104,34 @@ export default function DashboardPage() {
   }, [router])
 
   async function loadData(token: string) {
-      try {
-        setLoading(true)
-        const sub = await getSubscriptionStatus(token)
-        setSubscription(sub)
+    try {
+      setLoading(true)
+      const sub = await getSubscriptionStatus(token)
+      setSubscription(sub)
 
-        const ai = getAiSettings()
-        setAiSettingsState(ai)
-        setAiEnabled(ai.provider !== 'disabled')
+      const ai = getAiSettings()
+      setAiSettingsState(ai)
+      setAiEnabled(ai.provider !== 'disabled')
 
-        if (sub.can_sync) {
-          const { notes: cloudNotes, error } = await loadNotes(token)
-          
-          if (!error && cloudNotes) {
-            setNotes(cloudNotes)
-            setLoading(false)
+      if (sub.can_sync) {
+        const { notes: cloudNotes, error } = await loadNotes(token)
+        
+        if (!error && cloudNotes) {
+          setNotes(cloudNotes)
+          if (cloudNotes.length > 0) {
+            setSelectedNoteId(cloudNotes[0].id)
           }
-        } else {
-          setShowSubscriptionModal(true)
-          setLoading(false)
         }
-      } catch (e) {
-        console.error('Failed to load data:', e)
-      } finally{
-                  setLoading(false)
+      } else {
+        setShowSubscriptionModal(true)
       }
+    } catch (e) {
+      console.error('Failed to load data:', e)
+    } finally {
+      setLoading(false)
     }
-    
+  }
+  
   const syncToCloud = async (note: Note) => {
     if (!subscription?.can_sync) return
     const token = await getAuthToken()
@@ -176,12 +148,81 @@ export default function DashboardPage() {
     }
   }
 
+  const handleNewNote = () => {
+    const newNote: Note = {
+      id: crypto.randomUUID(),
+      title: '',
+      content: '',
+      tags: [],
+      pinned: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    setNotes([newNote, ...notes])
+    setSelectedNoteId(newNote.id)
+  }
+
+  const handleSelectNote = (note: Note) => {
+    setSelectedNoteId(note.id)
+  }
+
+  const handleUpdateNote = async (updated: Note) => {
+    let finalTitle = updated.title
+    let finalTags = [...updated.tags]
+
+    if (aiEnabled && aiSettings.provider !== 'disabled' && updated.title.trim() && !updated.content) {
+      setAiSummarizing(true)
+      try {
+        let result
+        const token = await getAuthToken()
+        if (aiSettings.provider === 'groq' && token) {
+          result = await summarizeUsingCloud(updated.title, token)
+        } else {
+          result = await summarizeUsingLocal(updated.title, aiSettings.ollamaUrl, aiSettings.ollamaModel)
+        }
+        finalTitle = result.summary
+        if (result.tags.length > 0) {
+          finalTags = [...new Set([...finalTags, ...result.tags])]
+        }
+      } catch (e) {
+        console.error('AI summarization failed:', e)
+      }
+      setAiSummarizing(false)
+    }
+
+    const finalNote = {
+      ...updated,
+      title: finalTitle,
+      tags: finalTags,
+      updated_at: new Date().toISOString(),
+    }
+
+    setNotes(notes.map(n => n.id === finalNote.id ? finalNote : n))
+    syncToCloud(finalNote)
+  }
+
+  const handleDeleteNote = async (id: string) => {
+    const previousNotes = [...notes]
+    const prevSelected = selectedNoteId
+    setNotes(notes.filter(n => n.id !== id))
+    
+    if (selectedNoteId === id) {
+      const remaining = notes.filter(n => n.id !== id)
+      setSelectedNoteId(remaining.length > 0 ? remaining[0].id : null)
+    }
+    
+    const success = await deleteFromCloud(id)
+    if (!success) {
+      setNotes(previousNotes)
+      setSelectedNoteId(prevSelected)
+    }
+  }
+
   const deleteFromCloud = async (id: string): Promise<boolean> => {
     if (!subscription?.can_sync) return false
     const token = await getAuthToken()
     if (!token) return false
 
-    setSyncStatus('syncing')
     try {
       await cloudDeleteNote(id, token)
       setSyncStatus('synced')
@@ -194,83 +235,12 @@ export default function DashboardPage() {
     }
   }
 
-  const handleSaveNote = async (title: string, content: string, tags: string[]) => {
-    const token = await getAuthToken()
-    if (!token || !subscription?.can_sync) {
-      setShowSubscriptionModal(true)
-      return
-    }
-
-    let finalTitle = title
-    let finalContent = content
-    let finalTags = tags
-
-    if (aiEnabled && aiSettings.provider !== 'disabled' && title.trim()) {
-      setAiSummarizing(true)
-      try {
-        let result
-        if (aiSettings.provider === 'groq') {
-          result = await summarizeUsingCloud(title, token)
-        } else {
-          result = await summarizeUsingLocal(title, aiSettings.ollamaUrl, aiSettings.ollamaModel)
-        }
-        finalTitle = result.summary
-        if (result.tags.length > 0) {
-          finalTags = [...new Set([...finalTags, ...result.tags])]
-        }
-      } catch (e) {
-        console.error('AI summarization failed:', e)
-      }
-      setAiSummarizing(false)
-    }
-
-    if (editingNote) {
-      const updatedNote: Note = {
-        ...editingNote,
-        title: finalTitle,
-        content: finalContent,
-        tags: finalTags,
-        updated_at: new Date().toISOString()
-      }
-      const updatedNotes = notes.map((n) =>
-        n.id === editingNote.id ? updatedNote : n
-      )
-      setNotes(updatedNotes)
-      syncToCloud(updatedNote)
-      setEditingNote(null)
-    } else {
-      const newNote: Note = {
-        id: crypto.randomUUID(),
-        title: finalTitle,
-        content: finalContent,
-        tags: finalTags,
-        pinned: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-      setNotes([newNote, ...notes])
-      syncToCloud(newNote)
-    }
-    setDrawerOpen(false)
-  }
-
-  const handleDelete = async (id: string) => {
-    const previousNotes = [...notes]
-    setNotes(notes.filter((n) => n.id !== id))
-    
-    const success = await deleteFromCloud(id)
-    if (!success) {
-      setNotes(previousNotes)
-    }
-  }
-
   const handleTogglePin = (id: string) => {
-    const noteToUpdate = notes.find((n) => n.id === id)
+    const noteToUpdate = notes.find(n => n.id === id)
     if (!noteToUpdate) return
     
     const updatedNote = { ...noteToUpdate, pinned: !noteToUpdate.pinned, updated_at: new Date().toISOString() }
-    const updatedNotes = notes.map((n) => n.id === id ? updatedNote : n)
-    setNotes(updatedNotes)
+    setNotes(notes.map(n => n.id === id ? updatedNote : n))
     syncToCloud(updatedNote)
   }
 
@@ -285,12 +255,13 @@ export default function DashboardPage() {
       
       if (sub.can_sync) {
         setShowSubscriptionModal(false)
-        setSyncing(true)
         const { notes: cloudNotes, error } = await loadNotes(token)
         if (!error && cloudNotes) {
           setNotes(cloudNotes)
+          if (cloudNotes.length > 0) {
+            setSelectedNoteId(cloudNotes[0].id)
+          }
         }
-        setSyncing(false)
       }
     } catch (e) {
       console.error('Failed to subscribe:', e)
@@ -302,245 +273,172 @@ export default function DashboardPage() {
     router.push('/')
   }
 
+  const selectedNote = notes.find(n => n.id === selectedNoteId) || null
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
+      <div className="h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
         <div style={{ color: 'var(--text-secondary)' }}>Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
-      <header className="px-4 py-3 sticky top-0 z-30" style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>Rwote</h1>
-          <div className="flex items-center gap-2 relative">
+    <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--bg)' }}>
+      <header className="px-4 py-2 shrink-0 flex items-center justify-between" style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>Rwote</h1>
+          
+          <div className="flex items-center gap-1">
             {syncStatus === 'syncing' && (
               <span className="text-xs animate-pulse" style={{ color: 'var(--text-tertiary)' }}>Syncing...</span>
             )}
             {syncStatus === 'synced' && lastSyncedAt && (
               <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-tertiary)' }}>
                 <Cloud size={12} strokeWidth={2} />
-                {formatSyncTime(lastSyncedAt)}
+                Synced
               </span>
             )}
             {syncStatus === 'error' && (
-              <span className="text-xs flex items-center gap-1" style={{ color: '#ef4444' }} title="Sync failed, will retry">
+              <span className="text-xs flex items-center gap-1" style={{ color: '#ef4444' }}>
                 <AlertCircle size={12} strokeWidth={2} />
               </span>
             )}
             {aiSummarizing && (
               <span className="text-xs animate-pulse" style={{ color: '#3b82f6' }}>AI...</span>
             )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 relative">
+          <button
+            onClick={() => setAiEnabled(!aiEnabled)}
+            className="p-2 rounded-md transition-colors"
+            style={{ 
+              backgroundColor: aiEnabled ? 'rgba(34, 197, 94, 0.2)' : 'transparent', 
+              color: aiEnabled ? '#22c55e' : 'var(--text-secondary)'
+            }}
+            title={aiEnabled ? 'AI ON' : 'AI OFF'}
+          >
+            <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
+          </button>
+          
+          <button
+            onClick={() => setShowAiSettings(true)}
+            className="p-2 rounded-md transition-colors"
+            style={{ color: 'var(--text-secondary)' }}
+            title="AI Settings"
+          >
+            <Layers size={16} strokeWidth={2} />
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setMenuOpen(!menuOpen)
+            }}
+            className="p-2 rounded-md transition-colors"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            <Menu size={18} strokeWidth={1.75} />
+          </button>
+
+          <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 rounded-lg shadow-lg z-50 ${menuOpen ? 'block' : 'hidden'}`} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="p-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
+              <Avatar user={user} size={36} />
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
+                <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }} title={user?.email}>
+                  {user?.email}
+                </div>
+              </div>
+            </div>
             <button
-              onClick={() => setAiEnabled(!aiEnabled)}
-              className="dashboard-btn ai-btn"
-              style={{ 
-                backgroundColor: aiEnabled ? 'rgba(34, 197, 94, 0.2)' : 'transparent', 
-                color: aiEnabled ? '#22c55e' : 'var(--text-secondary)'
-              }}
-              onMouseEnter={(e) => {
-                if (!aiEnabled) {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
-                  ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!aiEnabled) {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
-                  ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
-                }
-              }}
-              >
-              <Tooltip content={aiEnabled ? 'AI Summarization ON' : 'AI Summarization OFF'} position="bottom">
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
-              </Tooltip>
+              onClick={() => { setShowSubscriptionModal(true); setMenuOpen(false) }}
+              className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <Cloud size={18} strokeWidth={1.75} />
+              <span style={{ 
+                color: subscription?.subscription_status === 'paid' ? '#22c55e' : 
+                       subscription?.subscription_status === 'trial' ? '#f59e0b' : 
+                       subscription?.subscription_status === 'expired' ? '#ef4444' : 'var(--text-secondary)'
+              }}>
+                {subscription?.subscription_status === 'paid' && 'Pro'}
+                {subscription?.subscription_status === 'trial' && `Trial: ${subscription.days_left}d`}
+                {subscription?.subscription_status === 'expired' && 'Expired'}
+              </span>
+            </button>
+            <button
+              onClick={() => { setMenuOpen(false); setShowThemeModal(true) }}
+              className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <Sun size={18} strokeWidth={1.75} />
+              <span>Theme</span>
             </button>
             <button
               onClick={() => {
-                setEditingNote(null)
-                setDrawerOpen(true)
+                setMenuOpen(false)
+                const data = JSON.stringify(notes, null, 2)
+                const blob = new Blob([data], { type: 'application/json' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `rwote-backup-${new Date().toISOString().split('T')[0]}.json`
+                a.click()
+                URL.revokeObjectURL(url)
               }}
-              className="dashboard-btn"
+              className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
               style={{ color: 'var(--text-primary)' }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
-              }}
             >
-              <Tooltip content="New Note" position="bottom">
-                <Plus size={18} strokeWidth={2} />
-              </Tooltip>
+              <Download size={18} strokeWidth={2} />
+              <span>Export</span>
             </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setMenuOpen(!menuOpen)
-              }}
-              className="dashboard-btn"
-              style={{ color: 'var(--text-primary)' }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--surface-alt)'
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
-              }}
-              >
-              <Tooltip content="Menu" position="bottom">
-                <Menu size={18} strokeWidth={1.75} />
-              </Tooltip>
-            </button>
-            <div className={`hamburger-menu absolute right-0 top-full mt-2 w-56 rounded-lg shadow-lg ${menuOpen ? 'block' : 'hidden'}`} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <div className="p-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
-                <Avatar user={user} size={36} />
-                <div className="min-w-0 flex-1 overflow-hidden">
-                  <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
-                  <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }} title={user?.email}>
-                    {user?.email}
-                  </div>
-                </div>
-              </div>
+            <div style={{ borderTop: '1px solid var(--border)' }}>
               <button
-                onClick={() => {
-                  setShowSubscriptionModal(true)
-                  setMenuOpen(false)
-                }}
+                onClick={() => { handleSignOut(); setMenuOpen(false) }}
                 className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
                 style={{ color: 'var(--text-primary)' }}
               >
-                <Cloud size={18} strokeWidth={1.75} />
-                <span className="text-sm" style={{ 
-                  color: subscription?.subscription_status === 'paid' ? '#22c55e' : 
-                         subscription?.subscription_status === 'trial' ? '#f59e0b' : 
-                         subscription?.subscription_status === 'expired' ? '#ef4444' : 'var(--text-secondary)'
-                }}>
-                  {subscription?.subscription_status === 'paid' && 'Pro'}
-                  {subscription?.subscription_status === 'trial' && `Trial: ${subscription.days_left} days left`}
-                  {subscription?.subscription_status === 'expired' && 'Expired'}
-                </span>
+                <LogOut size={18} strokeWidth={2} />
+                <span>Sign Out</span>
               </button>
-              <button
-                onClick={() => {
-                  setShowAiSettings(true)
-                  setMenuOpen(false)
-                }}
-                className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <Layers size={18} strokeWidth={2} />
-                <span>AI Settings</span>
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false)
-                  setShowThemeModal(true)
-                }}
-                className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <Sun size={18} strokeWidth={1.75} />
-                <span>Theme</span>
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false)
-                  const data = JSON.stringify(notes, null, 2)
-                  const blob = new Blob([data], { type: 'application/json' })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  a.download = `rwote-notes-${new Date().toISOString().split('T')[0]}.json`
-                  a.click()
-                  URL.revokeObjectURL(url)
-                }}
-                className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                <Download size={18} strokeWidth={2} />
-                <span>Export Notes</span>
-              </button>
-              <div style={{ borderTop: '1px solid var(--border)' }}>
-                <button
-                  onClick={() => {
-                    handleSignOut()
-                    setMenuOpen(false)
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm flex items-center gap-3"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  <LogOut size={18} strokeWidth={2} />
-                  <span>Sign Out</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {subscription?.subscription_status === 'trial' && subscription.days_left !== undefined && subscription.days_left > 0 && (
-        <div className="px-4 py-2" style={{ backgroundColor: '#fef3c7', borderBottom: '1px solid #fcd34d' }}>
-<div className="max-w-7xl mx-auto flex items-center justify-between">
-            <p className="text-sm" style={{ color: '#92400e' }}>
-              ⏳ Trial period — {subscription.days_left} day{subscription.days_left !== 1 ? 's' : ''} remaining
-            </p>
-            <button
-              onClick={() => setShowSubscriptionModal(true)}
-              className="text-xs px-3 py-1 rounded-full transition-colors"
-              style={{ backgroundColor: '#f59e0b', color: 'white' }}
-            >
-              Upgrade Now
-            </button>
-          </div>
-        </div>
-      )}
-
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex gap-3 mb-6">
-          <div className="flex-1">
-            <SearchBar value={searchQuery} onChange={setSearchQuery} />
-          </div>
-          <TagFilter
-            tags={availableTags}
-            activeTags={activeTags}
-            onChange={setActiveTags}
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-72 shrink-0">
+          <NoteSidebar
+            notes={notes}
+            selectedId={selectedNoteId}
+            onSelect={handleSelectNote}
+            onNew={handleNewNote}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
           />
         </div>
 
-        <button
-          onClick={() => setShowForm(true)}
-          className="w-full mb-6 py-3 text-center border-2 border-dashed rounded-lg transition-colors"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
-        >
-          + Add Note
-        </button>
-
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {notes.length} {notes.length === 1 ? 'note' : 'notes'}
-            {subscription?.can_sync && (
-              <span className="ml-2" style={{ color: 'var(--text-tertiary)' }}>• Synced</span>
-            )}
-          </p>
+        <div className="flex-1 overflow-hidden">
+          {selectedNote ? (
+            <NoteDetail
+              note={selectedNote}
+              onUpdate={handleUpdateNote}
+              onDelete={handleDeleteNote}
+              onTogglePin={handleTogglePin}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center" style={{ color: 'var(--text-tertiary)' }}>
+              <div className="text-center">
+                <div className="text-4xl mb-4">📝</div>
+                <p className="text-sm">Select a note or create a new one</p>
+              </div>
+            </div>
+          )}
         </div>
-
-        <NoteList
-          notes={notes}
-          searchQuery={searchQuery}
-          activeTags={activeTags}
-          onEdit={(note) => {
-            setEditingNote(note)
-            setShowForm(true)
-          }}
-          onDelete={handleDelete}
-          onTogglePin={handleTogglePin}
-          onCopy={() => {
-            // Copy is handled internally in NoteCard with clipboard API
-          }}
-        />
-      </main>
+      </div>
 
       <SubscriptionModal
         isOpen={showSubscriptionModal}
@@ -609,16 +507,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
-      <NotepadDrawer
-        isOpen={drawerOpen}
-        note={editingNote}
-        onSave={handleSaveNote}
-        onClose={() => {
-          setDrawerOpen(false)
-          setEditingNote(null)
-        }}
-      />
     </div>
   )
 }

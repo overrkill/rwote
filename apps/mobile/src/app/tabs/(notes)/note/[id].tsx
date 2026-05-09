@@ -60,20 +60,20 @@ export default function NoteDetailScreen() {
   const { notes, updateNote } = useNotesStore();
   const { accessToken } = useAuthStore();
 
+  const note = useMemo(() => notes.find((n) => n.id === id), [id, notes]);
+
   useEffect(() => {
-    const note = notes.find((n) => n.id === id);
     if (note) {
       setTitle(note.title);
       setContent(note.content);
       setRemovedTags([]);
     }
-  }, [id, notes]);
+  }, [id]);
 
   const combinedText = `${title} ${content}`;
   const parsedTags = useMemo(() => extractTags(combinedText), [title, content]);
   
   // Start with existing tags from note, filter out removed ones, add new parsed ones
-  const note = notes.find((n) => n.id === id);
   const existingTags = note?.tags || [];
   
   const allTags = useMemo(() => {

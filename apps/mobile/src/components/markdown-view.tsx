@@ -1,6 +1,7 @@
 'use client';
 
 import { Text, StyleSheet, TextStyle, View } from 'react-native';
+import { useMemo } from 'react';
 import { useTheme } from '@/components/theme-provider';
 
 interface MarkdownViewProps {
@@ -85,7 +86,7 @@ function parseMarkdown(text: string): Segment[][] {
 
 export function MarkdownView({ content, style }: MarkdownViewProps) {
   const { theme } = useTheme();
-  const parsed = parseMarkdown(content);
+  const parsed = useMemo(() => parseMarkdown(content), [content]);
 
   return (
     <Text style={[styles.container, style, { color: theme.colors.textPrimary }]}>

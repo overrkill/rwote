@@ -99,9 +99,12 @@ fun NoteDetailPage(
 
     // Handle system back button
     val isEditOrNew = isEditMode || isNewNote
+    val isNewNoteEmpty = isNewNote && title.isBlank() && content.isBlank()
     BackHandler(enabled = true) {
         if (isEditOrNew) {
-            if (hasChanges) {
+            if (isNewNoteEmpty) {
+                onBack() // New note with no content → home screen
+            } else if (hasChanges) {
                 showDiscardDialog = true
             } else {
                 onToggleEditMode() // Edit mode with no changes → view mode
@@ -124,7 +127,9 @@ fun NoteDetailPage(
                 navigationIcon = {
                     IconButton(onClick = {
                         if (isEditOrNew) {
-                            if (hasChanges) {
+                            if (isNewNoteEmpty) {
+                                onBack() // New note with no content → home screen
+                            } else if (hasChanges) {
                                 showDiscardDialog = true
                             } else {
                                 onToggleEditMode() // Edit mode → view mode
@@ -360,8 +365,7 @@ fun NoteDetailPage(
                         }
                     }
                 }
-
-            Spacer(modifier = Modifier.height(48.dp))
+                
         }
         
         if (showDeleteConfirm) {
@@ -393,7 +397,11 @@ fun NoteDetailPage(
                 confirmButton = {
                     TextButton(onClick = {
                         showDiscardDialog = false
-                        if (isEditOrNew) onToggleEditMode() else onBack()
+                        when {
+                            isNewNote -> onBack() // New note → home screen
+                            isEditOrNew -> onToggleEditMode() // Edit mode → view mode
+                            else -> onBack() // View mode → home screen
+                        }
                     }) {
                         Text("Discard", color = MaterialTheme.colorScheme.error)
                     }
