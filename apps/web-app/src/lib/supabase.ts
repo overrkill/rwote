@@ -239,6 +239,88 @@ export function setAiSettings(settings: AiSettings) {
   localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settings))
 }
 
+// ── User Settings ────────────────────────────────────
+
+export interface UserSettings {
+  theme: string
+  aiProvider: 'disabled' | 'ollama' | 'groq'
+  aiOllamaUrl: string
+  aiOllamaModel: string
+  fontSize: 'small' | 'medium' | 'large'
+}
+
+const USER_SETTINGS_KEY = 'rwote_user_settings'
+
+export function getStoredUserSettings(): UserSettings | null {
+  if (typeof window === 'undefined') return null
+  const stored = localStorage.getItem(USER_SETTINGS_KEY)
+  if (stored) {
+    return JSON.parse(stored)
+  }
+  return null
+}
+
+export async function loadUserSettings(): Promise<UserSettings> {
+  const defaults: UserSettings = {
+    theme: 'paper_dark',
+    aiProvider: 'disabled',
+    aiOllamaUrl: 'http://localhost:11434',
+    aiOllamaModel: 'llama3.2',
+    fontSize: 'medium',
+  }
+
+  try {
+    const { data, error } = await supabase
+      .rpc('get_user_settings')
+
+    if (error || !data) {
+      return getStoredUserSettings() || defaults
+    }
+
+    const row = Array.isArray(data) ? data[0] : data
+    if (!row) {
+      return getStoredUserSettings() || defaults
+    }
+
+    const settings: UserSettings = {
+      theme: row.theme || defaults.theme,
+      aiProvider: row.ai_provider || defaults.aiProvider,
+      aiOllamaUrl: row.ai_ollama_url || defaults.aiOllamaUrl,
+      aiOllamaModel: row.ai_ollama_model || defaults.aiOllamaModel,
+      fontSize: row.font_size || defaults.fontSize,
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(settings))
+    }
+
+    return settings
+  } catch {
+    return getStoredUserSettings() || defaults
+  }
+}
+
+export async function saveUserSettings(settings: Partial<UserSettings>): Promise<void> {
+  const currentSettings = await loadUserSettings()
+  const merged = { ...currentSettings, ...settings }
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(merged))
+  }
+
+  try {
+    await supabase.rpc('update_user_settings', {
+      p_theme: settings.theme,
+      p_ai_provider: settings.aiProvider,
+      p_ai_ollama_url: settings.aiOllamaUrl,
+      p_ai_ollama_model: settings.aiOllamaModel,
+      p_font_size: settings.fontSize,
+    })
+  } catch (error) {
+    console.error('Failed to save user settings to DB:', error)
+  }
+}
+
 // ── Summarization ────────────────────────────────────
 
 const SUMMARY_PROMPT = `You are a precise summarization assistant. Given the text below, do the following:

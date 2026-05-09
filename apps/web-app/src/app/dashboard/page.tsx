@@ -16,7 +16,10 @@ import {
   getAiSettings,
   setAiSettings,
   summarizeUsingCloud,
-  summarizeUsingLocal
+  summarizeUsingLocal,
+  loadUserSettings,
+  saveUserSettings,
+  type UserSettings
 } from '@/lib/supabase'
 import Avatar from '@/components/ui/avatar'
 import type { Note, SubscriptionStatus, User, AiSettings } from '@/lib/types'
@@ -132,12 +135,18 @@ export default function DashboardPage() {
   async function loadData(token: string) {
     try {
       setLoading(true)
+
+      const userSettings = await loadUserSettings()
+      setAiSettingsState({
+        provider: userSettings.aiProvider,
+        ollamaUrl: userSettings.aiOllamaUrl,
+        ollamaModel: userSettings.aiOllamaModel,
+      })
+      setAiEnabled(userSettings.aiProvider !== 'disabled')
+      setTheme(userSettings.theme)
+
       const sub = await getSubscriptionStatus(token)
       setSubscription(sub)
-
-      const ai = getAiSettings()
-      setAiSettingsState(ai)
-      setAiEnabled(ai.provider !== 'disabled')
 
       if (sub.can_sync) {
         const { notes: cloudNotes, error } = await loadNotes(token)
@@ -419,12 +428,20 @@ export default function DashboardPage() {
         aiSettings={aiSettings}
         currentTheme={themeId}
         themeList={themeList}
-        onAiSettingsChange={(settings) => {
+        onAiSettingsChange={async (settings) => {
           setAiSettings(settings)
           setAiSettingsState(settings)
           setAiEnabled(settings.provider !== 'disabled')
+          await saveUserSettings({
+            aiProvider: settings.provider,
+            aiOllamaUrl: settings.ollamaUrl,
+            aiOllamaModel: settings.ollamaModel,
+          })
         }}
-        onThemeChange={(themeId) => setTheme(themeId)}
+        onThemeChange={async (newThemeId) => {
+          setTheme(newThemeId)
+          await saveUserSettings({ theme: newThemeId })
+        }}
         onSubscriptionOpen={() => setShowSubscriptionModal(true)}
         onExport={() => {
           const data = JSON.stringify(notes, null, 2)
