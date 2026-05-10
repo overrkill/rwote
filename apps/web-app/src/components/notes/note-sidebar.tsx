@@ -1,16 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import type { Note } from '@/lib/types'
-import { Plus, Search, X, Hash } from 'lucide-react'
+import { Hash } from 'lucide-react'
 
 interface NoteSidebarProps {
   notes: Note[]
   selectedId: string | null
   onSelect: (note: Note) => void
-  onNew: () => void
   searchQuery: string
-  onSearchChange: (query: string) => void
 }
 
 function getTagColor(tag: string): string {
@@ -35,9 +32,7 @@ export default function NoteSidebar({
   notes,
   selectedId,
   onSelect,
-  onNew,
   searchQuery,
-  onSearchChange,
 }: NoteSidebarProps) {
   const filteredNotes = notes.filter(note => {
     if (!searchQuery) return true
@@ -78,37 +73,6 @@ export default function NoteSidebar({
           background: var(--text-tertiary);
         }
       `}</style>
-      <div className="p-3 flex items-center gap-2 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
-        <button
-          onClick={onNew}
-          className="p-2 rounded-md transition-colors hover:bg-black/10"
-          style={{ color: 'var(--text-primary)' }}
-          title="New Note"
-        >
-          <Plus size={18} strokeWidth={2} />
-        </button>
-        <div className="flex-1 relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search..."
-            className="w-full h-8 pl-8 pr-3 text-sm rounded-md outline-none transition-colors"
-            style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => onSearchChange('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-black/10"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
-      </div>
-
       <div className="flex-1 overflow-y-auto sidebar-scroll">
         {sortedNotes.length === 0 ? (
           <div className="p-4 text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Cloud, Download, LogOut, Check, Loader2, ChevronDown } from 'lucide-react'
+import { Cloud, Download, LogOut, Check, Loader2 } from 'lucide-react'
 import type { User, AiSettings, SubscriptionStatus } from '@/lib/types'
 import Avatar from './avatar'
 import SideSheet from './side-sheet'
@@ -40,7 +40,6 @@ export default function SettingsPanel({
   const [ollamaModel, setOllamaModel] = useState(aiSettings.ollamaModel)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
-  const [aiExpanded, setAiExpanded] = useState(false)
 
   const handleSave = () => {
     onAiSettingsChange({ provider, ollamaUrl, ollamaModel })
@@ -63,7 +62,6 @@ export default function SettingsPanel({
   }
 
   const currentThemeName = themeList.find(t => t.id === currentTheme)?.name || 'Theme'
-  const currentProviderName = provider === 'disabled' ? 'Disabled' : provider === 'ollama' ? 'Ollama' : 'Groq'
 
   return (
     <SideSheet open={isOpen} onClose={onClose}>
@@ -78,80 +76,67 @@ export default function SettingsPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         <section>
           <div className="text-xs font-medium mb-3" style={{ color: 'var(--text-tertiary)' }}>AI Summarization</div>
-          <div 
-            className="flex items-center justify-between px-4 py-3 cursor-pointer transition-colors rounded"
-            style={{ backgroundColor: 'var(--surface-alt)' }}
-            onClick={() => setAiExpanded(!aiExpanded)}
+          <select
+            value={provider}
+            onChange={(e) => {
+              const newProvider = e.target.value as AiSettings['provider']
+              setProvider(newProvider)
+              onAiSettingsChange({ provider: newProvider, ollamaUrl, ollamaModel })
+            }}
+            className="w-full px-4 py-2.5 text-sm rounded"
+            style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
           >
-            <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{currentProviderName}</span>
-            <ChevronDown size={14} style={{ color: 'var(--text-tertiary)', transform: aiExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-          </div>
-          
-          {aiExpanded && (
-            <div className="mt-2 space-y-2">
-                <select
-                  value={provider}
-                  onChange={(e) => {
-                    const newProvider = e.target.value as AiSettings['provider']
-                    setProvider(newProvider)
-                    onAiSettingsChange({ provider: newProvider, ollamaUrl, ollamaModel })
-                  }}
-                className="w-full px-4 py-2.5 text-sm rounded"
-                style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
+            <option value="disabled">Disabled</option>
+            <option value="groq">Groq</option>
+            <option value="ollama">Local</option>
+          </select>
+
+          {provider === 'ollama' && (
+            <div className="mt-3 space-y-3">
+              <div>
+                <div className="text-xs mb-1.5 px-1" style={{ color: 'var(--text-secondary)' }}>Ollama URL</div>
+                <input
+                  type="text"
+                  value={ollamaUrl}
+                  onChange={(e) => setOllamaUrl(e.target.value)}
+                  onBlur={handleSave}
+                  placeholder="http://localhost:11434"
+                  className="w-full px-4 py-2.5 text-sm rounded"
+                  style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
+                />
+              </div>
+              <div>
+                <div className="text-xs mb-1.5 px-1" style={{ color: 'var(--text-secondary)' }}>Model</div>
+                <input
+                  type="text"
+                  value={ollamaModel}
+                  onChange={(e) => setOllamaModel(e.target.value)}
+                  onBlur={handleSave}
+                  placeholder="llama3.2"
+                  className="w-full px-4 py-2.5 text-sm rounded"
+                  style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
+                />
+              </div>
+              <button
+                onClick={handleTestConnection}
+                disabled={testing}
+                className="px-4 py-2 text-xs rounded flex items-center gap-2 disabled:opacity-50"
+                style={{ backgroundColor: 'var(--accent)', color: 'white' }}
               >
-                <option value="disabled">Disabled</option>
-                <option value="ollama">Ollama (Local)</option>
-                <option value="groq">Groq (Cloud)</option>
-              </select>
-
-              {provider === 'ollama' && (
-                <div className="space-y-3 pt-2">
-                  <div>
-                    <div className="text-xs mb-1.5 px-1" style={{ color: 'var(--text-secondary)' }}>Ollama URL</div>
-                    <input
-                      type="text"
-                      value={ollamaUrl}
-                      onChange={(e) => setOllamaUrl(e.target.value)}
-                      onBlur={handleSave}
-                      placeholder="http://localhost:11434"
-                      className="w-full px-4 py-2.5 text-sm rounded"
-                      style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <div>
-                    <div className="text-xs mb-1.5 px-1" style={{ color: 'var(--text-secondary)' }}>Model</div>
-                    <input
-                      type="text"
-                      value={ollamaModel}
-                      onChange={(e) => setOllamaModel(e.target.value)}
-                      onBlur={handleSave}
-                      placeholder="llama3.2"
-                      className="w-full px-4 py-2.5 text-sm rounded"
-                      style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
-                    />
-                  </div>
-                  <button
-                    onClick={handleTestConnection}
-                    disabled={testing}
-                    className="px-4 py-2 text-xs rounded flex items-center gap-2 disabled:opacity-50"
-                    style={{ backgroundColor: 'var(--accent)', color: 'white' }}
-                  >
-                    {testing ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                    {testing ? 'Testing...' : 'Test Connection'}
-                  </button>
-                  {testResult === 'success' && (
-                    <p className="text-xs px-1 flex items-center gap-1" style={{ color: '#22c55e' }}>Connected successfully</p>
-                  )}
-                  {testResult === 'error' && (
-                    <p className="text-xs px-1" style={{ color: '#ef4444' }}>Connection failed. Check URL and restart Ollama.</p>
-                  )}
-                </div>
+                {testing ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                {testing ? 'Testing...' : 'Test Connection'}
+              </button>
+              {testResult === 'success' && (
+                <p className="text-xs px-1 flex items-center gap-1" style={{ color: '#22c55e' }}>Connected successfully</p>
               )}
-
-              {provider === 'groq' && (
-                <p className="text-xs pt-2" style={{ color: 'var(--text-secondary)' }}>Uses cloud summarization. Data sent to servers.</p>
+              {testResult === 'error' && (
+                <p className="text-xs px-1" style={{ color: '#ef4444' }}>Connection failed. Check URL and restart Ollama.</p>
               )}
             </div>
+          )}
+
+          {provider === 'groq' && (
+            <p className="text-xs mt-3" style={{ color: 'var(--text-secondary)' }}>Uses cloud summarization. Data sent to servers.</p>
           )}
         </section>
 

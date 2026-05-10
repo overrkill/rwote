@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   getAuthToken,
@@ -27,8 +27,9 @@ import NoteSidebar from '@/components/notes/note-sidebar'
 import NoteDetail from '@/components/notes/note-detail'
 import SubscriptionModal from '@/components/ui/subscription-modal'
 import SettingsPanel from '@/components/ui/settings-panel'
+import Dialog from '@/components/ui/dialog'
 import { useTheme } from '@/components/providers/theme-provider'
-import { Cloud, AlertCircle, List } from 'lucide-react'
+import { Cloud, AlertCircle, List, Search, Plus, X } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -49,6 +50,9 @@ export default function DashboardPage() {
   const [sidebarWidth, setSidebarWidth] = useState(280)
   const [isResizing, setIsResizing] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [searchModalOpen, setSearchModalOpen] = useState(false)
+  const [searchFocusedIndex, setSearchFocusedIndex] = useState(0)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const themeList = [
     { id: 'paper_dark', name: 'Paper Dark' },
@@ -73,6 +77,24 @@ export default function DashboardPage() {
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [menuOpen])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        if (searchModalOpen) {
+          setSearchModalOpen(false)
+          setSearchQuery('')
+          setSearchFocusedIndex(0)
+        } else {
+          setSearchModalOpen(true)
+          setTimeout(() => searchInputRef.current?.focus(), 100)
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [searchModalOpen])
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -310,6 +332,16 @@ export default function DashboardPage() {
     router.push('/')
   }
 
+  const searchResults = useMemo(() => {
+    if (!searchQuery) return notes
+    const q = searchQuery.toLowerCase()
+    return notes.filter(n =>
+      n.title.toLowerCase().includes(q) ||
+      (n.content && n.content.toLowerCase().includes(q)) ||
+      (n.tags && n.tags.some(t => t.toLowerCase().includes(q)))
+    )
+  }, [notes, searchQuery])
+
   const selectedNote = notes.find(n => n.id === selectedNoteId) || null
 
   if (loading) {
@@ -357,17 +389,23 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-1 relative">
           <button
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setSearchModalOpen(true)}
             className="p-2 rounded-md transition-colors"
-            style={{ 
-              backgroundColor: aiSettings.provider !== 'disabled' ? 'rgba(34, 197, 94, 0.2)' : 'transparent', 
-              color: aiSettings.provider !== 'disabled' ? '#22c55e' : 'var(--text-secondary)'
-            }}
-            title="Change AI provider in settings"
+            style={{ color: 'var(--text-secondary)' }}
+            title="Search (Ctrl+K)"
           >
-            <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
+            <Search size={16} strokeWidth={2} />
           </button>
-          
+
+          <button
+            onClick={handleNewNote}
+            className="p-2 rounded-md transition-colors"
+            style={{ color: 'var(--text-primary)' }}
+            title="New Note"
+          >
+            <Plus size={18} strokeWidth={2} />
+          </button>
+
           <button
             onClick={() => setSettingsOpen(true)}
             className="p-1 rounded-md transition-colors"
@@ -385,9 +423,7 @@ export default function DashboardPage() {
             notes={notes}
             selectedId={selectedNoteId}
             onSelect={handleSelectNote}
-            onNew={handleNewNote}
             searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
           />
           <div
             className="absolute top-0 right-0 h-full w-1 cursor-ew-resize"
@@ -419,9 +455,7 @@ export default function DashboardPage() {
               notes={notes}
               selectedId={selectedNoteId}
               onSelect={handleSelectNote}
-              onNew={handleNewNote}
               searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
             />
           </div>
         </div>
@@ -489,6 +523,89 @@ export default function DashboardPage() {
         }}
         onSignOut={handleSignOut}
       />
+
+      <Dialog
+        open={searchModalOpen}
+        onOpenChange={(open) => {
+          setSearchModalOpen(open)
+          if (!open) { setSearchQuery(''); setSearchFocusedIndex(0) }
+        }}
+        title="Search notes"
+      >
+        <div
+          className="p-4"
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setSearchFocusedIndex(i => Math.min(i + 1, searchResults.length - 1))
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setSearchFocusedIndex(i => Math.max(i - 1, 0))
+            } else if (e.key === 'Enter' && searchResults[searchFocusedIndex]) {
+              handleSelectNote(searchResults[searchFocusedIndex])
+              setSearchModalOpen(false)
+              setSearchQuery('')
+              setSearchFocusedIndex(0)
+            }
+          }}
+        >
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setSearchFocusedIndex(0) }}
+              placeholder="Search notes..."
+              autoFocus
+              className="w-full h-10 pl-9 pr-4 text-sm rounded-lg outline-none transition-all"
+              style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(''); setSearchFocusedIndex(0); searchInputRef.current?.focus() }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-black/10"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-80 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {searchResults.length === 0 ? (
+              <p className="text-sm text-center py-8" style={{ color: 'var(--text-tertiary)' }}>
+                {searchQuery ? 'No notes match' : 'Type to search'}
+              </p>
+            ) : (
+              searchResults.map((note, i) => (
+                <div
+                  key={note.id}
+                  onClick={() => { handleSelectNote(note); setSearchModalOpen(false); setSearchQuery(''); setSearchFocusedIndex(0) }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors"
+                  style={{
+                    backgroundColor: i === searchFocusedIndex ? 'var(--surface-alt)' : 'transparent',
+                  }}
+                  onMouseEnter={() => setSearchFocusedIndex(i)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                      {note.pinned && <span className="mr-1" style={{ color: 'var(--accent)' }}>📌</span>}
+                      {note.title || 'Untitled'}
+                    </div>
+                    {note.content && (
+                      <div className="text-xs truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>{note.content}</div>
+                    )}
+                  </div>
+                  <span className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+                    {new Date(note.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Dialog>
     </div>
   )
 }
