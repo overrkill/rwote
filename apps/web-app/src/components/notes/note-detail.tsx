@@ -127,9 +127,9 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
     editorRef.current = editor
   }
 
-  const handleEditorUpdate = (html: string) => {
-    contentRef.current = html
-    setContent(html)
+  const handleEditorUpdate = (md: string) => {
+    contentRef.current = md
+    setContent(md)
     scheduleSave()
   }
 

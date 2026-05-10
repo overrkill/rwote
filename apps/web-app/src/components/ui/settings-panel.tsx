@@ -89,12 +89,13 @@ export default function SettingsPanel({
           
           {aiExpanded && (
             <div className="mt-2 space-y-2">
-              <select
-                value={provider}
-                onChange={(e) => {
-                  setProvider(e.target.value as AiSettings['provider'])
-                  setTimeout(handleSave, 0)
-                }}
+                <select
+                  value={provider}
+                  onChange={(e) => {
+                    const newProvider = e.target.value as AiSettings['provider']
+                    setProvider(newProvider)
+                    onAiSettingsChange({ provider: newProvider, ollamaUrl, ollamaModel })
+                  }}
                 className="w-full px-4 py-2.5 text-sm rounded"
                 style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
               >

@@ -4,6 +4,7 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
+import { Markdown } from '@tiptap/markdown'
 import { useEffect, useCallback, useRef } from 'react'
 
 interface MarkdownEditorProps {
@@ -13,6 +14,10 @@ interface MarkdownEditorProps {
   onSave?: () => void
   onInput?: () => void
   placeholder?: string
+}
+
+function looksLikeHtml(str: string): boolean {
+  return /^\s*</.test(str)
 }
 
 export default function MarkdownEditor({ content, onChange, onCreated, onSave, onInput, placeholder = 'Start typing...' }: MarkdownEditorProps) {
@@ -53,11 +58,14 @@ export default function MarkdownEditor({ content, onChange, onCreated, onSave, o
           class: 'editor-link',
         },
       }),
+      Markdown.configure({
+        indentation: { style: 'space', size: 2 },
+      }),
     ],
     content: content,
     onUpdate: ({ editor }) => {
       if (!isExternalUpdate.current) {
-        onChange(editor.getHTML())
+        onChange(editor.getMarkdown())
         onInput?.()
       }
     },
@@ -81,10 +89,14 @@ export default function MarkdownEditor({ content, onChange, onCreated, onSave, o
 
   useEffect(() => {
     if (editor) {
-      const currentHTML = editor.getHTML()
-      if (content !== currentHTML) {
+      const currentMd = editor.getMarkdown()
+      if (content !== currentMd) {
         isExternalUpdate.current = true
-        editor.commands.setContent(content)
+        if (content && !looksLikeHtml(content)) {
+          editor.commands.setContent(content, { contentType: 'markdown' as any })
+        } else {
+          editor.commands.setContent(content)
+        }
         isExternalUpdate.current = false
       }
     }
