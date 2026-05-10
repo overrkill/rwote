@@ -45,7 +45,6 @@ export default function DashboardPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(getStoredUser())
   const [aiSettings, setAiSettingsState] = useState<AiSettings>({ provider: 'disabled', ollamaUrl: 'http://localhost:11434', ollamaModel: 'llama3.2' })
-  const [aiEnabled, setAiEnabled] = useState(false)
   const [aiSummarizing, setAiSummarizing] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(280)
   const [isResizing, setIsResizing] = useState(false)
@@ -143,7 +142,6 @@ export default function DashboardPage() {
         ollamaUrl: userSettings.aiOllamaUrl,
         ollamaModel: userSettings.aiOllamaModel,
       })
-      setAiEnabled(userSettings.aiProvider !== 'disabled')
       setTheme(userSettings.theme)
 
       const sub = await getSubscriptionStatus(token)
@@ -209,7 +207,7 @@ export default function DashboardPage() {
     let finalTitle = updated.title
     let finalTags = [...updated.tags]
 
-    if (aiEnabled && aiSettings.provider !== 'disabled' && updated.title.trim() && !updated.content) {
+    if (aiSettings.provider !== 'disabled' && updated.title.trim() && !updated.content) {
       setAiSummarizing(true)
       try {
         let result
@@ -359,13 +357,13 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-1 relative">
           <button
-            onClick={() => setAiEnabled(!aiEnabled)}
+            onClick={() => setSettingsOpen(true)}
             className="p-2 rounded-md transition-colors"
             style={{ 
-              backgroundColor: aiEnabled ? 'rgba(34, 197, 94, 0.2)' : 'transparent', 
-              color: aiEnabled ? '#22c55e' : 'var(--text-secondary)'
+              backgroundColor: aiSettings.provider !== 'disabled' ? 'rgba(34, 197, 94, 0.2)' : 'transparent', 
+              color: aiSettings.provider !== 'disabled' ? '#22c55e' : 'var(--text-secondary)'
             }}
-            title={aiEnabled ? 'AI ON' : 'AI OFF'}
+            title="Change AI provider in settings"
           >
             <span style={{ fontSize: '12px', fontWeight: 600 }}>ai</span>
           </button>
@@ -468,7 +466,6 @@ export default function DashboardPage() {
         onAiSettingsChange={async (settings) => {
           setAiSettings(settings)
           setAiSettingsState(settings)
-          setAiEnabled(settings.provider !== 'disabled')
           await saveUserSettings({
             aiProvider: settings.provider,
             aiOllamaUrl: settings.ollamaUrl,

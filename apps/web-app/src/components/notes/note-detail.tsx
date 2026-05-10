@@ -5,6 +5,7 @@ import type { Editor } from '@tiptap/react'
 import type { Note } from '@/lib/types'
 import { Pin, Copy, Trash2, X, Check } from 'lucide-react'
 import MarkdownEditor from './markdown-editor'
+import AlertDialog, { AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
 
 interface NoteDetailProps {
   note: Note
@@ -37,6 +38,7 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
   const [tags, setTags] = useState<string[]>(note.tags || [])
   const [copied, setCopied] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const editorRef = useRef<Editor | null>(null)
 
   const titleRef = useRef(title)
@@ -106,9 +108,7 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
   }
 
   const handleDelete = () => {
-    if (confirm('Delete this note?')) {
-      onDelete(note.id)
-    }
+    setDeleteOpen(true)
   }
 
   const removeTag = (tag: string) => {
@@ -224,6 +224,11 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
           />
         </div>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen} title="Delete note?" description="This cannot be undone.">
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction onClick={() => onDelete(note.id)} variant="destructive">Delete</AlertDialogAction>
+      </AlertDialog>
     </div>
   )
 }
