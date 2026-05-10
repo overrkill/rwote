@@ -12,7 +12,7 @@ export default function HomePage() {
     if (user) {
       router.push('/dashboard')
     } else {
-      router.push('/auth/login')
+      router.push('/dashboard?guest')
     }
   }, [router])
 

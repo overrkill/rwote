@@ -52,6 +52,8 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchModalOpen, setSearchModalOpen] = useState(false)
   const [searchFocusedIndex, setSearchFocusedIndex] = useState(0)
+  const [isGuest, setIsGuest] = useState(false)
+  const [migrating, setMigrating] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const themeList = [
@@ -123,6 +125,13 @@ export default function DashboardPage() {
   }, [isResizing])
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+
+    if (params.has('guest')) {
+      initGuest()
+      return
+    }
+
     const { data: { subscription: authSubscription } } = onAuthStateChange((user) => {
       setUser(user)
       if (!user) {
@@ -144,6 +153,13 @@ export default function DashboardPage() {
       }
       setUser(currentUser)
 
+      if (params.has('migrate')) {
+        setMigrating(true)
+        await migrateGuestNotes(token)
+        setMigrating(false)
+        window.history.replaceState({}, '', '/dashboard')
+      }
+
       await loadData(token)
     }
 
@@ -153,6 +169,53 @@ export default function DashboardPage() {
       authSubscription?.unsubscribe()
     }
   }, [router])
+
+  function initGuest() {
+    setIsGuest(true)
+    try {
+      const stored = localStorage.getItem('rwote_guest_notes')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        setNotes(parsed)
+        setLoading(false)
+        return
+      }
+    } catch {}
+
+    const defaultNote: Note = {
+      id: crypto.randomUUID(),
+      title: '',
+      content: '',
+      tags: [],
+      pinned: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    setNotes([defaultNote])
+    setSelectedNoteId(defaultNote.id)
+    localStorage.setItem('rwote_guest_notes', JSON.stringify([defaultNote]))
+    setLoading(false)
+  }
+
+  async function migrateGuestNotes(token: string) {
+    try {
+      const stored = localStorage.getItem('rwote_guest_notes')
+      if (!stored) return
+      const guestNotes: Note[] = JSON.parse(stored)
+      for (const note of guestNotes) {
+        await saveNote(note, token)
+      }
+      localStorage.removeItem('rwote_guest_notes')
+    } catch (e) {
+      console.error('Failed to migrate notes:', e)
+    }
+  }
+
+  useEffect(() => {
+    if (isGuest) {
+      localStorage.setItem('rwote_guest_notes', JSON.stringify(notes))
+    }
+  }, [notes, isGuest])
 
   async function loadData(token: string) {
     try {
@@ -257,7 +320,7 @@ export default function DashboardPage() {
     }
 
     setNotes(notes.map(n => n.id === finalNote.id ? finalNote : n))
-    syncToCloud(finalNote)
+    if (!isGuest) syncToCloud(finalNote)
   }
 
   const handleDeleteNote = async (id: string) => {
@@ -270,7 +333,7 @@ export default function DashboardPage() {
       setSelectedNoteId(remaining.length > 0 ? remaining[0].id : null)
     }
     
-    const success = await deleteFromCloud(id)
+    const success = isGuest || await deleteFromCloud(id)
     if (!success) {
       setNotes(previousNotes)
       setSelectedNoteId(prevSelected)
@@ -300,7 +363,7 @@ export default function DashboardPage() {
     
     const updatedNote = { ...noteToUpdate, pinned: !noteToUpdate.pinned, updated_at: new Date().toISOString() }
     setNotes(notes.map(n => n.id === id ? updatedNote : n))
-    syncToCloud(updatedNote)
+    if (!isGuest) syncToCloud(updatedNote)
   }
 
   const handleSubscribe = async (plan: string) => {
@@ -367,7 +430,7 @@ export default function DashboardPage() {
           <h1 className="text-xl" style={{ fontFamily: "'Grand Hotel', cursive", color: 'var(--text-primary)' }}>Rwote</h1>
           
           <div className="flex items-center gap-1">
-            {syncStatus === 'syncing' && (
+            {!isGuest && syncStatus === 'syncing' && (
               <span className="text-xs animate-pulse" style={{ color: 'var(--text-tertiary)' }}>Syncing...</span>
             )}
             {syncStatus === 'synced' && lastSyncedAt && (
@@ -417,6 +480,15 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {isGuest && (
+        <div className="px-4 py-2 text-xs flex items-center justify-center gap-2 shrink-0"
+          style={{ backgroundColor: 'var(--accent)', color: '#fff' }}
+        >
+          <span>Notes saved locally only.</span>
+          <a href="/auth/login" className="underline font-medium">Sign up / Sign in</a>
+          <span>to sync across devices.</span>
+        </div>
+      )}
       <div className="flex-1 flex overflow-hidden">
         <div className="hidden md:block" style={{ width: sidebarWidth, flexShrink: 0, position: 'relative' }}>
           <NoteSidebar

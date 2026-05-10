@@ -25,7 +25,7 @@ export default function CallbackPage() {
           name: user.user_metadata?.name || user.user_metadata?.full_name,
           avatar: user.user_metadata?.avatar || user.user_metadata?.picture,
         })
-        router.push('/dashboard')
+        router.push('/dashboard?migrate=1')
       } else {
         router.push('/auth/login')
       }

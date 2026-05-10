@@ -188,14 +188,16 @@ export default function SettingsPanel({
       </div>
 
       <div className="p-4" style={{ borderTop: '1px solid var(--border)' }}>
-        <button
-          onClick={onSignOut}
-          className="w-full px-4 py-2.5 text-sm rounded flex items-center justify-center gap-2 transition-colors"
-          style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
-        >
-          <LogOut size={14} />
-          Sign Out
-        </button>
+        {user && (
+          <button
+            onClick={onSignOut}
+            className="w-full px-4 py-2.5 text-sm rounded flex items-center justify-center gap-2 transition-colors"
+            style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
+          >
+            <LogOut size={14} />
+            Sign Out
+          </button>
+        )}
       </div>
     </SideSheet>
   )

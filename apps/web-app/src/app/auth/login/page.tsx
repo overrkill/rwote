@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { signIn, signInWithGoogle, setStoredUser } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useTheme } from '@/components/providers/theme-provider'
 import { Sun } from 'lucide-react'
@@ -16,6 +16,8 @@ export default function LoginPage() {
   const [showThemeMenu, setShowThemeMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams?.get('redirect') || 'dashboard'
   const { themeId, setTheme } = useTheme()
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function LoginPage() {
         name: data.user.user_metadata?.name,
         avatar: data.user.user_metadata?.avatar || data.user.user_metadata?.picture,
       })
-      router.push('/dashboard')
+      router.push(`/${redirectTo}?migrate=1`)
     }
     setLoading(false)
   }
