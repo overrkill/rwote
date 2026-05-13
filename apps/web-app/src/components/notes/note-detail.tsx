@@ -112,7 +112,15 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
   }
 
   const removeTag = (tag: string) => {
-    setTags(tags.filter(t => t !== tag))
+    const newTags = tags.filter(t => t !== tag)
+    setTags(newTags)
+    tagsRef.current = newTags
+    const regex = new RegExp(`#${tag}\\b`, 'gi')
+    const newTitle = title.replace(regex, '').trim()
+    if (newTitle !== title) {
+      setTitle(newTitle)
+      titleRef.current = newTitle
+    }
     doSave()
   }
 
