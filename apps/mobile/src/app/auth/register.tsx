@@ -1,7 +1,7 @@
 'use client';
 
 import { View, Text, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
@@ -11,6 +11,7 @@ import { RwoteLogo } from '@/components/rwote-logo';
 export default function RegisterScreen() {
   const { theme } = useTheme();
   const toast = useToast();
+  const router = useRouter();
   const { signUp, isLoading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +28,7 @@ export default function RegisterScreen() {
     }
     try {
       await signUp(email, password);
+      router.replace('/(app)' as any);
     } catch {
       toast.error('Failed to create account');
     }

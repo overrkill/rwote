@@ -1,162 +1,119 @@
-'use client';
-
-import { Text, StyleSheet, TextStyle, View } from 'react-native';
 import { useMemo } from 'react';
 import { useTheme } from '@/components/theme-provider';
+import { WebView } from 'react-native-webview';
+import { ViewStyle } from 'react-native';
 
 interface MarkdownViewProps {
   content: string;
-  style?: TextStyle;
+  style?: ViewStyle;
 }
 
-interface Segment {
-  type: 'text' | 'bold' | 'italic' | 'code' | 'heading' | 'list' | 'link';
-  content: string;
-  level?: number;
+function esc(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function parseMarkdown(text: string): Segment[][] {
-  const lines = text.split('\n');
-  const result: Segment[][] = [];
+function renderInline(text: string): string {
+  return text
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+}
 
-  for (const line of lines) {
-    const lineSegments: Segment[] = [];
+function mdToHtml(md: string): string {
+  const lines = md.split('\n');
+  const html: string[] = [];
+  let inList = false;
 
-    if (line.startsWith('# ')) {
-      lineSegments.push({ type: 'heading', content: line.slice(2), level: 1 });
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (!line) {
+      if (inList) { html.push('</ul>'); inList = false; }
+      html.push('<br/>');
+      continue;
+    }
+
+    if (line.startsWith('### ')) {
+      if (inList) { html.push('</ul>'); inList = false; }
+      html.push(`<h3>${esc(line.slice(4))}</h3>`);
     } else if (line.startsWith('## ')) {
-      lineSegments.push({ type: 'heading', content: line.slice(3), level: 2 });
-    } else if (line.startsWith('### ')) {
-      lineSegments.push({ type: 'heading', content: line.slice(4), level: 3 });
+      if (inList) { html.push('</ul>'); inList = false; }
+      html.push(`<h2>${esc(line.slice(3))}</h2>`);
+    } else if (line.startsWith('# ')) {
+      if (inList) { html.push('</ul>'); inList = false; }
+      html.push(`<h1>${esc(line.slice(2))}</h1>`);
     } else if (line.startsWith('- ') || line.startsWith('* ')) {
-      lineSegments.push({ type: 'list', content: line.slice(2) });
+      if (!inList) { html.push('<ul>'); inList = true; }
+      html.push(`<li>${renderInline(esc(line.slice(2)))}</li>`);
+    } else if (line.startsWith('<')) {
+      if (inList) { html.push('</ul>'); inList = false; }
+      html.push(line);
     } else {
-      let remaining = line;
-      while (remaining.length > 0) {
-        const codeMatch = remaining.match(/^`([^`]+)`/);
-        if (codeMatch) {
-          lineSegments.push({ type: 'code', content: codeMatch[1] });
-          remaining = remaining.slice(codeMatch[0].length);
-          continue;
-        }
-
-        const boldMatch = remaining.match(/^\*\*([^*]+)\*\*/);
-        if (boldMatch) {
-          lineSegments.push({ type: 'bold', content: boldMatch[1] });
-          remaining = remaining.slice(boldMatch[0].length);
-          continue;
-        }
-
-        const italicMatch = remaining.match(/^\*([^*]+)\*/);
-        if (italicMatch) {
-          lineSegments.push({ type: 'italic', content: italicMatch[1] });
-          remaining = remaining.slice(italicMatch[0].length);
-          continue;
-        }
-
-        const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
-        if (linkMatch) {
-          lineSegments.push({ type: 'link', content: linkMatch[1], level: 0 });
-          remaining = remaining.slice(linkMatch[0].length);
-          continue;
-        }
-
-        const textMatch = remaining.match(/^[\*\`\[#\-]+/);
-        if (textMatch) {
-          lineSegments.push({ type: 'text', content: textMatch[0] });
-          remaining = remaining.slice(textMatch[0].length);
-          continue;
-        }
-
-        if (remaining.length > 0) {
-          lineSegments.push({ type: 'text', content: remaining[0] });
-          remaining = remaining.slice(1);
-        }
-      }
+      if (inList) { html.push('</ul>'); inList = false; }
+      html.push(`<p>${renderInline(esc(line))}</p>`);
     }
-
-    if (lineSegments.length === 0) {
-      lineSegments.push({ type: 'text', content: '' });
-    }
-    result.push(lineSegments);
   }
 
-  return result;
+  if (inList) html.push('</ul>');
+  return html.join('\n');
 }
 
 export function MarkdownView({ content, style }: MarkdownViewProps) {
   const { theme } = useTheme();
-  const parsed = useMemo(() => parseMarkdown(content), [content]);
+
+  const html = useMemo(() => {
+    const body = mdToHtml(content);
+    const bg = theme.colors.bg;
+    const fg = theme.colors.textPrimary;
+    const tertiary = theme.colors.textTertiary;
+    const accent = theme.colors.accent;
+    const codeBg = theme.colors.surfaceAlt;
+    const border = theme.colors.border;
+
+    return `
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font: -apple-system, system-ui, sans-serif;
+            font-size: 15px; line-height: 24px;
+            color: ${fg}; background: ${bg};
+            padding: 0 0 60px; word-wrap: break-word;
+          }
+          h1 { font-size: 22px; font-weight: 700; margin: 0 0 12px; }
+          h2 { font-size: 20px; font-weight: 700; margin: 16px 0 8px; }
+          h3 { font-size: 18px; font-weight: 600; margin: 14px 0 6px; }
+          p { margin: 0 0 8px; }
+          ul { margin: 4px 0; padding-left: 20px; }
+          li { margin: 2px 0; }
+          code {
+            background: ${codeBg}; padding: 2px 6px; border-radius: 4px;
+            font-family: monospace; font-size: 14px;
+          }
+          a { color: ${accent}; text-decoration: underline; }
+          strong { font-weight: 700; }
+          em { font-style: italic; }
+          br { display: block; content: ''; margin: 4px 0; }
+          hr { border: none; border-top: 1px solid ${border}; margin: 24px 0 16px; }
+          .meta { font-size: 12px; color: ${tertiary}; }
+        </style>
+      </head>
+      <body>${body}</body>
+      </html>
+    `;
+  }, [content, theme]);
 
   return (
-    <Text style={[styles.container, style, { color: theme.colors.textPrimary }]}>
-      {parsed.map((line, lineIndex) => (
-        <Text key={lineIndex}>
-          {lineIndex > 0 ? '\n' : ''}
-          {line.map((segment, segIndex) => {
-            const baseStyle: TextStyle = {
-              color: theme.colors.textPrimary,
-            };
-
-            if (segment.type === 'heading') {
-              const sizes = [28, 24, 20];
-              return (
-                <Text key={segIndex} style={[baseStyle, { fontWeight: '700', fontSize: sizes[segment.level! - 1] }]}>
-                  {segment.content}
-                </Text>
-              );
-            }
-            if (segment.type === 'bold') {
-              return (
-                <Text key={segIndex} style={[baseStyle, { fontWeight: '700' }]}>
-                  {segment.content}
-                </Text>
-              );
-            }
-            if (segment.type === 'italic') {
-              return (
-                <Text key={segIndex} style={[baseStyle, { fontStyle: 'italic' }]}>
-                  {segment.content}
-                </Text>
-              );
-            }
-            if (segment.type === 'code') {
-              return (
-                <Text key={segIndex} style={[baseStyle, { fontFamily: 'monospace', backgroundColor: theme.colors.bg, paddingHorizontal: 4, borderRadius: 4 }]}>
-                  {segment.content}
-                </Text>
-              );
-            }
-            if (segment.type === 'list') {
-              return (
-                <Text key={segIndex}>
-                  <Text style={[baseStyle, { fontWeight: '600' }]}>• </Text>
-                  <Text style={baseStyle}>{segment.content}</Text>
-                </Text>
-              );
-            }
-            if (segment.type === 'link') {
-              return (
-                <Text key={segIndex} style={[baseStyle, { color: theme.colors.accent, textDecorationLine: 'underline' }]}>
-                  {segment.content}
-                </Text>
-              );
-            }
-            return (
-              <Text key={segIndex} style={baseStyle}>
-                {segment.content}
-              </Text>
-            );
-          })}
-        </Text>
-      ))}
-    </Text>
+    <WebView
+      source={{ html }}
+      scrollEnabled={true}
+      showsVerticalScrollIndicator={false}
+      style={[
+        { backgroundColor: 'transparent', flex: 1 },
+        style,
+      ]}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-});

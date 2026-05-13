@@ -24,6 +24,26 @@ export function Skeleton({
   style,
 }: SkeletonProps) {
   const { theme } = useTheme();
+
+  return (
+    <View
+      style={[
+        {
+          width: width as any,
+          height,
+          borderRadius,
+          backgroundColor: theme.colors.surfaceAlt,
+          overflow: 'hidden',
+        },
+        style,
+      ]}
+    >
+      <Shimmer theme={theme} />
+    </View>
+  );
+}
+
+function Shimmer({ theme }: { theme: any }) {
   const translateX = useSharedValue(-200);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -37,32 +57,19 @@ export function Skeleton({
   );
 
   return (
-    <View
+    <Animated.View
       style={[
         {
-          width,
-          height,
-          borderRadius,
-          backgroundColor: theme.colors.surfaceAlt,
-          overflow: 'hidden',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: theme.colors.border,
         },
-        style,
+        animatedStyle,
       ]}
-    >
-      <Animated.View
-        style={[
-          {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: theme.colors.border,
-          },
-          animatedStyle,
-        ]}
-      />
-    </View>
+    />
   );
 }
 

@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/stores/auth-store';
@@ -10,9 +8,8 @@ export default function Index() {
 
   useEffect(() => {
     if (!initialized) return;
-    
     if (user) {
-      router.replace('/tabs/(notes)');
+      router.replace('/(app)' as any);
     } else {
       router.replace('/auth');
     }

@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ToastProvider } from '@/components/toast-context';
 import { useAuthStore } from '@/stores/auth-store';
@@ -5,22 +6,6 @@ import { Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-function AuthStack() {
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="auth" />
-    </Stack>
-  );
-}
-
-function MainStack() {
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="tabs" />
-    </Stack>
-  );
-}
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -46,12 +31,22 @@ export default function RootLayout() {
   }
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       <ThemeProvider>
         <ToastProvider>
-          {user ? <MainStack /> : <AuthStack />}
+          {user ? (
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(app)" />
+            </Stack>
+          ) : (
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="auth" />
+            </Stack>
+          )}
         </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

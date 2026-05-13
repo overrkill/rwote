@@ -23,7 +23,7 @@ export default function LoginScreen() {
     }
     try {
       await signIn(email, password);
-      router.replace('/tabs/(notes)');
+      router.replace('/(app)' as any);
     } catch (err: any) {
       toast.error(err.message || 'Failed to sign in');
     }
@@ -32,7 +32,7 @@ export default function LoginScreen() {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-      router.replace('/tabs/(notes)');
+      router.replace('/(app)' as any);
     } catch (err: any) {
       toast.error(err.message || 'Failed to sign in with Google');
     }
