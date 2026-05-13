@@ -17,10 +17,10 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
 import { MarkdownView } from '@/components/markdown-view';
+import { generateId, extractTags, cleanTags, tagColor, tagTextColor } from '@/components/note-list-drawer';
 import {
-  FileText, Pin, Trash2, Copy, Menu, Pencil,
+  FileText, Pin, Trash2, Copy, Menu, Pencil, Plus,
 } from 'lucide-react-native';
-import { tagColor, tagTextColor } from '@/components/note-list-drawer';
 
 export default function HomeScreen() {
   const { theme } = useTheme();
@@ -28,6 +28,9 @@ export default function HomeScreen() {
   const toast = useToast();
   const navigation = useNavigation();
   const s = theme.spacing;
+  const [newNoteVersion, setNewNoteVersion] = useState(0);
+  const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
+  const addNote = useNotesStore((s) => s.addNote);
 
   const selectedNoteId = useUIStore((s) => s.selectedNoteId);
   const notes = useNotesStore((s) => s.notes);
@@ -121,7 +124,7 @@ export default function HomeScreen() {
       </View>
 
       {selectedNote ? (
-        <NoteDetailView note={selectedNote} theme={theme} s={s} toast={toast} />
+        <NoteDetailView key={`${selectedNote.id}-${newNoteVersion}`} note={selectedNote} theme={theme} s={s} toast={toast} autoEdit={selectedNote.id === lastCreatedId} />
       ) : (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: s.xl }}>
           <View
@@ -142,14 +145,46 @@ export default function HomeScreen() {
           </Text>
         </View>
       )}
+
+      <Pressable
+        onPress={() => {
+          const id = generateId();
+          const now = new Date().toISOString();
+          addNote({
+            id, title: '', content: '', tags: [],
+            pinned: false, created_at: now, updated_at: now, synced: false,
+          });
+          useUIStore.getState().setSelectedNoteId(id);
+          setLastCreatedId(id);
+          setNewNoteVersion(v => v + 1);
+        }}
+        style={{
+          position: 'absolute',
+          bottom: insets.bottom + 20,
+          right: 20,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: theme.colors.accentBtn,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 8,
+        }}
+      >
+        <Plus size={24} color={theme.colors.bg} />
+      </Pressable>
     </View>
   );
 }
 
-function NoteDetailView({ note, theme, s, toast }: any) {
+function NoteDetailView({ note, theme, s, toast, autoEdit }: any) {
   const updateNote = useNotesStore((s) => s.updateNote);
   const accessToken = useAuthStore((s) => s.accessToken);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(autoEdit || false);
   const [editTitle, setEditTitle] = useState(note.title);
   const [editContent, setEditContent] = useState(note.content || '');
 
