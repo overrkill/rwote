@@ -6,12 +6,16 @@ import SettingsScreen from './settings';
 
 const Drawer = createDrawerNavigator();
 
+function DrawerContent(props: any) {
+  return <NoteListDrawer {...props} />;
+}
+
 export default function AppLayout() {
   const { theme } = useTheme();
 
   return (
     <Drawer.Navigator
-      drawerContent={(props: any) => <NoteListDrawer {...props} />}
+      drawerContent={DrawerContent}
       screenOptions={{
         headerShown: false,
         drawerType: 'front',

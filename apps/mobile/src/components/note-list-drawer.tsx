@@ -1,5 +1,5 @@
 import { View, Text, Pressable, TextInput, FlatList, RefreshControl, Modal, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotesStore, getFilteredNotes } from '@/stores/notes-store';
@@ -17,22 +17,33 @@ export function generateId(): string {
   });
 }
 
-export function tagColor(tag: string): string {
+const colorCache = new Map<string, string>();
+const textColorCache = new Map<string, string>();
+
+function calcHue(tag: string): number {
   let hash = 0;
   for (let i = 0; i < tag.length; i++) {
     hash = tag.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 70%, 85%)`;
+  return Math.abs(hash) % 360;
+}
+
+export function tagColor(tag: string): string {
+  let c = colorCache.get(tag);
+  if (!c) {
+    c = `hsl(${calcHue(tag)}, 70%, 85%)`;
+    colorCache.set(tag, c);
+  }
+  return c;
 }
 
 export function tagTextColor(tag: string): string {
-  let hash = 0;
-  for (let i = 0; i < tag.length; i++) {
-    hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+  let c = textColorCache.get(tag);
+  if (!c) {
+    c = `hsl(${calcHue(tag)}, 70%, 25%)`;
+    textColorCache.set(tag, c);
   }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 70%, 25%)`;
+  return c;
 }
 
 export function extractTags(text: string): string[] {
@@ -170,7 +181,9 @@ export function NewNoteModal({ theme, s, onClose, toast, onNoteCreated }: any) {
   );
 }
 
-function NoteListItem({ item, theme, s, onSelect }: any) {
+const NoteListItem = React.memo(function NoteListItem({ item, onSelect }: any) {
+  const { theme } = useTheme();
+  const s = theme.spacing;
   return (
     <Pressable
       onPress={() => onSelect(item.id)}
@@ -213,7 +226,7 @@ function NoteListItem({ item, theme, s, onSelect }: any) {
       )}
     </Pressable>
   );
-}
+});
 
 export function NoteListDrawer(props: any) {
   const { theme } = useTheme();
@@ -261,10 +274,10 @@ export function NoteListDrawer(props: any) {
     setRefreshing(false);
   }, [loadNotes]);
 
-  const handleSelectNote = (id: string) => {
+  const handleSelectNote = useCallback((id: string) => {
     useUIStore.getState().setSelectedNoteId(id);
     (navigation as any).closeDrawer();
-  };
+  }, [navigation]);
 
   return (
     <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: theme.colors.surface }}>
@@ -314,12 +327,7 @@ export function NoteListDrawer(props: any) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.accent} />
           }
           renderItem={({ item }) => (
-            <NoteListItem
-              item={item}
-              theme={theme}
-              s={s}
-              onSelect={handleSelectNote}
-            />
+            <NoteListItem item={item} onSelect={handleSelectNote} />
           )}
         />
       )}

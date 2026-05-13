@@ -27,7 +27,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   initialized: false,
 
-  initialize: () => {
+  initialize: async () => {
+    await storage.hydrate('accessToken');
+    await storage.hydrate('user');
     const savedToken = storage.get<string | null>('accessToken', null);
     const savedUser = storage.get<User | null>('user', null);
     if (savedToken && savedUser) {

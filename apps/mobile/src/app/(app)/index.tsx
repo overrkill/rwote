@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/toast-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, useEffect, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from 'expo-router';
 import { MarkdownView } from '@/components/markdown-view';
-import { generateId, extractTags, cleanTags, tagColor, tagTextColor } from '@/components/note-list-drawer';
+import { generateId, tagColor, tagTextColor } from '@/components/note-list-drawer';
 import {
   FileText, Pin, Trash2, Copy, Menu, Pencil, Plus,
 } from 'lucide-react-native';
@@ -28,58 +28,55 @@ export default function HomeScreen() {
   const toast = useToast();
   const navigation = useNavigation();
   const s = theme.spacing;
-  const [newNoteVersion, setNewNoteVersion] = useState(0);
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
   const addNote = useNotesStore((s) => s.addNote);
 
   const selectedNoteId = useUIStore((s) => s.selectedNoteId);
-  const notes = useNotesStore((s) => s.notes);
-  const selectedNote = useMemo(
-    () => notes.find((n: any) => n.id === selectedNoteId),
-    [notes, selectedNoteId]
+  const selectedNote = useNotesStore(
+    (s) => selectedNoteId ? s.notes.find((n) => n.id === selectedNoteId) ?? null : null
   );
 
   const updateNote = useNotesStore((s) => s.updateNote);
   const deleteNote = useNotesStore((s) => s.deleteNote);
   const accessToken = useAuthStore((s) => s.accessToken);
 
-  const handlePin = async () => {
-    if (!selectedNote) return;
+  const handlePin = useCallback(() => {
+    const note = selectedNote;
+    if (!note) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    updateNote(selectedNote.id, { pinned: !selectedNote.pinned });
+    updateNote(note.id, { pinned: !note.pinned });
     if (accessToken) {
-      try {
-        await supabase.saveNote(accessToken, {
-          id: selectedNote.id,
-          title: selectedNote.title,
-          content: selectedNote.content,
-          tags: selectedNote.tags || [],
-          pinned: !selectedNote.pinned,
-          updated_at: new Date().toISOString(),
-        });
-      } catch { toast.error('Sync failed'); }
+      supabase.saveNote(accessToken, {
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        tags: note.tags || [],
+        pinned: !note.pinned,
+        updated_at: new Date().toISOString(),
+      }).catch(() => toast.error('Sync failed'));
     }
-  };
+  }, [selectedNote, accessToken]);
 
-  const handleCopy = () => {
-    if (!selectedNote) return;
-    const text = selectedNote.content
-      ? `${selectedNote.title}\n\n${selectedNote.content}`
-      : selectedNote.title;
+  const handleCopy = useCallback(() => {
+    const note = selectedNote;
+    if (!note) return;
+    const text = note.content
+      ? `${note.title}\n\n${note.content}`
+      : note.title;
     toast.success('Copied');
-  };
+  }, [selectedNote]);
 
-  const handleDelete = async () => {
-    if (!selectedNote) return;
+  const handleDelete = useCallback(() => {
+    const note = selectedNote;
+    if (!note) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    deleteNote(selectedNote.id);
+    deleteNote(note.id);
     useUIStore.getState().setSelectedNoteId(null);
     if (accessToken) {
-      try {
-        await supabase.deleteNote(accessToken, selectedNote.id);
-      } catch { toast.error('Delete sync failed'); }
+      supabase.deleteNote(accessToken, note.id)
+        .catch(() => toast.error('Delete sync failed'));
     }
-  };
+  }, [selectedNote, accessToken]);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
@@ -124,7 +121,7 @@ export default function HomeScreen() {
       </View>
 
       {selectedNote ? (
-        <NoteDetailView key={`${selectedNote.id}-${newNoteVersion}`} note={selectedNote} theme={theme} s={s} toast={toast} autoEdit={selectedNote.id === lastCreatedId} />
+        <NoteDetailView note={selectedNote} theme={theme} s={s} toast={toast} autoEdit={selectedNote.id === lastCreatedId} />
       ) : (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: s.xl }}>
           <View
@@ -156,7 +153,6 @@ export default function HomeScreen() {
           });
           useUIStore.getState().setSelectedNoteId(id);
           setLastCreatedId(id);
-          setNewNoteVersion(v => v + 1);
         }}
         style={{
           position: 'absolute',
@@ -181,12 +177,23 @@ export default function HomeScreen() {
   );
 }
 
-function NoteDetailView({ note, theme, s, toast, autoEdit }: any) {
+const NoteDetailView = memo(function NoteDetailView({ note, theme, s, toast, autoEdit }: any) {
   const updateNote = useNotesStore((s) => s.updateNote);
   const accessToken = useAuthStore((s) => s.accessToken);
-  const [editing, setEditing] = useState(autoEdit || false);
+  const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(note.title);
   const [editContent, setEditContent] = useState(note.content || '');
+  const prevNoteId = useRef(note.id);
+
+  useEffect(() => {
+    if (note.id !== prevNoteId.current) {
+      prevNoteId.current = note.id;
+      setEditTitle(note.title);
+      setEditContent(note.content || '');
+      if (autoEdit) setEditing(true);
+      else setEditing(false);
+    }
+  }, [note.id, note.title, note.content, autoEdit]);
 
   const dateStr = note.created_at
     ? new Date(note.created_at).toLocaleDateString('en-US', {
@@ -292,7 +299,7 @@ function NoteDetailView({ note, theme, s, toast, autoEdit }: any) {
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   mainHeader: {

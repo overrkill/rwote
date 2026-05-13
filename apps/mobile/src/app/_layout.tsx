@@ -11,13 +11,13 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [ready, setReady] = useState(false);
   const initRef = useRef(false);
-  const { user, initialize } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const initialize = useAuthStore((s) => s.initialize);
 
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    initialize();
-    setReady(true);
+    initialize().then(() => setReady(true));
   }, []);
 
   if (!ready) {

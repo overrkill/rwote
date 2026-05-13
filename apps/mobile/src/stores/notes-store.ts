@@ -67,29 +67,26 @@ export const useNotesStore = create<NotesState>((set) => ({
 }));
 
 export function getFilteredNotes(notes: Note[], searchQuery: string, activeTag: string): Note[] {
-  if (!Array.isArray(notes)) {
-    return [];
+  if (!Array.isArray(notes)) return [];
+
+  const query = searchQuery?.trim().toLowerCase();
+  const filterByTag = activeTag && activeTag !== 'all';
+  const filterBySearch = !!query;
+
+  const pinned: Note[] = [];
+  const unpinned: Note[] = [];
+
+  for (let i = 0; i < notes.length; i++) {
+    const n = notes[i];
+    if (filterByTag && !n.tags?.includes(activeTag)) continue;
+    if (filterBySearch) {
+      const titleMatch = n.title && n.title.toLowerCase().includes(query);
+      const contentMatch = !titleMatch && n.content && n.content.toLowerCase().includes(query);
+      if (!titleMatch && !contentMatch) continue;
+    }
+    (n.pinned ? pinned : unpinned).push(n);
   }
-  let filtered: Note[] = [...notes];
 
-  if (activeTag && activeTag !== 'all') {
-    filtered = filtered.filter((n) => n.tags && n.tags.includes(activeTag));
-  }
-
-  if (searchQuery && searchQuery.trim()) {
-    const query = searchQuery.toLowerCase();
-    filtered = filtered.filter(
-      (n) =>
-        (n.title && n.title.toLowerCase().includes(query)) ||
-        (n.content && n.content.toLowerCase().includes(query))
-    );
-  }
-
-  const pinned = filtered.filter((n) => n.pinned);
-  const unpinned = filtered.filter((n) => !n.pinned);
-
-  const result: Note[] = [];
-  for (const n of pinned) result.push(n);
-  for (const n of unpinned) result.push(n);
-  return result;
+  pinned.push(...unpinned);
+  return pinned;
 }

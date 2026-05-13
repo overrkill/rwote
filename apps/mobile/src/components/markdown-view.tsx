@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useTheme } from '@/components/theme-provider';
 import { WebView } from 'react-native-webview';
 import { ViewStyle } from 'react-native';
@@ -58,7 +58,7 @@ function mdToHtml(md: string): string {
   return html.join('\n');
 }
 
-export function MarkdownView({ content, style }: MarkdownViewProps) {
+export const MarkdownView = React.memo(function MarkdownView({ content, style }: MarkdownViewProps) {
   const { theme } = useTheme();
 
   const html = useMemo(() => {
@@ -116,4 +116,4 @@ export function MarkdownView({ content, style }: MarkdownViewProps) {
       ]}
     />
   );
-}
+});

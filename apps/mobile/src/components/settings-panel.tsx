@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ScrollView, Alert, TextInput } from 'react-native';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useTheme, THEMES, Theme } from '@/components/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
@@ -15,8 +15,10 @@ export function SettingsPanel() {
   const { theme, themeId, setThemeId } = useTheme();
   const router = useRouter();
   const toast = useToast();
-  const { user, signOut, isLoading } = useAuthStore();
-  const { setNotes } = useNotesStore();
+  const user = useAuthStore((s) => s.user);
+  const signOut = useAuthStore((s) => s.signOut);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const setNotes = useNotesStore((s) => s.setNotes);
   const [aiMode, setAiMode] = useState<AIMode>('off');
   const [localUrl, setLocalUrl] = useState('');
   const [localModel, setLocalModel] = useState('');
@@ -202,7 +204,7 @@ export function SettingsPanel() {
   );
 }
 
-function Section({ title, theme, children }: { title: string; theme: any; children: React.ReactNode }) {
+const Section = React.memo(function Section({ title, theme, children }: { title: string; theme: any; children: React.ReactNode }) {
   const s = theme.spacing;
   return (
     <View style={{ marginBottom: s.xl }}>
@@ -217,9 +219,9 @@ function Section({ title, theme, children }: { title: string; theme: any; childr
       </View>
     </View>
   );
-}
+});
 
-function Row({ label, value, theme, s }: { label: string; value: string; theme: any; s: any }) {
+const Row = React.memo(function Row({ label, value, theme, s }: { label: string; value: string; theme: any; s: any }) {
   return (
     <View style={{
       flexDirection: 'row', justifyContent: 'space-between',
@@ -229,9 +231,9 @@ function Row({ label, value, theme, s }: { label: string; value: string; theme: 
       <Text style={{ fontSize: 16, color: theme.colors.textSecondary }}>{value}</Text>
     </View>
   );
-}
+});
 
-function ThemeOption({ t, isSelected, onSelect, theme, s }: {
+const ThemeOption = React.memo(function ThemeOption({ t, isSelected, onSelect, theme, s }: {
   t: Theme; isSelected: boolean; onSelect: () => void; theme: any; s: any;
 }) {
   return (
@@ -262,4 +264,4 @@ function ThemeOption({ t, isSelected, onSelect, theme, s }: {
       )}
     </Pressable>
   );
-}
+});

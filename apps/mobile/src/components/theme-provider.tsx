@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 
 const CACHE: Record<string, string> = {};
@@ -72,8 +72,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = THEMES[themeId] || THEMES.paper_dark;
   const isDark = theme.type === 'dark';
 
+  const ctx = useMemo(() => ({ theme, themeId, setThemeId, isDark }), [theme, themeId, setThemeId, isDark]);
+
   return (
-    <ThemeContext.Provider value={{ theme, themeId, setThemeId, isDark }}>
+    <ThemeContext.Provider value={ctx}>
       {children}
     </ThemeContext.Provider>
   );
