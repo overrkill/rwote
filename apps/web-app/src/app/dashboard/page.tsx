@@ -54,6 +54,8 @@ export default function DashboardPage() {
   const [searchFocusedIndex, setSearchFocusedIndex] = useState(0)
   const [isGuest, setIsGuest] = useState(false)
   const [migrating, setMigrating] = useState(false)
+  const [importConfirmOpen, setImportConfirmOpen] = useState(false)
+  const [pendingImport, setPendingImport] = useState<Note[]>([])
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const themeList = [
@@ -366,6 +368,34 @@ export default function DashboardPage() {
     if (!isGuest) syncToCloud(updatedNote)
   }
 
+  const handleImport = (imported: Note[]) => {
+    const valid = imported.filter(n => n.id && n.title !== undefined)
+    if (valid.length === 0) return
+    setPendingImport(valid)
+    setImportConfirmOpen(true)
+  }
+
+  const confirmImport = () => {
+    const existingIds = new Set(notes.map(n => n.id))
+    const merged = [...notes]
+    for (const note of pendingImport) {
+      if (existingIds.has(note.id)) {
+        const idx = merged.findIndex(n => n.id === note.id)
+        merged[idx] = { ...note, updated_at: new Date().toISOString() }
+      } else {
+        merged.push({ ...note, created_at: note.created_at || new Date().toISOString(), updated_at: note.updated_at || new Date().toISOString() })
+      }
+    }
+    setNotes(merged)
+    setImportConfirmOpen(false)
+    setPendingImport([])
+    if (isGuest) {
+      localStorage.setItem('rwote_guest_notes', JSON.stringify(merged))
+    } else {
+      merged.forEach(n => syncToCloud(n))
+    }
+  }
+
   const handleSubscribe = async (plan: string) => {
     const token = await getAuthToken()
     if (!token) return
@@ -392,7 +422,7 @@ export default function DashboardPage() {
 
   const handleSignOut = async () => {
     await signOut()
-    router.push('/')
+	router.push('/auth/login')
   }
 
   const searchResults = useMemo(() => {
@@ -583,7 +613,7 @@ export default function DashboardPage() {
           await saveUserSettings({ theme: newThemeId })
         }}
         onSubscriptionOpen={() => setShowSubscriptionModal(true)}
-        onExport={() => {
+          onExport={() => {
           const data = JSON.stringify(notes, null, 2)
           const blob = new Blob([data], { type: 'application/json' })
           const url = URL.createObjectURL(blob)
@@ -593,8 +623,35 @@ export default function DashboardPage() {
           a.click()
           URL.revokeObjectURL(url)
         }}
+        onImport={handleImport}
         onSignOut={handleSignOut}
       />
+
+      <Dialog
+        open={importConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open) { setImportConfirmOpen(false); setPendingImport([]) }
+        }}
+        title="Import notes"
+        description={`Import ${pendingImport.length} note${pendingImport.length !== 1 ? 's' : ''}? Existing notes with the same ID will be overwritten.`}
+      >
+        <div className="p-4 flex gap-3 justify-end">
+          <button
+            onClick={() => { setImportConfirmOpen(false); setPendingImport([]) }}
+            className="px-4 py-2 text-sm rounded"
+            style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)' }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmImport}
+            className="px-4 py-2 text-sm rounded font-medium"
+            style={{ backgroundColor: 'var(--accent)', color: 'white' }}
+          >
+            Import
+          </button>
+        </div>
+      </Dialog>
 
       <Dialog
         open={searchModalOpen}

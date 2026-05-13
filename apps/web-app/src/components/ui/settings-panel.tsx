@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { Cloud, Download, LogOut, Check, Loader2 } from 'lucide-react'
-import type { User, AiSettings, SubscriptionStatus } from '@/lib/types'
+import { useState, useRef } from 'react'
+import { Cloud, Download, Upload, LogOut, Check, Loader2 } from 'lucide-react'
+import type { Note, User, AiSettings, SubscriptionStatus } from '@/lib/types'
 import Avatar from './avatar'
 import SideSheet from './side-sheet'
 
@@ -18,6 +18,7 @@ interface SettingsPanelProps {
   onThemeChange: (themeId: string) => void
   onSubscriptionOpen: () => void
   onExport: () => void
+  onImport: (notes: Note[]) => void
   onSignOut: () => void
 }
 
@@ -33,8 +34,10 @@ export default function SettingsPanel({
   onThemeChange,
   onSubscriptionOpen,
   onExport,
+  onImport,
   onSignOut,
 }: SettingsPanelProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [provider, setProvider] = useState(aiSettings.provider)
   const [ollamaUrl, setOllamaUrl] = useState(aiSettings.ollamaUrl)
   const [ollamaModel, setOllamaModel] = useState(aiSettings.ollamaModel)
@@ -59,6 +62,22 @@ export default function SettingsPanel({
       setTestResult('error')
     }
     setTesting(false)
+  }
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string)
+        if (Array.isArray(parsed)) {
+          onImport(parsed)
+        }
+      } catch {}
+    }
+    reader.readAsText(file)
+    e.target.value = ''
   }
 
   const currentThemeName = themeList.find(t => t.id === currentTheme)?.name || 'Theme'
@@ -176,14 +195,31 @@ export default function SettingsPanel({
 
         <section>
           <div className="text-xs font-medium mb-3" style={{ color: 'var(--text-tertiary)' }}>Data</div>
-          <button
-            onClick={onExport}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded transition-colors"
-            style={{ backgroundColor: 'var(--surface-alt)' }}
-          >
-            <Download size={16} style={{ color: 'var(--text-secondary)' }} />
-            <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Export Notes</span>
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={onExport}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded transition-colors"
+              style={{ backgroundColor: 'var(--surface-alt)' }}
+            >
+              <Download size={16} style={{ color: 'var(--text-secondary)' }} />
+              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Backup</span>
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded transition-colors"
+              style={{ backgroundColor: 'var(--surface-alt)' }}
+            >
+              <Upload size={16} style={{ color: 'var(--text-secondary)' }} />
+              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Import</span>
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportFile}
+            className="hidden"
+          />
         </section>
       </div>
 
