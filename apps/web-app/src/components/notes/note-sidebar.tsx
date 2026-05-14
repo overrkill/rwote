@@ -137,6 +137,18 @@ export default function NoteSidebar({
           })
         )}
       </div>
+      <div className="flex-shrink-0 px-3 py-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+        <a
+          href="https://ko-fi.com/abhishekkr"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1.5 text-xs transition-opacity hover:opacity-80"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <span>☕</span>
+          <span>Like Rwote? Support us</span>
+        </a>
+      </div>
     </div>
   )
 }
