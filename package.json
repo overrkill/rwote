@@ -2,7 +2,7 @@
   "name": "rwote",
   "private": true,
   "version": "0.1.0",
-  "description": "Chrome extension for capturing and organizing insights",
+  "description": "Monorepo for capturing + organizing learning insights",
   "scripts": {
     "lint": "pnpm -r lint",
     "dev": "pnpm -r --parallel dev"

@@ -1,198 +1,167 @@
 # Rwote
 
-A Chrome extension and web app for capturing and organizing insights from learning sessions. Perfect for DSA preparation, research, and technical interviews.
+Capture + organize learning insights. Web app, mobile app, marketing site — all backed by Supabase.
 
-## Overview
+## Apps
 
-- **Chrome Extension** - Capture insights while browsing with right-click context menu
-- **Web App** - Access notes anywhere with cloud sync (paid)
-- **Hashtag-based tagging** - Organize notes with DSA tags (arrays, trees, graphs, dp, etc.)
+| App | Stack | Purpose |
+|-----|-------|---------|
+| **Web App** (`apps/web-app`) | Next.js 16, React 19, Tailwind | Full notes dashboard, auth, AI summarize |
+| **Mobile** (`apps/mobile`) | Expo SDK 55, RN 0.83, Zustand | iOS + Android notes app |
+| **Landing** (`apps/landing`) | Astro 6, React 19, Tailwind | Marketing site + blog + legal pages |
+| **Extension** (`apps/wxt-extension`) | WXT + React 19, MV3 | Chrome extension (right-click → save) |
+
+**Backend:** Supabase (Postgres + 8 Edge Functions).
+
+## Quick Start
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Set up environment
+
+Each app needs Supabase env vars. Copy the template:
+
+```bash
+# Web app
+cp apps/web-app/.env.example apps/web-app/.env.local
+
+# Mobile
+cp apps/mobile/.env.example apps/mobile/.env
+```
+
+Fill in your Supabase project URL + anon key.
+
+### 3. Supabase (local)
+
+```bash
+supabase start
+supabase db reset      # Run migrations
+supabase functions serve --env-file supabase/.env
+```
+
+See [Supabase Setup](supabase/SETUP.md) for full guide.
+
+### 4. Run apps
+
+```bash
+# All apps in parallel
+pnpm -r --parallel dev
+
+# Or individually:
+cd apps/web-app && npm run dev       # http://localhost:3000
+cd apps/mobile && npx expo start     # Expo Go / simulator
+cd apps/landing && npm run dev       # http://localhost:4321
+```
+
+### Chrome Extension (WXT)
+
+```bash
+cd apps/wxt-extension
+pnpm dev          # Dev mode with HMR
+pnpm build        # Production build
+pnpm zip          # Package for stores
+```
+
+Load unpacked from `apps/wxt-extension/.output/chrome-mv3/` after build.
 
 ## Project Structure
 
 ```
 rwote/
 ├── apps/
-│   ├── web-extension/     # Chrome extension (Manifest V3)
-│   ├── web-app/          # Next.js web app with Tailwind CSS
-│   └── mobile/           # React Native mobile app (Expo SDK 55)
+│   ├── web-app/              # Next.js 16
+│   │   └── src/
+│   │       ├── app/          # App Router (auth/, dashboard/, marketing/)
+│   │       ├── components/   # notes/, marketing/, ui/, layout/
+│   │       ├── lib/          # supabase.ts, themes.ts, types.ts
+│   │       └── styles/       # globals.css
+│   ├── mobile/               # Expo Router
+│   │   └── src/
+│   │       ├── app/          # tabs/, auth/
+│   │       ├── components/   # ui/, animated-icon, markdown-view
+│   │       ├── stores/       # auth-store.ts, notes-store.ts (zustand)
+│   │       └── lib/          # supabase.ts, storage.ts
+│   ├── landing/              # Astro 6
+│   │   └── src/
+│   │       ├── pages/        # index, blog/, privacy, terms, refund
+│   │       ├── components/   # Hero, Features, Pricing, etc.
+│   │       └── content/blog/ # MDX blog posts
+│   └── wxt-extension/         # WXT + React 19 Chrome extension
+├── packages/
+│   └── shared/               # @rwote/shared types (stub)
 ├── supabase/
-│   └── functions/        # Edge Functions API
-├── .gitignore
-├── package.json
-├── pnpm-workspace.yaml
-└── README.md
+│   ├── functions/            # 8 Deno Edge Functions
+│   │   ├── save-note/        # Upsert note
+│   │   ├── load-notes/       # Load user notes
+│   │   ├── delete-note/      # Soft delete
+│   │   ├── sync/             # Two-way sync
+│   │   ├── summarize/        # AI summarization (Groq)
+│   │   ├── subscribe/        # Payment placeholder
+│   │   ├── subscription-status/
+│   │   └── webhook-stripe/   # Stripe webhook placeholder
+│   └── migrations/           # 001_initial_schema, 002_user_settings
+├── package.json              # pnpm workspace root
+└── pnpm-workspace.yaml
 ```
 
-## Current Status
+## Data Flow
 
-### ✅ Completed
-
-**Chrome Extension:**
-- Right-click context menu to save selected text
-- Side panel UI with note list, search, and filtering
-- Local storage with IndexedDB fallback
-- Cloud sync via Supabase Edge Functions (paid)
-- Keyboard navigation (j/k arrows, Enter, d, p)
-- Undo delete (p to restore)
-- Pin notes
-- Export/Import notes as JSON
-- Font size toggle (S/M/L)
-- User auth (email/password + Google OAuth)
-- Subscription status display
-- Token refresh for API calls
-- Session storage for secure token management
-- Theme picker with 11 editor themes (Paper Dark, Tokyo Night, Catppuccin, Nord, Ayu, Monokai)
-
-**Web App:**
-- Landing page with hero, features, pricing, FAQ
-- Browser mockup preview
-- Auth pages (login/register)
-- Google OAuth sign-in
-- Dashboard with note CRUD
-- Full dark mode support
-- Cloud sync (always on, paid feature)
-- Trial banner with days remaining
-- Grand Hotel font branding
-- Hamburger menu with export
-- Favicon and PWA icons
-- Theme picker with 6 editor themes (Paper Dark, Tokyo Night, Catppuccin, Nord, Monokai, Light)
-
-**Mobile App (React Native/Expo):**
-- Expo SDK 55 with React Native 0.83, React 19.2
-- Expo Router with file-based routing
-- NativeTabs navigation (Notes, Settings)
-- Auth screens (login, register)
-- Notes list with FlatList, search, tag filtering
-- Note editor with tag selection
-- Theme picker with all 12 themes
-- Sign out functionality
-- Supabase REST API integration
-
-**Backend:**
-- Supabase Auth (email/password)
-- Edge Functions: save-note, load-notes, delete-note, subscription-status, subscribe
-- RLS policies for note security
-- Profile table with subscription status
-
-**Design:**
-- Paper aesthetic (#f5f2ec background, #0f0e0d ink)
-- Grand Hotel font for logo
-- Playfair Display, DM Mono, DM Sans fonts
-- Dark mode with system preference detection
-- Consistent dark mode across all components
-
-### 🚧 In Progress / TODO
-
-**High Priority:**
-- [x] Deploy web app to Vercel (blocked: pnpm version issue)
-- [x] Fix Vercel build settings (use npm instead of pnpm)
-- [x] Google OAuth sign-in (extension + web app)
-- [x] Theme system with multiple editor themes (extension + web app)
-- [x] Test cloud sync between extension and web app
-- [ ] Add actual Stripe integration for payments
-
-**Medium Priority:**
-- [ ] Chrome Web Store submission
-- [ ] Extension store compliance review
-- [ ] Add more DSA tag suggestions
-- [ ] Improve onboarding flow
-- [ ] Sync conflict resolution (open issue: when same note is edited on multiple devices, "last write wins" - could detect conflicts and notify user)
-
-**Low Priority:**
-- [ ] Email/password reset flow
-- [ ] Note sharing functionality
-- [ ] Note categories/folders
-- [ ] Mobile responsive improvements
-- [ ] Performance optimization
-
-## Workflow Rules
-
-- **Always commit after a change** - Make a git commit after every code change before moving to another task
-
-## Quick Start
-
-### Web App (Development)
-
-```bash
-cd apps/web-app
-npm install
-npm run dev
-```
-
-Open http://localhost:3000
-
-### Web App (Production)
-
-Deploy to Vercel:
-- Build Command: `npm install && npm run build`
-- Install Command: `npm install`
-- Output Directory: `.next`
-
-### Chrome Extension (Development)
-
-```bash
-# No build step required
-1. Open chrome://extensions/
-2. Enable Developer mode
-3. Click "Load unpacked"
-4. Select apps/web-extension/
-5. Reload extension after code changes
-```
-
-### Extension Permissions
-- `storage` - Local note storage (session + local)
-- `contextMenus` - Right-click "Save to Rwote"
-- `sidePanel` - Side panel UI
-- `activeTab`, `scripting`, `tabs` - Content script injection
-- `identity` - Google OAuth via chrome.identity
-
-## API Reference
-
-Base URL: `https://joqxsbboxmkpcizasdbc.supabase.co/functions/v1`
-
-### Endpoints
-
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/save-note` | POST | Bearer | Save or update a note |
-| `/load-notes` | POST | Bearer | Load all user notes |
-| `/delete-note` | POST | Bearer | Soft delete a note |
-| `/subscription-status` | POST | Bearer | Get subscription info |
-| `/subscribe` | POST | Bearer | Activate subscription |
-
-### Authentication
-
-All endpoints require `Authorization: Bearer <token>` header where token is the Supabase JWT from login.
-
-## Tech Stack
-
-- **Web App:** Next.js 16, React 19, TypeScript, Tailwind CSS
-- **Extension:** Vanilla JS, Manifest V3
-- **Backend:** Supabase Edge Functions (Deno)
-- **Database:** Supabase (Postgres) with RLS
-- **Auth:** Supabase Auth (email/password + Google OAuth)
-- **Payments:** Stripe (placeholder - needs integration)
+- **Web app**: `@supabase/supabase-js` in browser → Supabase REST + Edge Functions
+- **Mobile**: raw `fetch()` → Supabase REST + Edge Functions (no JS client)
+- **Extension**: `chrome.storage.local` (local-only), future: Supabase REST via `fetch()`
+- **Auth**: Supabase Auth (email/password + Google OAuth). JWT in localStorage (web) or expo-secure-store (mobile)
+- **DB**: PostgreSQL with RLS. Tables: `profiles`, `notes` (soft-delete), `user_settings`
+- **Edge Functions**: Deno, manual JWT decode, CORS headers, `supabase-js` from CDN
 
 ## Scripts
 
 ```bash
-pnpm install       # Install all workspaces
-pnpm lint          # Lint all packages
-pnpm dev           # Dev mode for all packages
+pnpm install             # Install all workspaces
+pnpm -r lint             # Lint all packages
+pnpm -r --parallel dev   # Dev mode for all apps
 ```
 
 ## Environment Variables
 
-### Web App (.env.local)
+### Web App (`.env.local`)
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://joqxsbboxmkpcizasdbc.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 ```
 
-### Supabase
-- Project URL: `https://joqxsbboxmkpcizasdbc.supabase.co`
-- Edge Functions deployed with `verify_jwt: false` (manual JWT decode)
+### Mobile (`.env`)
+```
+EXPO_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+```
+
+### Supabase Edge Functions (Dashboard > Settings > Edge Functions)
+```
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_ANON_KEY=<anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+```
+
+## API Reference
+
+Base URL: `https://<project>.supabase.co/functions/v1`
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/save-note` | POST | Bearer | Create/update note |
+| `/load-notes` | POST | Bearer | Load all user notes |
+| `/delete-note` | POST | Bearer | Soft delete |
+| `/sync` | POST | Bearer | Two-way sync |
+| `/summarize` | POST | Bearer | AI summarize (Groq) |
+| `/subscription-status` | POST | Bearer | Get subscription info |
+| `/subscribe` | POST | Bearer | Activate subscription |
+| `/webhook-stripe` | POST | — | Stripe webhook (placeholder) |
+
+All endpoints require `Authorization: Bearer <token>` (Supabase JWT).
 
 ## Database Schema
 
@@ -204,10 +173,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 | subscription_status | text | 'trial', 'paid', 'expired' |
 | trial_ends_at | timestamptz | Trial end date |
 
-### notes
+### notes (soft-delete)
 | Column | Type | Description |
 |--------|------|-------------|
-| id | uuid | Primary key |
+| id | uuid | PK |
 | user_id | uuid | Owner |
 | local_id | text | Client-generated ID |
 | text | text | Note content |
@@ -215,48 +184,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 | tag | text | Tag name |
 | date | text | Formatted date |
 | pinned | boolean | Pinned status |
-| updated_at | timestamptz | Last update |
 | deleted_at | timestamptz | Soft delete |
 
 RLS: Users can only access their own notes.
-
-### Note Structure
-
-The note object is consistent across all apps (Chrome extension, web app, mobile app):
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `local_id` | string | Client-generated unique ID (UUID or timestamp-based) |
-| `text` | string | Note title/content |
-| `note` | string | Extended note content (markdown) |
-| `tag` | text | Comma-separated tags |
-| `date` | string | Creation date (ISO or formatted string) |
-| `pinned` | boolean | Pinned status |
-| `updated_at` | ISO timestamp | Last update time |
-
-#### App-Specific Mappings
-
-**Mobile App:**
-- `id` ← `local_id`
-- `cloud_id` ← DB row `id`
-
-**Web Extension:**
-- `id` ← `local_id || id`
-- `cloudId` ← DB row `id`
-
-#### Example Note Object
-
-```javascript
-{
-  local_id: "12345678-1234-1234-1234-123456789012",
-  text: "Binary Search Tree traversal",
-  note: "## Inorder\n- Left -> Root -> Right\n\n## Preorder\n- Root -> Left -> Right",
-  tag: "trees,algorithms",
-  date: "2024-03-15",
-  pinned: false,
-  updated_at: "2024-03-15T10:30:00Z"
-}
-```
 
 ## Design System
 
@@ -270,16 +200,48 @@ The note object is consistent across all apps (Chrome extension, web app, mobile
 ### Colors (Dark)
 - Background: `#0f0e0d`
 - Surface: `#1a1a19`
-- Surface Alt: `#2a2a28`
 - Border: `#3a3a38`
 - Text: `#f5f2ec`
 
 ### Fonts
 - Logo: Grand Hotel
 - Headings: Playfair Display
-- Code/Mono: DM Mono
+- Code: DM Mono
 - Body: DM Sans
+
+## Current Progress
+
+### ✅ Completed
+- Web app: Full notes CRUD, 12 themes, auth, dark mode, subscription, AI summarize
+- Mobile: Expo app with tabs, auth, notes CRUD, search, tag filter, themes
+- Landing: Marketing site, blog, legal pages
+- Extension: WXT scaffold with React 19, background service worker, side panel UI, context menu
+- Backend: 8 edge functions, DB schema, RLS, profile auto-create
+- Design: Paper aesthetic, font system, dark mode, 12 themes
+
+### 🚧 TODO
+- Extension: connect to Supabase (cloud sync)
+- Extension: Google OAuth via chrome.identity
+- Chrome Web Store submission + compliance review
+- Stripe integration (real payments)
+- Email/password reset flow
+- Note sharing functionality
+- Note categories/folders
+- Sync conflict resolution UI
+- Mobile responsive improvements
+- Performance optimization
+- More DSA tag suggestions
+- Onboarding flow
+
+## Tech Stack
+
+- **Web App:** Next.js 16, React 19, TypeScript, Tailwind CSS, TipTap editor
+- **Mobile:** Expo SDK 55, React Native 0.83, Zustand, Expo Router
+- **Landing:** Astro 6, React 19, MDX, Tailwind CSS
+- **Extension:** WXT + React 19, Manifest V3
+- **Backend:** Supabase (Postgres, Auth, Edge Functions)
+- **Payments:** Stripe (placeholder)
 
 ## License
 
-Private - All rights reserved
+Private — All rights reserved.
