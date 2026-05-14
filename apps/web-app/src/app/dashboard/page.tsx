@@ -11,8 +11,6 @@ import {
   loadNotes,
   saveNote,
   deleteNote as cloudDeleteNote,
-  getSubscriptionStatus,
-  subscribeToPlan,
   getAiSettings,
   setAiSettings,
   summarizeUsingCloud,
@@ -22,10 +20,9 @@ import {
   type UserSettings
 } from '@/lib/supabase'
 import Avatar from '@/components/ui/avatar'
-import type { Note, SubscriptionStatus, User, AiSettings } from '@/lib/types'
+import type { Note, User, AiSettings } from '@/lib/types'
 import NoteSidebar from '@/components/notes/note-sidebar'
 import NoteDetail from '@/components/notes/note-detail'
-import SubscriptionModal from '@/components/ui/subscription-modal'
 import SettingsPanel from '@/components/ui/settings-panel'
 import Dialog from '@/components/ui/dialog'
 import { useTheme } from '@/components/providers/theme-provider'
@@ -40,8 +37,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle')
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
-  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null)
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null>(getStoredUser())
@@ -166,20 +161,13 @@ export default function DashboardPage() {
       })
       setTheme(userSettings.theme)
 
-      const sub = await getSubscriptionStatus(token)
-      setSubscription(sub)
-
-      if (sub.can_sync) {
-        const { notes: cloudNotes, error } = await loadNotes(token)
-        
-        if (!error && cloudNotes) {
-          setNotes(cloudNotes)
-          if (cloudNotes.length > 0) {
-            setSelectedNoteId(cloudNotes[0].id)
-          }
+      const { notes: cloudNotes, error } = await loadNotes(token)
+      
+      if (!error && cloudNotes) {
+        setNotes(cloudNotes)
+        if (cloudNotes.length > 0) {
+          setSelectedNoteId(cloudNotes[0].id)
         }
-      } else {
-        setShowSubscriptionModal(true)
       }
     } catch (e) {
       console.error('Failed to load data:', e)
@@ -189,7 +177,6 @@ export default function DashboardPage() {
   }
   
   const syncToCloud = async (note: Note) => {
-    if (!subscription?.can_sync) return
     const token = await getAuthToken()
     if (!token) return
 
@@ -278,7 +265,6 @@ export default function DashboardPage() {
   }
 
   const deleteFromCloud = async (id: string): Promise<boolean> => {
-    if (!subscription?.can_sync) return false
     const token = await getAuthToken()
     if (!token) return false
 
@@ -301,30 +287,6 @@ export default function DashboardPage() {
     const updatedNote = { ...noteToUpdate, pinned: !noteToUpdate.pinned, updated_at: new Date().toISOString() }
     setNotes(notes.map(n => n.id === id ? updatedNote : n))
     syncToCloud(updatedNote)
-  }
-
-  const handleSubscribe = async (plan: string) => {
-    const token = await getAuthToken()
-    if (!token) return
-
-    try {
-      await subscribeToPlan(plan, token)
-      const sub = await getSubscriptionStatus(token)
-      setSubscription(sub)
-      
-      if (sub.can_sync) {
-        setShowSubscriptionModal(false)
-        const { notes: cloudNotes, error } = await loadNotes(token)
-        if (!error && cloudNotes) {
-          setNotes(cloudNotes)
-          if (cloudNotes.length > 0) {
-            setSelectedNoteId(cloudNotes[0].id)
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Failed to subscribe:', e)
-    }
   }
 
   const handleSignOut = async () => {
@@ -479,21 +441,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <SubscriptionModal
-        isOpen={showSubscriptionModal}
-        onClose={() => {
-          if (!subscription?.can_sync) return
-          setShowSubscriptionModal(false)
-        }}
-        subscription={subscription}
-        onSubscribe={handleSubscribe}
-      />
-
       <SettingsPanel
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         user={user}
-        subscription={subscription}
         aiSettings={aiSettings}
         currentTheme={themeId}
         themeList={themeList}
@@ -510,7 +461,6 @@ export default function DashboardPage() {
           setTheme(newThemeId)
           await saveUserSettings({ theme: newThemeId })
         }}
-        onSubscriptionOpen={() => setShowSubscriptionModal(true)}
         onExport={() => {
           const data = JSON.stringify(notes, null, 2)
           const blob = new Blob([data], { type: 'application/json' })

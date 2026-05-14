@@ -13,10 +13,6 @@ export default function FAQ() {
       a: 'Yes. The Chrome extension works offline. Your notes are saved locally and sync when you reconnect.',
     },
     {
-      q: 'What happens if I cancel my subscription?',
-      a: 'You keep all your notes. They stay on your device and you can export them anytime. Cloud sync just stops working.',
-    },
-    {
       q: 'How does cloud sync work?',
       a: 'Your notes are encrypted and stored in our cloud. They sync automatically across all your devices when you sign in.',
     },

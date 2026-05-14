@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Cloud, Download, LogOut, Check, Loader2 } from 'lucide-react'
-import type { User, AiSettings, SubscriptionStatus } from '@/lib/types'
+import { Download, LogOut, Check, Loader2 } from 'lucide-react'
+import type { User, AiSettings } from '@/lib/types'
 import Avatar from './avatar'
 import SideSheet from './side-sheet'
 
@@ -10,13 +10,11 @@ interface SettingsPanelProps {
   isOpen: boolean
   onClose: () => void
   user: User | null
-  subscription: SubscriptionStatus | null
   aiSettings: AiSettings
   currentTheme: string
   themeList: { id: string; name: string }[]
   onAiSettingsChange: (settings: AiSettings) => void
   onThemeChange: (themeId: string) => void
-  onSubscriptionOpen: () => void
   onExport: () => void
   onSignOut: () => void
 }
@@ -25,13 +23,11 @@ export default function SettingsPanel({
   isOpen,
   onClose,
   user,
-  subscription,
   aiSettings,
   currentTheme,
   themeList,
   onAiSettingsChange,
   onThemeChange,
-  onSubscriptionOpen,
   onExport,
   onSignOut,
 }: SettingsPanelProps) {
@@ -152,26 +148,6 @@ export default function SettingsPanel({
               <option key={theme.id} value={theme.id}>{theme.name}</option>
             ))}
           </select>
-        </section>
-
-        <section>
-          <div className="text-xs font-medium mb-3" style={{ color: 'var(--text-tertiary)' }}>Account</div>
-          <button
-            onClick={onSubscriptionOpen}
-            className="w-full flex items-center justify-between px-4 py-3 rounded transition-colors"
-            style={{ backgroundColor: 'var(--surface-alt)' }}
-          >
-            <div className="flex items-center gap-3">
-              <Cloud size={18} style={{ color: subscription?.subscription_status === 'paid' ? '#22c55e' : subscription?.subscription_status === 'trial' ? '#f59e0b' : 'var(--text-secondary)' }} />
-              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                {subscription?.subscription_status === 'paid' && 'Pro'}
-                {subscription?.subscription_status === 'trial' && `Trial: ${subscription.days_left}d left`}
-                {subscription?.subscription_status === 'expired' && 'Expired'}
-                {!subscription?.subscription_status && 'Subscription'}
-              </span>
-            </div>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--border)', color: 'var(--text-secondary)' }}>Manage</span>
-          </button>
         </section>
 
         <section>
