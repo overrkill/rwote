@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, LogOut, Check, Loader2 } from 'lucide-react'
+import { Download, LogOut, Check, Loader2, Heart } from 'lucide-react'
 import type { User, AiSettings } from '@/lib/types'
 import Avatar from './avatar'
 import SideSheet from './side-sheet'
@@ -160,6 +160,23 @@ export default function SettingsPanel({
             <Download size={16} style={{ color: 'var(--text-secondary)' }} />
             <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Export Notes</span>
           </button>
+        </section>
+
+        <section>
+          <div className="text-xs font-medium mb-3" style={{ color: 'var(--text-tertiary)' }}>Support</div>
+          <a
+            href="https://ko-fi.com/abhishekkr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded transition-colors"
+            style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', textDecoration: 'none' }}
+          >
+            <Heart size={16} style={{ color: 'var(--accent)' }} />
+            <span className="text-sm">Support Rwote</span>
+          </a>
+          <p className="text-xs mt-2 px-1" style={{ color: 'var(--text-tertiary)' }}>
+            If you find this app useful, a coffee would mean a lot.
+          </p>
         </section>
       </div>
 
