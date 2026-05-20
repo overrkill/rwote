@@ -80,6 +80,22 @@ export default function MarkdownEditor({ content, onChange, onCreated, onSave, o
       attributes: {
         class: 'prose prose-sm focus:outline-none min-h-[400px] py-2 px-1',
       },
+      handleKeyDown: (_view, event) => {
+        if (event.key === 'Tab') {
+          event.preventDefault()
+          const sel = window.getSelection()
+          if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0)
+            const node = range.commonAncestorContainer as Node
+            const el = node.nodeType === 1 ? node as Element : node.parentElement
+            if (el?.closest('.ProseMirror')) {
+              document.execCommand('insertText', false, '\t')
+              return true
+            }
+          }
+        }
+        return false
+      },
     },
   })
 

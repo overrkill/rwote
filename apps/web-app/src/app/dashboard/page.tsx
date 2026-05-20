@@ -76,24 +76,6 @@ export default function DashboardPage() {
   }, [menuOpen])
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        if (searchModalOpen) {
-          setSearchModalOpen(false)
-          setSearchQuery('')
-          setSearchFocusedIndex(0)
-        } else {
-          setSearchModalOpen(true)
-          setTimeout(() => searchInputRef.current?.focus(), 100)
-        }
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [searchModalOpen])
-
-  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return
       const newWidth = Math.min(Math.max(e.clientX, 200), 500)
@@ -203,6 +185,28 @@ export default function DashboardPage() {
     setNotes([newNote, ...notes])
     setSelectedNoteId(newNote.id)
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        if (searchModalOpen) {
+          setSearchModalOpen(false)
+          setSearchQuery('')
+          setSearchFocusedIndex(0)
+        } else {
+          setSearchModalOpen(true)
+          setTimeout(() => searchInputRef.current?.focus(), 100)
+        }
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'O') {
+        e.preventDefault()
+        handleNewNote()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [searchModalOpen, handleNewNote])
 
   const handleSelectNote = (note: Note) => {
     setSelectedNoteId(note.id)

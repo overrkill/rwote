@@ -81,6 +81,21 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
     }
   }, [note, onUpdate])
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        doSave()
+      }
+      if (e.altKey && e.key === 'p') {
+        e.preventDefault()
+        onTogglePin(note.id)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [doSave, note.id, onTogglePin])
+
   const scheduleSave = useCallback(() => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
