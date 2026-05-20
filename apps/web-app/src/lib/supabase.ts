@@ -607,3 +607,21 @@ export async function saveNoteAnalysis(noteId: string, analysis: NoteAnalysis, c
 export function contentHash(note: { title: string; content: string }): string {
   return simpleHash(note.content || '')
 }
+
+export async function loadAllNoteAnalyses(): Promise<Record<string, NoteAnalysis>> {
+  const { data, error } = await supabase
+    .from('note_analyses')
+    .select('note_id, analysis')
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to load all analyses:', error)
+    return {}
+  }
+
+  const result: Record<string, NoteAnalysis> = {}
+  for (const row of data) {
+    result[row.note_id] = row.analysis as NoteAnalysis
+  }
+  return result
+}
