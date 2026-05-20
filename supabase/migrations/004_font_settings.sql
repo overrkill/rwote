@@ -1,11 +1,7 @@
--- Add font customization columns to user_settings
+-- Add font customization columns to user_settings (free TEXT, no CHECK — curated at client)
 ALTER TABLE public.user_settings
-  ADD COLUMN editor_font TEXT NOT NULL DEFAULT 'mono',
+  ADD COLUMN editor_font TEXT NOT NULL DEFAULT 'jetbrains-mono',
   ADD COLUMN interface_font TEXT NOT NULL DEFAULT 'system';
-
-ALTER TABLE public.user_settings
-  ADD CONSTRAINT editor_font_check CHECK (editor_font IN ('mono', 'sans', 'serif')),
-  ADD CONSTRAINT interface_font_check CHECK (interface_font IN ('system', 'sans', 'serif'));
 
 -- Update get_user_settings function
 CREATE OR REPLACE FUNCTION public.get_user_settings()

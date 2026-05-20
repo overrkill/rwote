@@ -16,14 +16,25 @@ import { useTheme } from '@/components/providers/theme-provider'
 import Avatar from '@/components/ui/avatar'
 import type { User, AiAnalyzeConfig, AiAnalyzeProvider } from '@/lib/types'
 import { ArrowLeft, Download, LogOut, Heart, Check, Loader2, Eye, EyeOff } from 'lucide-react'
-
-function applyFontVars(settings: Partial<UserSettings>) {
-  const root = document.documentElement
-  if (settings.editorFont) root.dataset.fontEditor = settings.editorFont
-  if (settings.interfaceFont) root.dataset.fontUi = settings.interfaceFont
-  if (settings.fontSize) root.dataset.fontSize = settings.fontSize
-}
 import Link from 'next/link'
+import { EDITOR_FONTS, INTERFACE_FONTS, getFontOption, loadGoogleFont } from '@/lib/fonts'
+
+function applyFontCss(editorFont: string, interfaceFont: string, fontSize: string) {
+  const root = document.documentElement
+  root.dataset.fontSize = fontSize
+
+  const editorOpt = getFontOption(editorFont)
+  if (editorOpt) {
+    root.style.setProperty('--font-editor', editorOpt.cssStack)
+    if (editorOpt.googleFont) loadGoogleFont(editorOpt.googleFont)
+  }
+
+  const uiOpt = getFontOption(interfaceFont)
+  if (uiOpt) {
+    root.style.setProperty('--font-ui', uiOpt.cssStack)
+    if (uiOpt.googleFont) loadGoogleFont(uiOpt.googleFont)
+  }
+}
 
 const THEME_LIST = [
   { id: 'paper_dark', name: 'Paper Dark' },
@@ -59,8 +70,8 @@ export default function SettingsPage() {
 
   // Font
   const [fontSize, setFontSize] = useState<UserSettings['fontSize']>('medium')
-  const [editorFont, setEditorFont] = useState<UserSettings['editorFont']>('mono')
-  const [interfaceFont, setInterfaceFont] = useState<UserSettings['interfaceFont']>('system')
+  const [editorFont, setEditorFont] = useState<string>('jetbrains-mono')
+  const [interfaceFont, setInterfaceFont] = useState<string>('system')
 
   // Export
   const [exporting, setExporting] = useState(false)
@@ -75,7 +86,7 @@ export default function SettingsPage() {
 
       const settings = await loadUserSettings()
       setFontSize(settings.fontSize || 'medium')
-      setEditorFont(settings.editorFont || 'mono')
+      setEditorFont(settings.editorFont || 'jetbrains-mono')
       setInterfaceFont(settings.interfaceFont || 'system')
 
       setLoading(false)
@@ -145,19 +156,19 @@ export default function SettingsPage() {
   const handleFontSizeChange = (size: UserSettings['fontSize']) => {
     setFontSize(size)
     saveUserSettings({ fontSize: size })
-    applyFontVars({ fontSize: size })
+    applyFontCss(editorFont, interfaceFont, size)
   }
 
-  const handleEditorFontChange = (font: UserSettings['editorFont']) => {
+  const handleEditorFontChange = (font: string) => {
     setEditorFont(font)
     saveUserSettings({ editorFont: font })
-    applyFontVars({ editorFont: font })
+    applyFontCss(font, interfaceFont, fontSize)
   }
 
-  const handleInterfaceFontChange = (font: UserSettings['interfaceFont']) => {
+  const handleInterfaceFontChange = (font: string) => {
     setInterfaceFont(font)
     saveUserSettings({ interfaceFont: font })
-    applyFontVars({ interfaceFont: font })
+    applyFontCss(editorFont, font, fontSize)
   }
 
   if (loading) {
@@ -248,7 +259,7 @@ export default function SettingsPage() {
             </div>
           )}
           {aiProvider === 'groq' && (
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Uses cloud summarization via Anyscale API. Data sent to external servers.</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Uses cloud summarization via Groq API. Data sent to external servers.</p>
           )}
         </section>
 
@@ -256,7 +267,7 @@ export default function SettingsPage() {
         <section className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <h2 className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>AI Note Analysis</h2>
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            Extract deadlines, todos, follow-ups, and flash cards from notes. Stored locally in your browser.
+            Extract deadlines, todos, follow-ups, and flash cards from notes.
           </p>
 
           <div>
@@ -375,13 +386,30 @@ export default function SettingsPage() {
             <label className="text-xs block mb-1" style={{ color: 'var(--text-secondary)' }}>Editor Font</label>
             <select
               value={editorFont}
-              onChange={(e) => handleEditorFontChange(e.target.value as 'mono' | 'sans' | 'serif')}
+              onChange={(e) => handleEditorFontChange(e.target.value)}
               className="w-full px-4 py-3 text-sm rounded outline-none"
               style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
             >
-              <option value="mono">Monospace</option>
-              <option value="sans">Sans-serif</option>
-              <option value="serif">Serif</option>
+              <optgroup label="— System —">
+                {EDITOR_FONTS.filter(f => f.key === 'system').map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="— Monospace —">
+                {EDITOR_FONTS.filter(f => f.key !== 'system' && f.cssStack.includes('monospace')).map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="— Sans-serif —">
+                {EDITOR_FONTS.filter(f => f.cssStack.includes('sans-serif') && !f.cssStack.includes('monospace')).map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="— Serif —">
+                {EDITOR_FONTS.filter(f => f.cssStack.includes('serif') && !f.cssStack.includes('monospace')).map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
@@ -389,13 +417,25 @@ export default function SettingsPage() {
             <label className="text-xs block mb-1" style={{ color: 'var(--text-secondary)' }}>Interface Font</label>
             <select
               value={interfaceFont}
-              onChange={(e) => handleInterfaceFontChange(e.target.value as 'system' | 'sans' | 'serif')}
+              onChange={(e) => handleInterfaceFontChange(e.target.value)}
               className="w-full px-4 py-3 text-sm rounded outline-none"
               style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
             >
-              <option value="system">System Default</option>
-              <option value="sans">Sans-serif</option>
-              <option value="serif">Serif</option>
+              <optgroup label="— System —">
+                {INTERFACE_FONTS.filter(f => f.key === 'system').map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="— Sans-serif —">
+                {INTERFACE_FONTS.filter(f => f.cssStack.includes('sans-serif') && f.key !== 'system').map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="— Serif —">
+                {INTERFACE_FONTS.filter(f => f.cssStack.includes('serif')).map(f => (
+                  <option key={f.key} value={f.key}>{f.label}</option>
+                ))}
+              </optgroup>
             </select>
           </div>
         </section>

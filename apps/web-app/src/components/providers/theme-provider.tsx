@@ -3,18 +3,24 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { THEMES, applyTheme, getTheme, type Theme } from '@/lib/themes'
 import { getStoredUserSettings } from '@/lib/supabase'
+import { getFontOption, loadGoogleFont } from '@/lib/fonts'
 
-interface FontSettings {
-  editorFont: string
-  interfaceFont: string
-  fontSize: string
-}
-
-function applyFontSettings(fonts: FontSettings) {
+function applyFontSettings(editorFont: string, interfaceFont: string, fontSize: string) {
   const root = document.documentElement
-  root.dataset.fontEditor = fonts.editorFont
-  root.dataset.fontUi = fonts.interfaceFont
-  root.dataset.fontSize = fonts.fontSize
+
+  root.dataset.fontSize = fontSize
+
+  const editorOpt = getFontOption(editorFont)
+  if (editorOpt) {
+    root.style.setProperty('--font-editor', editorOpt.cssStack)
+    if (editorOpt.googleFont) loadGoogleFont(editorOpt.googleFont)
+  }
+
+  const uiOpt = getFontOption(interfaceFont)
+  if (uiOpt) {
+    root.style.setProperty('--font-ui', uiOpt.cssStack)
+    if (uiOpt.googleFont) loadGoogleFont(uiOpt.googleFont)
+  }
 }
 
 interface ThemeContextType {
@@ -49,11 +55,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const settings = getStoredUserSettings()
     if (settings) {
-      applyFontSettings({
-        editorFont: settings.editorFont || 'mono',
-        interfaceFont: settings.interfaceFont || 'system',
-        fontSize: settings.fontSize || 'medium',
-      })
+      applyFontSettings(
+        settings.editorFont || 'jetbrains-mono',
+        settings.interfaceFont || 'system',
+        settings.fontSize || 'medium',
+      )
     }
   }, [])
 

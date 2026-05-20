@@ -247,8 +247,8 @@ export interface UserSettings {
   aiOllamaUrl: string
   aiOllamaModel: string
   fontSize: 'small' | 'medium' | 'large'
-  editorFont: 'mono' | 'sans' | 'serif'
-  interfaceFont: 'system' | 'sans' | 'serif'
+  editorFont: string
+  interfaceFont: string
 }
 
 const USER_SETTINGS_KEY = 'rwote_user_settings'
@@ -269,7 +269,7 @@ export async function loadUserSettings(): Promise<UserSettings> {
     aiOllamaUrl: 'http://localhost:11434',
     aiOllamaModel: 'llama3.2',
     fontSize: 'medium',
-    editorFont: 'mono',
+    editorFont: 'jetbrains-mono',
     interfaceFont: 'system',
   }
 
