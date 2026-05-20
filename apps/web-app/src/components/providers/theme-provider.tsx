@@ -5,10 +5,10 @@ import { THEMES, applyTheme, getTheme, type Theme } from '@/lib/themes'
 import { getStoredUserSettings } from '@/lib/supabase'
 import { getFontOption, loadGoogleFont } from '@/lib/fonts'
 
-function applyFontSettings(editorFont: string, interfaceFont: string, fontSize: string) {
+function applyFontSettings(editorFont: string, interfaceFont: string, fontSize: number) {
   const root = document.documentElement
 
-  root.dataset.fontSize = fontSize
+  root.style.setProperty('--font-size-base', `${fontSize}px`)
 
   const editorOpt = getFontOption(editorFont)
   if (editorOpt) {
@@ -58,7 +58,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       applyFontSettings(
         settings.editorFont || 'jetbrains-mono',
         settings.interfaceFont || 'system',
-        settings.fontSize || 'medium',
+        settings.fontSize || 14,
       )
     }
   }, [])

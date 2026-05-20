@@ -246,7 +246,7 @@ export interface UserSettings {
   aiProvider: 'disabled' | 'ollama' | 'groq'
   aiOllamaUrl: string
   aiOllamaModel: string
-  fontSize: 'small' | 'medium' | 'large'
+  fontSize: number
   editorFont: string
   interfaceFont: string
 }
@@ -268,7 +268,7 @@ export async function loadUserSettings(): Promise<UserSettings> {
     aiProvider: 'disabled',
     aiOllamaUrl: 'http://localhost:11434',
     aiOllamaModel: 'llama3.2',
-    fontSize: 'medium',
+    fontSize: 14,
     editorFont: 'jetbrains-mono',
     interfaceFont: 'system',
   }
@@ -299,7 +299,7 @@ export async function loadUserSettings(): Promise<UserSettings> {
       aiProvider: (data.ai_provider as UserSettings['aiProvider']) || defaults.aiProvider,
       aiOllamaUrl: data.ai_ollama_url || defaults.aiOllamaUrl,
       aiOllamaModel: data.ai_ollama_model || defaults.aiOllamaModel,
-      fontSize: (data.font_size as UserSettings['fontSize']) || defaults.fontSize,
+      fontSize: typeof data.font_size === 'number' ? data.font_size : defaults.fontSize,
       editorFont: (data.editor_font as UserSettings['editorFont']) || defaults.editorFont,
       interfaceFont: (data.interface_font as UserSettings['interfaceFont']) || defaults.interfaceFont,
     }

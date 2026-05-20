@@ -19,9 +19,9 @@ import { ArrowLeft, Download, LogOut, Heart, Check, Loader2, Eye, EyeOff } from 
 import Link from 'next/link'
 import { EDITOR_FONTS, INTERFACE_FONTS, getFontOption, loadGoogleFont } from '@/lib/fonts'
 
-function applyFontCss(editorFont: string, interfaceFont: string, fontSize: string) {
+function applyFontCss(editorFont: string, interfaceFont: string, fontSize: number) {
   const root = document.documentElement
-  root.dataset.fontSize = fontSize
+  root.style.setProperty('--font-size-base', `${fontSize}px`)
 
   const editorOpt = getFontOption(editorFont)
   if (editorOpt) {
@@ -69,7 +69,7 @@ export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false)
 
   // Font
-  const [fontSize, setFontSize] = useState<UserSettings['fontSize']>('medium')
+  const [fontSize, setFontSize] = useState<number>(14)
   const [editorFont, setEditorFont] = useState<string>('jetbrains-mono')
   const [interfaceFont, setInterfaceFont] = useState<string>('system')
 
@@ -85,7 +85,7 @@ export default function SettingsPage() {
       setUser(currentUser)
 
       const settings = await loadUserSettings()
-      setFontSize(settings.fontSize || 'medium')
+      setFontSize(settings.fontSize || 14)
       setEditorFont(settings.editorFont || 'jetbrains-mono')
       setInterfaceFont(settings.interfaceFont || 'system')
 
@@ -153,7 +153,7 @@ export default function SettingsPage() {
     setAnalyzeConfig({ ...analyzeConfig, ...defaults[provider], provider })
   }
 
-  const handleFontSizeChange = (size: UserSettings['fontSize']) => {
+  const handleFontSizeChange = (size: number) => {
     setFontSize(size)
     saveUserSettings({ fontSize: size })
     applyFontCss(editorFont, interfaceFont, size)
@@ -369,17 +369,19 @@ export default function SettingsPage() {
           </div>
 
           <div>
-            <label className="text-xs block mb-1" style={{ color: 'var(--text-secondary)' }}>Font Size</label>
-            <select
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>Font Size</label>
+              <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>{fontSize}px</span>
+            </div>
+            <input
+              type="range"
+              min={8}
+              max={24}
               value={fontSize}
-              onChange={(e) => handleFontSizeChange(e.target.value as 'small' | 'medium' | 'large')}
-              className="w-full px-4 py-3 text-sm rounded outline-none"
-              style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
-            >
-              <option value="small">Small (12px)</option>
-              <option value="medium">Medium (14px)</option>
-              <option value="large">Large (16px)</option>
-            </select>
+              onChange={(e) => handleFontSizeChange(Number(e.target.value))}
+              className="w-full"
+              style={{ accentColor: 'var(--accent)' }}
+            />
           </div>
 
           <div>

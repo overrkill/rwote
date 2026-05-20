@@ -1,7 +1,16 @@
--- Add font customization columns to user_settings (free TEXT, no CHECK — curated at client)
+-- Add font customization columns to user_settings
 ALTER TABLE public.user_settings
   ADD COLUMN editor_font TEXT NOT NULL DEFAULT 'jetbrains-mono',
   ADD COLUMN interface_font TEXT NOT NULL DEFAULT 'system';
+
+-- Change font_size from TEXT to INTEGER, drop old check
+ALTER TABLE public.user_settings
+  ALTER COLUMN font_size TYPE INTEGER USING font_size::INTEGER,
+  ALTER COLUMN font_size SET DEFAULT 14,
+  DROP CONSTRAINT IF EXISTS font_size_check;
+
+ALTER TABLE public.user_settings
+  ADD CONSTRAINT font_size_check CHECK (font_size >= 8 AND font_size <= 24);
 
 -- Update get_user_settings function
 CREATE OR REPLACE FUNCTION public.get_user_settings()

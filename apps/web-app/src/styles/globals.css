@@ -27,10 +27,6 @@
     --font-editor: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', Menlo, Courier, monospace;
   }
 
-  [data-font-size="small"] { --font-size-base: 12px; }
-  [data-font-size="medium"] { --font-size-base: 14px; }
-  [data-font-size="large"] { --font-size-base: 16px; }
-
   .dark {
     --bg: #1a1a1e;
     --surface: #242428;
