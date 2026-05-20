@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, LogOut, Check, Loader2, Heart } from 'lucide-react'
+import Link from 'next/link'
+import { Download, LogOut, Check, Loader2, Heart, Settings } from 'lucide-react'
 import type { User, AiSettings } from '@/lib/types'
 import Avatar from './avatar'
 import SideSheet from './side-sheet'
@@ -148,6 +149,19 @@ export default function SettingsPanel({
               <option key={theme.id} value={theme.id}>{theme.name}</option>
             ))}
           </select>
+        </section>
+
+        <section>
+          <div className="text-xs font-medium mb-3" style={{ color: 'var(--text-tertiary)' }}>Settings</div>
+          <Link
+            href="/dashboard/settings"
+            onClick={onClose}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded transition-colors"
+            style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', textDecoration: 'none' }}
+          >
+            <Settings size={16} style={{ color: 'var(--text-secondary)' }} />
+            <span className="text-sm">All Settings</span>
+          </Link>
         </section>
 
         <section>
