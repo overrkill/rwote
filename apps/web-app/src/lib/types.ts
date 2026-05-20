@@ -58,4 +58,5 @@ export interface AiAnalyzeConfig {
   baseUrl: string
   model: string
   apiKey: string
+  autoAnalyze: boolean
 }

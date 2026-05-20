@@ -7,6 +7,7 @@ export const DEFAULT_ANALYZE_CONFIG: AiAnalyzeConfig = {
   baseUrl: 'https://api.openai.com/v1',
   model: 'gpt-4o-mini',
   apiKey: '',
+  autoAnalyze: false,
 }
 
 export function loadAnalyzeConfig(): AiAnalyzeConfig {

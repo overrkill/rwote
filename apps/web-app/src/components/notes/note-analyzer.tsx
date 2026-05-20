@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { NoteAnalysis, AiAnalyzeConfig, AiAnalyzeProvider } from '@/lib/types'
 import { analyzeNoteDirect, loadNoteAnalysis, saveNoteAnalysis, getAuthToken, contentHash } from '@/lib/supabase'
 import { loadAnalyzeConfig, saveAnalyzeConfig } from '@/lib/ai-config'
@@ -10,6 +10,7 @@ interface NoteAnalyzerProps {
   noteId: string
   text: string
   view: 'minimized' | 'expanded'
+  autoAnalyzeTrigger?: number
   onToggleView: () => void
 }
 
@@ -191,6 +192,17 @@ function ConfigForm({
         </div>
       )}
 
+      <label className="flex items-center justify-between text-xs py-1">
+        <span style={{ color: 'var(--text-tertiary)' }}>Auto-analyze on save</span>
+        <input
+          type="checkbox"
+          checked={config.autoAnalyze}
+          onChange={(e) => onChange({ ...config, autoAnalyze: e.target.checked })}
+          className="rounded"
+          style={{ accentColor: 'var(--accent)' }}
+        />
+      </label>
+
       <button
         onClick={onSave}
         className="w-full text-xs font-medium px-3 py-1.5 rounded mt-1 transition-colors"
@@ -286,7 +298,7 @@ function MinimizedStrip({
   )
 }
 
-export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteAnalyzerProps) {
+export default function NoteAnalyzer({ noteId, text, view, autoAnalyzeTrigger, onToggleView }: NoteAnalyzerProps) {
   const [config, setConfig] = useState<AiAnalyzeConfig>(() => loadAnalyzeConfig())
   const [analysis, setAnalysis] = useState<NoteAnalysis | null>(null)
   const [storedHash, setStoredHash] = useState<string | null>(null)
@@ -351,6 +363,15 @@ export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteA
       setStatus('error')
     }
   }
+
+  const autoAnalyzeRef = useRef(handleAnalyze)
+  autoAnalyzeRef.current = handleAnalyze
+
+  useEffect(() => {
+    if (autoAnalyzeTrigger && autoAnalyzeTrigger > 0 && config.autoAnalyze && text.trim()) {
+      autoAnalyzeRef.current()
+    }
+  }, [autoAnalyzeTrigger])
 
   const hasContent = text.trim().length > 0
   const configMissing = needsConfig(config)

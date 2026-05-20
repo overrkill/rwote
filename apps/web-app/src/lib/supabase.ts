@@ -247,6 +247,8 @@ export interface UserSettings {
   aiOllamaUrl: string
   aiOllamaModel: string
   fontSize: 'small' | 'medium' | 'large'
+  editorFont: 'mono' | 'sans' | 'serif'
+  interfaceFont: 'system' | 'sans' | 'serif'
 }
 
 const USER_SETTINGS_KEY = 'rwote_user_settings'
@@ -267,6 +269,8 @@ export async function loadUserSettings(): Promise<UserSettings> {
     aiOllamaUrl: 'http://localhost:11434',
     aiOllamaModel: 'llama3.2',
     fontSize: 'medium',
+    editorFont: 'mono',
+    interfaceFont: 'system',
   }
 
   try {
@@ -296,6 +300,8 @@ export async function loadUserSettings(): Promise<UserSettings> {
       aiOllamaUrl: data.ai_ollama_url || defaults.aiOllamaUrl,
       aiOllamaModel: data.ai_ollama_model || defaults.aiOllamaModel,
       fontSize: (data.font_size as UserSettings['fontSize']) || defaults.fontSize,
+      editorFont: (data.editor_font as UserSettings['editorFont']) || defaults.editorFont,
+      interfaceFont: (data.interface_font as UserSettings['interfaceFont']) || defaults.interfaceFont,
     }
 
     if (typeof window !== 'undefined') {
@@ -327,6 +333,8 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
     if (settings.aiOllamaUrl !== undefined) updates.ai_ollama_url = settings.aiOllamaUrl
     if (settings.aiOllamaModel !== undefined) updates.ai_ollama_model = settings.aiOllamaModel
     if (settings.fontSize !== undefined) updates.font_size = settings.fontSize
+    if (settings.editorFont !== undefined) updates.editor_font = settings.editorFont
+    if (settings.interfaceFont !== undefined) updates.interface_font = settings.interfaceFont
 
     const { error } = await supabase
       .from('user_settings')

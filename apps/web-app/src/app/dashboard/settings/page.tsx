@@ -7,6 +7,7 @@ import {
   getAuthUser,
   signOut,
   loadNotes,
+  loadUserSettings,
   saveUserSettings,
   type UserSettings,
 } from '@/lib/supabase'
@@ -15,6 +16,13 @@ import { useTheme } from '@/components/providers/theme-provider'
 import Avatar from '@/components/ui/avatar'
 import type { User, AiAnalyzeConfig, AiAnalyzeProvider } from '@/lib/types'
 import { ArrowLeft, Download, LogOut, Heart, Check, Loader2, Eye, EyeOff } from 'lucide-react'
+
+function applyFontVars(settings: Partial<UserSettings>) {
+  const root = document.documentElement
+  if (settings.editorFont) root.dataset.fontEditor = settings.editorFont
+  if (settings.interfaceFont) root.dataset.fontUi = settings.interfaceFont
+  if (settings.fontSize) root.dataset.fontSize = settings.fontSize
+}
 import Link from 'next/link'
 
 const THEME_LIST = [
@@ -49,6 +57,11 @@ export default function SettingsPage() {
   const [analyzeSaved, setAnalyzeSaved] = useState(false)
   const [showKey, setShowKey] = useState(false)
 
+  // Font
+  const [fontSize, setFontSize] = useState<UserSettings['fontSize']>('medium')
+  const [editorFont, setEditorFont] = useState<UserSettings['editorFont']>('mono')
+  const [interfaceFont, setInterfaceFont] = useState<UserSettings['interfaceFont']>('system')
+
   // Export
   const [exporting, setExporting] = useState(false)
 
@@ -59,6 +72,12 @@ export default function SettingsPage() {
       const currentUser = await getAuthUser()
       if (!currentUser) { router.push('/auth/login'); return }
       setUser(currentUser)
+
+      const settings = await loadUserSettings()
+      setFontSize(settings.fontSize || 'medium')
+      setEditorFont(settings.editorFont || 'mono')
+      setInterfaceFont(settings.interfaceFont || 'system')
+
       setLoading(false)
     }
     init()
@@ -121,6 +140,24 @@ export default function SettingsPage() {
       ollama: { baseUrl: 'http://localhost:11434', model: 'llama3.2' },
     }
     setAnalyzeConfig({ ...analyzeConfig, ...defaults[provider], provider })
+  }
+
+  const handleFontSizeChange = (size: UserSettings['fontSize']) => {
+    setFontSize(size)
+    saveUserSettings({ fontSize: size })
+    applyFontVars({ fontSize: size })
+  }
+
+  const handleEditorFontChange = (font: UserSettings['editorFont']) => {
+    setEditorFont(font)
+    saveUserSettings({ editorFont: font })
+    applyFontVars({ editorFont: font })
+  }
+
+  const handleInterfaceFontChange = (font: UserSettings['interfaceFont']) => {
+    setInterfaceFont(font)
+    saveUserSettings({ interfaceFont: font })
+    applyFontVars({ interfaceFont: font })
   }
 
   if (loading) {
@@ -282,6 +319,17 @@ export default function SettingsPage() {
             </div>
           )}
 
+          <label className="flex items-center justify-between text-sm py-1">
+            <span style={{ color: 'var(--text-secondary)' }}>Auto-analyze on save</span>
+            <input
+              type="checkbox"
+              checked={analyzeConfig.autoAnalyze}
+              onChange={(e) => setAnalyzeConfig({ ...analyzeConfig, autoAnalyze: e.target.checked })}
+              className="rounded"
+              style={{ accentColor: 'var(--accent)' }}
+            />
+          </label>
+
           <button
             onClick={handleSaveAnalyzeConfig}
             className="w-full px-4 py-2 text-xs font-medium rounded flex items-center justify-center gap-2 transition-colors"
@@ -293,17 +341,63 @@ export default function SettingsPage() {
 
         {/* Appearance */}
         <section className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <h2 className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Appearance</h2>
-          <select
-            value={themeId}
-            onChange={(e) => handleThemeChange(e.target.value)}
-            className="w-full px-4 py-3 text-sm rounded outline-none"
-            style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
-          >
-            {THEME_LIST.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
+          <h2 className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Appearance</h2>
+
+          <div>
+            <label className="text-xs block mb-1" style={{ color: 'var(--text-secondary)' }}>Theme</label>
+            <select
+              value={themeId}
+              onChange={(e) => handleThemeChange(e.target.value)}
+              className="w-full px-4 py-3 text-sm rounded outline-none"
+              style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+            >
+              {THEME_LIST.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs block mb-1" style={{ color: 'var(--text-secondary)' }}>Font Size</label>
+            <select
+              value={fontSize}
+              onChange={(e) => handleFontSizeChange(e.target.value as 'small' | 'medium' | 'large')}
+              className="w-full px-4 py-3 text-sm rounded outline-none"
+              style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+            >
+              <option value="small">Small (12px)</option>
+              <option value="medium">Medium (14px)</option>
+              <option value="large">Large (16px)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs block mb-1" style={{ color: 'var(--text-secondary)' }}>Editor Font</label>
+            <select
+              value={editorFont}
+              onChange={(e) => handleEditorFontChange(e.target.value as 'mono' | 'sans' | 'serif')}
+              className="w-full px-4 py-3 text-sm rounded outline-none"
+              style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+            >
+              <option value="mono">Monospace</option>
+              <option value="sans">Sans-serif</option>
+              <option value="serif">Serif</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs block mb-1" style={{ color: 'var(--text-secondary)' }}>Interface Font</label>
+            <select
+              value={interfaceFont}
+              onChange={(e) => handleInterfaceFontChange(e.target.value as 'system' | 'sans' | 'serif')}
+              className="w-full px-4 py-3 text-sm rounded outline-none"
+              style={{ backgroundColor: 'var(--surface-alt)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+            >
+              <option value="system">System Default</option>
+              <option value="sans">Sans-serif</option>
+              <option value="serif">Serif</option>
+            </select>
+          </div>
         </section>
 
         {/* Data */}

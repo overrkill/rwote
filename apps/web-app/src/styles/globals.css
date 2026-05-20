@@ -23,7 +23,21 @@
     --accent: #a0a0a0;
     --accent-btn: #1a1a1a;
     --font-size-base: 14px;
+    --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    --font-editor: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', Menlo, Courier, monospace;
   }
+
+  [data-font-ui="system"] { --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif; }
+  [data-font-ui="sans"] { --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif; }
+  [data-font-ui="serif"] { --font-ui: Georgia, 'Times New Roman', Times, serif; }
+
+  [data-font-editor="mono"] { --font-editor: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', Menlo, Courier, monospace; }
+  [data-font-editor="sans"] { --font-editor: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif; }
+  [data-font-editor="serif"] { --font-editor: Georgia, 'Times New Roman', Times, serif; }
+
+  [data-font-size="small"] { --font-size-base: 12px; }
+  [data-font-size="medium"] { --font-size-base: 14px; }
+  [data-font-size="large"] { --font-size-base: 16px; }
 
   .dark {
     --bg: #1a1a1e;
@@ -45,7 +59,7 @@
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-family: var(--font-ui);
     font-size: var(--font-size-base);
     background-color: var(--bg);
     color: var(--text-primary);
@@ -91,6 +105,11 @@
     border-color: var(--border-focus);
     box-shadow: var(--shadow-md);
   }
+}
+
+/* Editor font */
+.ProseMirror {
+  font-family: var(--font-editor);
 }
 
 /* Animations */

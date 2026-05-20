@@ -6,6 +6,7 @@ import type { Note } from '@/lib/types'
 import { Pin, Copy, Trash2, X, Check } from 'lucide-react'
 import MarkdownEditor from './markdown-editor'
 import NoteAnalyzer from './note-analyzer'
+import { loadAnalyzeConfig } from '@/lib/ai-config'
 import AlertDialog, { AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
 
 interface NoteDetailProps {
@@ -41,6 +42,7 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
   const [saved, setSaved] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [analyzeView, setAnalyzeView] = useState<'minimized' | 'expanded'>('minimized')
+  const [autoAnalyzeTrigger, setAutoAnalyzeTrigger] = useState(0)
   const editorRef = useRef<Editor | null>(null)
 
   const titleRef = useRef(title)
@@ -72,6 +74,11 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
     
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
+
+    const cfg = loadAnalyzeConfig()
+    if (cfg.autoAnalyze && (titleRef.current.trim() || contentRef.current.trim())) {
+      setAutoAnalyzeTrigger(c => c + 1)
+    }
   }, [note, onUpdate])
 
   const scheduleSave = useCallback(() => {
@@ -236,12 +243,13 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
             backgroundColor: 'var(--surface)',
           }}
         >
-          <NoteAnalyzer
-            noteId={note.id}
-            text={title + '\n\n' + content}
-            view={analyzeView}
-            onToggleView={() => setAnalyzeView(analyzeView === 'minimized' ? 'expanded' : 'minimized')}
-          />
+            <NoteAnalyzer
+              noteId={note.id}
+              text={title + '\n\n' + content}
+              view={analyzeView}
+              autoAnalyzeTrigger={autoAnalyzeTrigger}
+              onToggleView={() => setAnalyzeView(analyzeView === 'minimized' ? 'expanded' : 'minimized')}
+            />
         </div>
       </div>
 

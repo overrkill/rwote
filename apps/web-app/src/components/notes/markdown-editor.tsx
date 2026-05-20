@@ -71,7 +71,7 @@ export default function MarkdownEditor({ content, onChange, onCreated, onSave, o
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm focus:outline-none font-mono min-h-[400px] py-2 px-1',
+        class: 'prose prose-sm focus:outline-none min-h-[400px] py-2 px-1',
       },
     },
   })
