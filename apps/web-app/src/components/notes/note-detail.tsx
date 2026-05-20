@@ -34,7 +34,13 @@ function getTagTextColor(tag: string): string {
   return `hsl(${hue}, 70%, 25%)`
 }
 
-export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: NoteDetailProps) {
+export default function 
+ 
+ 
+ 
+
+ 
+NoteDetail({ note, onUpdate, onDelete, onTogglePin }: NoteDetailProps) {
   const [title, setTitle] = useState(note.title)
   const [content, setContent] = useState(note.content || '')
   const [tags, setTags] = useState<string[]>(note.tags || [])
@@ -159,7 +165,7 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
 
   return (
     <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--bg)' }}>
-      <div className="p-3 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+      <div className="px-3 py-0.5 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
           <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
             {new Date(note.created_at).toLocaleDateString()}

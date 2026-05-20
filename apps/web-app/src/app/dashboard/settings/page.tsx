@@ -457,7 +457,7 @@ export default function SettingsPage() {
         <section className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <h2 className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Support</h2>
           <a
-            href="https://ko-fi.com/abhishekkr"
+            href="https://ko-fi.com/abhishekdk"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full flex items-center gap-3 px-4 py-3 rounded transition-colors"

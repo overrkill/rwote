@@ -609,9 +609,16 @@ export function contentHash(note: { title: string; content: string }): string {
 }
 
 export async function loadAllNoteAnalyses(): Promise<Record<string, { analysis: NoteAnalysis; contentHash: string }>> {
+  const token = await getAuthToken()
+  if (!token) return {}
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return {}
+
   const { data, error } = await supabase
     .from('note_analyses')
     .select('note_id, analysis, content_hash')
+    .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 
   if (error) {

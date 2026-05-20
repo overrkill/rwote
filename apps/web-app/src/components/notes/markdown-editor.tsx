@@ -3,7 +3,6 @@
 import { useEditor, EditorContent, Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import Link from '@tiptap/extension-link'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { createLowlight, common } from 'lowlight'
 import { Markdown } from '@tiptap/markdown'
@@ -46,24 +45,21 @@ export default function MarkdownEditor({ content, onChange, onCreated, onSave, o
             class: 'code-inline',
           },
         },
-        codeBlock: {
-          HTMLAttributes: {},
+        codeBlock: false,
+        link: {
+          openOnClick: true,
+          HTMLAttributes: {
+            class: 'editor-link',
+          },
         },
       }),
       CodeBlockLowlight.configure({
         lowlight,
         defaultLanguage: null,
-        HTMLAttributes: {},
       }),
       Placeholder.configure({
         placeholder,
         emptyEditorClass: 'is-editor-empty',
-      }),
-      Link.configure({
-        openOnClick: true,
-        HTMLAttributes: {
-          class: 'editor-link',
-        },
       }),
       Markdown.configure({
         indentation: { style: 'space', size: 2 },
