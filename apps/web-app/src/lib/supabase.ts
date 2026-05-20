@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Note, User, SubscriptionStatus, AiSettings, SummarizeResult } from './types'
+import type { Note, User, SubscriptionStatus, AiSettings, SummarizeResult, NoteAnalysis, AiAnalyzeConfig } from './types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -441,4 +441,100 @@ export async function summarizeUsingLocal(text: string, url: string, model: stri
 
   const data = await response.json()
   return parseSummarizeResponse(data.response)
+}
+
+// ── Note Analysis ─────────────────────────────────────
+
+const ANALYZE_PROMPT = `You are a precise note analyzer. Given the text below, extract actionable items and informational content.
+
+Identify these 4 categories:
+
+1. **DEADLINES** — Any dates, due dates, or time-sensitive items mentioned
+2. **TODOS** — Tasks, action items, or things that need to be done
+3. **FOLLOW_UPS** — Things that need follow-up, check-ins, or revisiting (with dates if mentioned)
+4. **FLASH_CARDS** — Key facts, concepts, or definitions that could be turned into study flashcards (front = question/prompt, back = answer/explanation)
+
+Analyze the text thoroughly. If a category has no items, return an empty array for it.
+
+Respond ONLY in this JSON format (no markdown, no code blocks):
+{
+  "deadlines": [
+    { "text": "description of deadline", "date": "specific date if mentioned" }
+  ],
+  "todos": [
+    { "text": "action item description" }
+  ],
+  "followUps": [
+    { "text": "follow-up description", "date": "specific date if mentioned" }
+  ],
+  "flashCards": [
+    { "front": "question or prompt", "back": "answer or explanation" }
+  ]
+}
+
+-----
+{{TEXT}}`
+
+function extractJsonFromResponse(content: string): string {
+  const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+  return jsonMatch ? jsonMatch[1].trim() : content.trim()
+}
+
+function parseAnalysisResponse(content: string): NoteAnalysis {
+  const jsonStr = extractJsonFromResponse(content)
+  try {
+    const data = JSON.parse(jsonStr)
+    return {
+      deadlines:  data.deadlines  || [],
+      todos:      data.todos      || [],
+      followUps:  data.followUps  || [],
+      flashCards: data.flashCards || [],
+    }
+  } catch {
+    console.error('Failed to parse analysis response:', content)
+    throw new Error('AI returned invalid JSON')
+  }
+}
+
+export async function analyzeNoteDirect(text: string, config: AiAnalyzeConfig): Promise<NoteAnalysis> {
+  const prompt = ANALYZE_PROMPT.replace('{{TEXT}}', text)
+  const messages = [{ role: 'user', content: prompt }]
+
+  if (config.provider === 'ollama') {
+    const base = config.baseUrl.replace(/\/$/, '')
+    const res = await fetch(`${base}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: config.model, messages, stream: false }),
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Ollama error ${res.status}: ${err}`)
+    }
+    const data = await res.json()
+    const content = data.message?.content || data.response || ''
+    return parseAnalysisResponse(content)
+  }
+
+  const base = config.baseUrl.replace(/\/$/, '')
+  const res = await fetch(`${base}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: config.model,
+      messages,
+      temperature: 0.3,
+      max_tokens: 800,
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`API error ${res.status}: ${err}`)
+  }
+  const data = await res.json()
+  const content = data.choices?.[0]?.message?.content || ''
+  return parseAnalysisResponse(content)
 }

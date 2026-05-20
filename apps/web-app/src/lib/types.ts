@@ -33,3 +33,29 @@ export interface SummarizeResult {
   summary: string;
   tags: string[];
 }
+
+export interface Deadline {
+  text: string;
+  date?: string;
+}
+
+export interface FlashCard {
+  front: string;
+  back: string;
+}
+
+export interface NoteAnalysis {
+  deadlines:  Deadline[];
+  todos:      { text: string }[];
+  followUps:  Deadline[];
+  flashCards: FlashCard[];
+}
+
+export type AiAnalyzeProvider = 'ollama' | 'openai'
+
+export interface AiAnalyzeConfig {
+  provider: AiAnalyzeProvider
+  baseUrl: string
+  model: string
+  apiKey: string
+}

@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Editor } from '@tiptap/react'
 import type { Note } from '@/lib/types'
-import { Pin, Copy, Trash2, X, Check } from 'lucide-react'
+import { Pin, Copy, Trash2, X, Check, Sparkles } from 'lucide-react'
 import MarkdownEditor from './markdown-editor'
+import NoteAnalyzer from './note-analyzer'
 import AlertDialog, { AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
 
 interface NoteDetailProps {
@@ -39,6 +40,7 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
   const [copied, setCopied] = useState(false)
   const [saved, setSaved] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [analyzeView, setAnalyzeView] = useState<'closed' | 'minimized' | 'expanded'>('closed')
   const editorRef = useRef<Editor | null>(null)
 
   const titleRef = useRef(title)
@@ -168,6 +170,18 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
             {copied ? <Check size={16} /> : <Copy size={16} />}
           </button>
           <button
+            onClick={() => {
+              if (analyzeView === 'closed') setAnalyzeView('expanded')
+              else if (analyzeView === 'expanded') setAnalyzeView('minimized')
+              else setAnalyzeView('closed')
+            }}
+            className="p-2 rounded transition-colors"
+            style={{ color: analyzeView !== 'closed' ? 'var(--accent)' : 'var(--text-secondary)' }}
+            title="Analyze with AI"
+          >
+            <Sparkles size={16} />
+          </button>
+          <button
             onClick={handleDelete}
             className="p-2 rounded transition-colors"
             style={{ color: 'var(--text-secondary)' }}
@@ -178,51 +192,70 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-2xl mx-auto">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value)
-              scheduleSave()
-            }}
-            onKeyDown={handleTitleKeyDown}
-            placeholder="Note title... use #tag for tags"
-            className="w-full text-2xl font-bold outline-none mb-4 py-2"
-            style={{ backgroundColor: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit' }}
-          />
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-2xl mx-auto">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value)
+                scheduleSave()
+              }}
+              onKeyDown={handleTitleKeyDown}
+              placeholder="Note title... use #tag for tags"
+              className="w-full text-2xl font-bold outline-none mb-4 py-2"
+              style={{ backgroundColor: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit' }}
+            />
 
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 text-[8px] font-semibold px-1.5 py-0.5 rounded"
-                  style={{
-                    backgroundColor: getTagColor(tag),
-						  opacity:0.4,
-                    color: getTagTextColor(tag),
-                  }}
-                >
-                  #{tag}
-                  <button onClick={() => removeTag(tag)} className="hover:opacity-70 ml-0.5">
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 text-[8px] font-semibold px-1.5 py-0.5 rounded"
+                    style={{
+                      backgroundColor: getTagColor(tag),
+                      opacity:0.4,
+                      color: getTagTextColor(tag),
+                    }}
+                  >
+                    #{tag}
+                    <button onClick={() => removeTag(tag)} className="hover:opacity-70 ml-0.5">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
 
-          <MarkdownEditor
-            content={content}
-            onChange={handleEditorUpdate}
-            onCreated={handleEditorCreated}
-            onSave={doSave}
-            onInput={() => scheduleSave()}
-            placeholder="Start typing..."
-          />
+            <MarkdownEditor
+              content={content}
+              onChange={handleEditorUpdate}
+              onCreated={handleEditorCreated}
+              onSave={doSave}
+              onInput={() => scheduleSave()}
+              placeholder="Start typing..."
+            />
+          </div>
         </div>
+
+        {analyzeView !== 'closed' && (
+          <div
+            className="shrink-0 overflow-y-auto"
+            style={{
+              width: analyzeView === 'minimized' ? 48 : 320,
+              borderLeft: '1px solid var(--border)',
+              backgroundColor: 'var(--surface)',
+            }}
+          >
+            <NoteAnalyzer
+              text={title + '\n\n' + content}
+              view={analyzeView}
+              onToggleView={() => setAnalyzeView(analyzeView === 'minimized' ? 'expanded' : 'minimized')}
+            />
+          </div>
+        )}
       </div>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen} title="Delete note?" description="This cannot be undone.">
