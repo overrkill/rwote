@@ -4,8 +4,12 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { createLowlight, common } from 'lowlight'
 import { Markdown } from '@tiptap/markdown'
 import { useEffect, useCallback, useRef } from 'react'
+
+const lowlight = createLowlight(common)
 
 interface MarkdownEditorProps {
   content: string
@@ -43,10 +47,13 @@ export default function MarkdownEditor({ content, onChange, onCreated, onSave, o
           },
         },
         codeBlock: {
-          HTMLAttributes: {
-            class: 'code-block',
-          },
+          HTMLAttributes: {},
         },
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        defaultLanguage: null,
+        HTMLAttributes: {},
       }),
       Placeholder.configure({
         placeholder,
@@ -105,7 +112,7 @@ export default function MarkdownEditor({ content, onChange, onCreated, onSave, o
   return (
     <EditorContent
       editor={editor}
-      className="w-full [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] [&_.ProseMirror]:py-2 [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:text-2xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h3]:text-lg [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_strong]:font-bold [&_.ProseMirror_em]:italic [&_.ProseMirror_code]:bg-black/10 [&_.ProseMirror_code]:px-1 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:rounded [&_.ProseMirror_codeBlock]:bg-black/10 [&_.ProseMirror_codeBlock]:p-3 [&_.ProseMirror_codeBlock]:rounded [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_li]:my-1 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_blockquote]:opacity-80 [&_.ProseMirror_hr]:border-t [&_.ProseMirror_hr]:my-4 [&_.ProseMirror_is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_is-editor-empty:first-child::before]:float-left [&_.ProseMirror_is-editor-empty:first-child::before]:text-[var(--text-tertiary)] [&_.ProseMirror_is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_is-editor-empty:first-child::before]:h-0"
+      className="w-full [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[400px] [&_.ProseMirror]:py-2 [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:text-2xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h3]:text-lg [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_strong]:font-bold [&_.ProseMirror_em]:italic [&_.ProseMirror_code]:bg-black/10 [&_.ProseMirror_code]:px-1 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:rounded [&_.ProseMirror_pre]:bg-[var(--surface-alt)] [&_.ProseMirror_pre]:rounded [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_li]:my-1 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_blockquote]:opacity-80 [&_.ProseMirror_hr]:border-t [&_.ProseMirror_hr]:my-4 [&_.ProseMirror_is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_is-editor-empty:first-child::before]:float-left [&_.ProseMirror_is-editor-empty:first-child::before]:text-[var(--text-tertiary)] [&_.ProseMirror_is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_is-editor-empty:first-child::before]:h-0"
       style={{ color: 'var(--text-primary)' }}
     />
   )

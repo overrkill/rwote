@@ -25,6 +25,7 @@ import NoteSidebar from '@/components/notes/note-sidebar'
 import NoteDetail from '@/components/notes/note-detail'
 import NoteOverview from '@/components/notes/note-overview'
 import SettingsPanel from '@/components/ui/settings-panel'
+import { DashboardSkeleton } from '@/components/ui/skeleton'
 import Dialog from '@/components/ui/dialog'
 import { useTheme } from '@/components/providers/theme-provider'
 import { Cloud, AlertCircle, List, Search, Home, X } from 'lucide-react'
@@ -305,11 +306,7 @@ export default function DashboardPage() {
   const selectedNote = notes.find(n => n.id === selectedNoteId) || null
 
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
-        <div style={{ color: 'var(--text-secondary)' }}>Loading...</div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   return (

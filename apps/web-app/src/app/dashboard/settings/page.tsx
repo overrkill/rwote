@@ -16,6 +16,7 @@ import { useTheme } from '@/components/providers/theme-provider'
 import Avatar from '@/components/ui/avatar'
 import type { User, AiAnalyzeConfig, AiAnalyzeProvider } from '@/lib/types'
 import { ArrowLeft, Download, LogOut, Heart, Check, Loader2, Eye, EyeOff } from 'lucide-react'
+import { SettingsSkeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import { EDITOR_FONTS, INTERFACE_FONTS, getFontOption, loadGoogleFont } from '@/lib/fonts'
 
@@ -172,11 +173,7 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
-        <div style={{ color: 'var(--text-secondary)' }}>Loading...</div>
-      </div>
-    )
+    return <SettingsSkeleton />
   }
 
   return (

@@ -100,6 +100,56 @@
   font-family: var(--font-editor);
 }
 
+/* Code block syntax highlighting */
+.ProseMirror pre {
+  background: var(--surface-alt);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+}
+.ProseMirror code {
+  font-family: var(--font-editor);
+  font-size: 0.9em;
+}
+.ProseMirror .hljs-comment,
+.ProseMirror .hljs-quote {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+.ProseMirror .hljs-keyword,
+.ProseMirror .hljs-selector-tag,
+.ProseMirror .hljs-tag {
+  color: #c678dd;
+}
+.ProseMirror .hljs-string,
+.ProseMirror .hljs-addition {
+  color: #98c379;
+}
+.ProseMirror .hljs-number,
+.ProseMirror .hljs-literal {
+  color: #d19a66;
+}
+.ProseMirror .hljs-function,
+.ProseMirror .hljs-title {
+  color: #61afef;
+}
+.ProseMirror .hljs-built_in,
+.ProseMirror .hljs-type {
+  color: #e5c07b;
+}
+.ProseMirror .hljs-variable,
+.ProseMirror .hljs-template-variable {
+  color: #e06c75;
+}
+.ProseMirror .hljs-attr,
+.ProseMirror .hljs-selector-attr {
+  color: #d19a66;
+}
+.ProseMirror .hljs-name,
+.ProseMirror .hljs-selector-id {
+  color: #e5c07b;
+}
+
 /* Animations */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(24px); }
