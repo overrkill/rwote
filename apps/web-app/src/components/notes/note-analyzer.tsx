@@ -212,52 +212,76 @@ function MinimizedStrip({
   analysis,
   status,
   stale,
+  onRefresh,
   onToggleView,
 }: {
   analysis: NoteAnalysis | null
   status: 'idle' | 'loading' | 'success' | 'error'
   stale: boolean
+  onRefresh: () => void
   onToggleView: () => void
 }) {
   const totalItems = analysis
     ? analysis.deadlines.length + analysis.todos.length + analysis.followUps.length + analysis.flashCards.length
     : 0
 
+  const isLoading = status === 'loading'
+
   return (
-    <div className="flex flex-col items-center gap-3 py-3" style={{ cursor: 'pointer' }} onClick={onToggleView}>
+    <div className="flex flex-col items-center gap-3 py-3">
+      <button
+        onClick={onToggleView}
+        className="p-1 rounded transition-colors hover:opacity-70"
+        style={{ color: 'var(--text-tertiary)' }}
+        title="Expand analysis panel"
+      >
+        <PanelRightOpen size={16} />
+      </button>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); onRefresh() }}
+        disabled={isLoading}
+        className="p-1 rounded transition-colors hover:opacity-70 disabled:opacity-30"
+        style={{ color: stale ? '#f59e0b' : 'var(--text-tertiary)' }}
+        title={isLoading ? 'Analyzing...' : stale ? 'Update analysis' : 'Run analysis'}
+      >
+        {isLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+      </button>
+
       {analysis ? (
         <>
-          <span title={`${totalItems} items${stale ? ' (stale)' : ''}`} className="flex flex-col items-center gap-0.5">
-            {stale ? (
-              <TriangleAlert size={16} style={{ color: '#f59e0b' }} />
-            ) : (
-              <Sparkles size={16} style={{ color: 'var(--accent)' }} />
-            )}
-            <span className="text-[10px] font-bold" style={{ color: stale ? '#f59e0b' : 'var(--accent)' }}>{totalItems}</span>
-          </span>
-          {(Object.keys(SECTION_CONFIG) as SectionKey[]).map((key) => {
-            const cfg = SECTION_CONFIG[key]
-            const count = analysis[key].length
-            if (count === 0) return null
-            const Icon = cfg.icon
-            return (
-              <span key={key} title={`${cfg.label}: ${count}`} className="flex flex-col items-center gap-0.5">
-                <Icon size={14} style={{ color: stale ? `${cfg.color}80` : cfg.color }} />
-                <span className="text-[10px] font-bold" style={{ color: stale ? `${cfg.color}80` : cfg.color }}>{count}</span>
-              </span>
-            )
-          })}
+          <div className="flex flex-col items-center gap-2" style={{ cursor: 'pointer' }} onClick={onToggleView}>
+            <span title={`${totalItems} items${stale ? ' (stale)' : ''}`} className="flex flex-col items-center gap-0.5">
+              {stale ? (
+                <TriangleAlert size={16} style={{ color: '#f59e0b' }} />
+              ) : (
+                <Sparkles size={16} style={{ color: 'var(--accent)' }} />
+              )}
+              <span className="text-[10px] font-bold" style={{ color: stale ? '#f59e0b' : 'var(--accent)' }}>{totalItems}</span>
+            </span>
+            {(Object.keys(SECTION_CONFIG) as SectionKey[]).map((key) => {
+              const cfg = SECTION_CONFIG[key]
+              const count = analysis[key].length
+              if (count === 0) return null
+              const Icon = cfg.icon
+              return (
+                <span key={key} title={`${cfg.label}: ${count}`} className="flex flex-col items-center gap-0.5">
+                  <Icon size={14} style={{ color: stale ? `${cfg.color}80` : cfg.color }} />
+                  <span className="text-[10px] font-bold" style={{ color: stale ? `${cfg.color}80` : cfg.color }}>{count}</span>
+                </span>
+              )
+            })}
+          </div>
         </>
       ) : (
-        <>
+        <div className="flex flex-col items-center gap-2" style={{ cursor: 'pointer' }} onClick={onToggleView}>
           <Sparkles size={16} style={{ color: 'var(--text-tertiary)' }} />
           {(Object.keys(SECTION_CONFIG) as SectionKey[]).map((key) => {
             const Icon = SECTION_CONFIG[key].icon
             return <Icon key={key} size={14} style={{ color: 'var(--text-tertiary)', opacity: 0.3 }} />
           })}
-        </>
+        </div>
       )}
-      <PanelRightOpen size={14} style={{ color: 'var(--text-tertiary)', marginTop: 'auto' }} />
     </div>
   )
 }
@@ -345,6 +369,7 @@ export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteA
         analysis={analysis}
         status={status}
         stale={stale}
+        onRefresh={handleAnalyze}
         onToggleView={onToggleView}
       />
     )
@@ -362,6 +387,15 @@ export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteA
         )}
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleView}
+            className="p-1.5 rounded-md transition-colors hover:opacity-70"
+            style={{ color: 'var(--text-tertiary)' }}
+            title="Minimize panel"
+          >
+            <PanelRightClose size={14} />
+          </button>
+
           <button
             onClick={handleAnalyze}
             disabled={status === 'loading' || !hasContent}
@@ -381,7 +415,7 @@ export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteA
 
           <button
             onClick={() => setShowConfig(!showConfig)}
-            className="p-1.5 rounded-md transition-colors"
+            className="p-1.5 rounded-md transition-colors hover:opacity-70"
             style={{ color: showConfig ? 'var(--accent)' : 'var(--text-tertiary)' }}
             title="AI Settings"
           >
@@ -394,8 +428,17 @@ export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteA
 
   return (
     <div className="space-y-2 py-3 px-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onToggleView}
+          className="p-1 rounded transition-colors hover:opacity-70"
+          style={{ color: 'var(--text-tertiary)' }}
+          title="Minimize panel"
+        >
+          <PanelRightClose size={12} />
+        </button>
+
+        <span className="flex-1 text-xs font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
           <Sparkles size={12} style={{ color: stale ? '#f59e0b' : 'var(--accent)' }} />
           AI Analysis
           {stale && (
@@ -412,18 +455,11 @@ export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteA
             </span>
           )}
         </span>
+
         <div className="flex items-center gap-1">
           <button
-            onClick={onToggleView}
-            className="p-1 rounded transition-colors"
-            style={{ color: 'var(--text-tertiary)' }}
-            title="Minimize panel"
-          >
-            <PanelRightClose size={12} />
-          </button>
-          <button
             onClick={() => setShowConfig(!showConfig)}
-            className="p-1 rounded transition-colors"
+            className="p-1 rounded transition-colors hover:opacity-70"
             style={{ color: 'var(--text-tertiary)' }}
             title="AI Settings"
           >
@@ -432,15 +468,15 @@ export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteA
           <button
             onClick={handleAnalyze}
             disabled={status === 'loading'}
-            className="text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors disabled:opacity-40"
+            className="p-1 rounded transition-colors hover:opacity-70 disabled:opacity-30"
             style={{ color: stale ? '#f59e0b' : 'var(--accent)' }}
+            title={status === 'loading' ? 'Analyzing...' : stale ? 'Update analysis' : 'Re-analyze'}
           >
             {status === 'loading' ? (
               <Loader2 size={12} className="animate-spin" />
             ) : (
               <RefreshCw size={12} />
             )}
-            {stale ? 'Update' : 'Re-analyze'}
           </button>
         </div>
       </div>
