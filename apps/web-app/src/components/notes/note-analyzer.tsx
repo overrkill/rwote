@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { NoteAnalysis, AiAnalyzeConfig, AiAnalyzeProvider } from '@/lib/types'
-import { analyzeNoteDirect } from '@/lib/supabase'
+import { analyzeNoteDirect, loadNoteAnalysis, saveNoteAnalysis, getAuthToken, contentHash } from '@/lib/supabase'
 import { loadAnalyzeConfig, saveAnalyzeConfig } from '@/lib/ai-config'
-import { Sparkles, Calendar, CheckSquare, RefreshCw, BookOpen, AlertCircle, Loader2, ChevronDown, ChevronUp, Settings, Eye, EyeOff, PanelRightClose } from 'lucide-react'
+import { Sparkles, Calendar, CheckSquare, RefreshCw, BookOpen, AlertCircle, Loader2, ChevronDown, ChevronUp, Settings, Eye, EyeOff, PanelRightClose, PanelRightOpen, TriangleAlert } from 'lucide-react'
 
 interface NoteAnalyzerProps {
+  noteId: string
   text: string
   view: 'minimized' | 'expanded'
   onToggleView: () => void
@@ -210,10 +211,12 @@ function needsConfig(config: AiAnalyzeConfig): boolean {
 function MinimizedStrip({
   analysis,
   status,
+  stale,
   onToggleView,
 }: {
   analysis: NoteAnalysis | null
   status: 'idle' | 'loading' | 'success' | 'error'
+  stale: boolean
   onToggleView: () => void
 }) {
   const totalItems = analysis
@@ -224,9 +227,13 @@ function MinimizedStrip({
     <div className="flex flex-col items-center gap-3 py-3" style={{ cursor: 'pointer' }} onClick={onToggleView}>
       {analysis ? (
         <>
-          <span title="All items" className="flex flex-col items-center gap-0.5">
-            <Sparkles size={16} style={{ color: 'var(--accent)' }} />
-            <span className="text-[10px] font-bold" style={{ color: 'var(--accent)' }}>{totalItems}</span>
+          <span title={`${totalItems} items${stale ? ' (stale)' : ''}`} className="flex flex-col items-center gap-0.5">
+            {stale ? (
+              <TriangleAlert size={16} style={{ color: '#f59e0b' }} />
+            ) : (
+              <Sparkles size={16} style={{ color: 'var(--accent)' }} />
+            )}
+            <span className="text-[10px] font-bold" style={{ color: stale ? '#f59e0b' : 'var(--accent)' }}>{totalItems}</span>
           </span>
           {(Object.keys(SECTION_CONFIG) as SectionKey[]).map((key) => {
             const cfg = SECTION_CONFIG[key]
@@ -235,8 +242,8 @@ function MinimizedStrip({
             const Icon = cfg.icon
             return (
               <span key={key} title={`${cfg.label}: ${count}`} className="flex flex-col items-center gap-0.5">
-                <Icon size={14} style={{ color: cfg.color }} />
-                <span className="text-[10px] font-bold" style={{ color: cfg.color }}>{count}</span>
+                <Icon size={14} style={{ color: stale ? `${cfg.color}80` : cfg.color }} />
+                <span className="text-[10px] font-bold" style={{ color: stale ? `${cfg.color}80` : cfg.color }}>{count}</span>
               </span>
             )
           })}
@@ -250,17 +257,41 @@ function MinimizedStrip({
           })}
         </>
       )}
+      <PanelRightOpen size={14} style={{ color: 'var(--text-tertiary)', marginTop: 'auto' }} />
     </div>
   )
 }
 
-export default function NoteAnalyzer({ text, view, onToggleView }: NoteAnalyzerProps) {
+export default function NoteAnalyzer({ noteId, text, view, onToggleView }: NoteAnalyzerProps) {
   const [config, setConfig] = useState<AiAnalyzeConfig>(() => loadAnalyzeConfig())
   const [analysis, setAnalysis] = useState<NoteAnalysis | null>(null)
+  const [storedHash, setStoredHash] = useState<string | null>(null)
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError] = useState('')
   const [showConfig, setShowConfig] = useState(needsConfig(loadAnalyzeConfig()))
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(['deadlines', 'todos', 'followUps', 'flashCards']))
+
+  const currentHash = contentHash({ title: '', content: text })
+  const stale = !!(analysis && storedHash !== null && storedHash !== currentHash)
+
+  const loadFromDb = useCallback(async () => {
+    const token = await getAuthToken()
+    if (!token) return
+    const cached = await loadNoteAnalysis(noteId, token)
+    if (cached) {
+      setAnalysis(cached.analysis)
+      setStoredHash(cached.contentHash)
+      setStatus('success')
+    }
+  }, [noteId])
+
+  useEffect(() => {
+    setAnalysis(null)
+    setStoredHash(null)
+    setStatus('idle')
+    setError('')
+    loadFromDb()
+  }, [noteId, loadFromDb])
 
   const toggleSection = (key: SectionKey) => {
     setOpenSections(prev => {
@@ -284,7 +315,13 @@ export default function NoteAnalyzer({ text, view, onToggleView }: NoteAnalyzerP
     try {
       const result = await analyzeNoteDirect(text, config)
       setAnalysis(result)
+      setStoredHash(currentHash)
       setStatus('success')
+
+      const token = await getAuthToken()
+      if (token) {
+        await saveNoteAnalysis(noteId, result, currentHash, token).catch(console.error)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Analysis failed')
       setStatus('error')
@@ -307,6 +344,7 @@ export default function NoteAnalyzer({ text, view, onToggleView }: NoteAnalyzerP
       <MinimizedStrip
         analysis={analysis}
         status={status}
+        stale={stale}
         onToggleView={onToggleView}
       />
     )
@@ -358,9 +396,15 @@ export default function NoteAnalyzer({ text, view, onToggleView }: NoteAnalyzerP
     <div className="space-y-2 py-3 px-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-          <Sparkles size={12} style={{ color: 'var(--accent)' }} />
+          <Sparkles size={12} style={{ color: stale ? '#f59e0b' : 'var(--accent)' }} />
           AI Analysis
-          {status === 'success' && (
+          {stale && (
+            <span className="text-xs flex items-center gap-0.5" style={{ color: '#f59e0b' }}>
+              <TriangleAlert size={10} />
+              stale
+            </span>
+          )}
+          {status === 'success' && !stale && (
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
               · {
                 (analysis!.deadlines.length + analysis!.todos.length + analysis!.followUps.length + analysis!.flashCards.length)
@@ -389,14 +433,14 @@ export default function NoteAnalyzer({ text, view, onToggleView }: NoteAnalyzerP
             onClick={handleAnalyze}
             disabled={status === 'loading'}
             className="text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors disabled:opacity-40"
-            style={{ color: 'var(--accent)' }}
+            style={{ color: stale ? '#f59e0b' : 'var(--accent)' }}
           >
             {status === 'loading' ? (
               <Loader2 size={12} className="animate-spin" />
             ) : (
               <RefreshCw size={12} />
             )}
-            Re-analyze
+            {stale ? 'Update' : 'Re-analyze'}
           </button>
         </div>
       </div>

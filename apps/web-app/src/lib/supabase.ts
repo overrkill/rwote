@@ -538,3 +538,64 @@ export async function analyzeNoteDirect(text: string, config: AiAnalyzeConfig): 
   const content = data.choices?.[0]?.message?.content || ''
   return parseAnalysisResponse(content)
 }
+
+// ── Analysis Persistence ───────────────────────────────
+
+function simpleHash(str: string): string {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash |= 0
+  }
+  return hash.toString(36)
+}
+
+export async function loadNoteAnalysis(noteId: string, _token: string): Promise<{ analysis: NoteAnalysis; contentHash: string } | null> {
+  const { data, error } = await supabase
+    .from('note_analyses')
+    .select('analysis, content_hash')
+    .eq('note_id', noteId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Failed to load analysis:', error)
+    return null
+  }
+  if (!data) return null
+
+  return {
+    analysis: data.analysis as NoteAnalysis,
+    contentHash: data.content_hash,
+  }
+}
+
+export async function saveNoteAnalysis(noteId: string, analysis: NoteAnalysis, contentHash: string, _token: string): Promise<void> {
+  const { data: existing } = await supabase
+    .from('note_analyses')
+    .select('id')
+    .eq('note_id', noteId)
+    .maybeSingle()
+
+  const record = {
+    note_id: noteId,
+    analysis,
+    content_hash: contentHash,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (existing) {
+    await supabase.from('note_analyses').update(record).eq('note_id', noteId)
+  } else {
+    const { data: user } = await supabase.auth.getUser()
+    await supabase.from('note_analyses').insert({
+      ...record,
+      user_id: user.user?.id,
+      created_at: new Date().toISOString(),
+    })
+  }
+}
+
+export function contentHash(note: { title: string; content: string }): string {
+  return simpleHash(note.content || '')
+}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { Editor } from '@tiptap/react'
 import type { Note } from '@/lib/types'
-import { Pin, Copy, Trash2, X, Check, Sparkles } from 'lucide-react'
+import { Pin, Copy, Trash2, X, Check } from 'lucide-react'
 import MarkdownEditor from './markdown-editor'
 import NoteAnalyzer from './note-analyzer'
 import AlertDialog, { AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
@@ -40,7 +40,7 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
   const [copied, setCopied] = useState(false)
   const [saved, setSaved] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [analyzeView, setAnalyzeView] = useState<'closed' | 'minimized' | 'expanded'>('closed')
+  const [analyzeView, setAnalyzeView] = useState<'minimized' | 'expanded'>('minimized')
   const editorRef = useRef<Editor | null>(null)
 
   const titleRef = useRef(title)
@@ -170,18 +170,6 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
             {copied ? <Check size={16} /> : <Copy size={16} />}
           </button>
           <button
-            onClick={() => {
-              if (analyzeView === 'closed') setAnalyzeView('expanded')
-              else if (analyzeView === 'expanded') setAnalyzeView('minimized')
-              else setAnalyzeView('closed')
-            }}
-            className="p-2 rounded transition-colors"
-            style={{ color: analyzeView !== 'closed' ? 'var(--accent)' : 'var(--text-secondary)' }}
-            title="Analyze with AI"
-          >
-            <Sparkles size={16} />
-          </button>
-          <button
             onClick={handleDelete}
             className="p-2 rounded transition-colors"
             style={{ color: 'var(--text-secondary)' }}
@@ -240,22 +228,21 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
           </div>
         </div>
 
-        {analyzeView !== 'closed' && (
-          <div
-            className="shrink-0 overflow-y-auto"
-            style={{
-              width: analyzeView === 'minimized' ? 48 : 320,
-              borderLeft: '1px solid var(--border)',
-              backgroundColor: 'var(--surface)',
-            }}
-          >
-            <NoteAnalyzer
-              text={title + '\n\n' + content}
-              view={analyzeView}
-              onToggleView={() => setAnalyzeView(analyzeView === 'minimized' ? 'expanded' : 'minimized')}
-            />
-          </div>
-        )}
+        <div
+          className="shrink-0 overflow-y-auto"
+          style={{
+            width: analyzeView === 'minimized' ? 48 : 320,
+            borderLeft: '1px solid var(--border)',
+            backgroundColor: 'var(--surface)',
+          }}
+        >
+          <NoteAnalyzer
+            noteId={note.id}
+            text={title + '\n\n' + content}
+            view={analyzeView}
+            onToggleView={() => setAnalyzeView(analyzeView === 'minimized' ? 'expanded' : 'minimized')}
+          />
+        </div>
       </div>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen} title="Delete note?" description="This cannot be undone.">
