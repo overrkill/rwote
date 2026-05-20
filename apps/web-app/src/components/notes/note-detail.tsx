@@ -8,6 +8,7 @@ import MarkdownEditor from './markdown-editor'
 import NoteAnalyzer from './note-analyzer'
 import { loadAnalyzeConfig } from '@/lib/ai-config'
 import AlertDialog, { AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
+import Tooltip from '@/components/ui/tooltip'
 
 interface NoteDetailProps {
   note: Note
@@ -181,30 +182,33 @@ NoteDetail({ note, onUpdate, onDelete, onTogglePin }: NoteDetailProps) {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => onTogglePin(note.id)}
-            className="p-2 rounded transition-colors"
-            style={{ color: note.pinned ? 'var(--accent)' : 'var(--text-secondary)' }}
-            title={note.pinned ? 'Unpin' : 'Pin'}
-          >
-            <Pin size={16} fill={note.pinned ? 'currentColor' : 'none'} />
-          </button>
-          <button
-            onClick={handleCopy}
-            className="p-2 rounded transition-colors"
-            style={{ color: copied ? '#22c55e' : 'var(--text-secondary)' }}
-            title="Copy"
-          >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
-          </button>
-          <button
-            onClick={handleDelete}
-            className="p-2 rounded transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Delete"
-          >
-            <Trash2 size={16} />
-          </button>
+          <Tooltip content={note.pinned ? 'Unpin (Alt+P)' : 'Pin (Alt+P)'}>
+            <button
+              onClick={() => onTogglePin(note.id)}
+              className="p-2 rounded transition-colors"
+              style={{ color: note.pinned ? 'var(--accent)' : 'var(--text-secondary)' }}
+            >
+              <Pin size={16} fill={note.pinned ? 'currentColor' : 'none'} />
+            </button>
+          </Tooltip>
+          <Tooltip content={copied ? 'Copied!' : 'Copy'}>
+            <button
+              onClick={handleCopy}
+              className="p-2 rounded transition-colors"
+              style={{ color: copied ? '#22c55e' : 'var(--text-secondary)' }}
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+            </button>
+          </Tooltip>
+          <Tooltip content="Delete">
+            <button
+              onClick={handleDelete}
+              className="p-2 rounded transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <Trash2 size={16} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
