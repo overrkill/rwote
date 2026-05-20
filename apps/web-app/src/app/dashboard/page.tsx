@@ -27,7 +27,7 @@ import NoteOverview from '@/components/notes/note-overview'
 import SettingsPanel from '@/components/ui/settings-panel'
 import Dialog from '@/components/ui/dialog'
 import { useTheme } from '@/components/providers/theme-provider'
-import { Cloud, AlertCircle, List, Search, X } from 'lucide-react'
+import { Cloud, AlertCircle, List, Search, Home, X } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -348,6 +348,15 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-1 relative">
+          <button
+            onClick={() => setSelectedNoteId(null)}
+            className="p-2 rounded-md transition-colors"
+            style={{ color: selectedNoteId ? 'var(--text-secondary)' : 'var(--accent)' }}
+            title="Home"
+          >
+            <Home size={16} strokeWidth={2} />
+          </button>
+
           <button
             onClick={() => setSearchModalOpen(true)}
             className="p-2 rounded-md transition-colors"

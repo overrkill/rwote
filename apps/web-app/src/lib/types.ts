@@ -45,9 +45,9 @@ export interface FlashCard {
 }
 
 export interface NoteAnalysis {
-  deadlines:  Deadline[];
-  todos:      { text: string }[];
-  followUps:  Deadline[];
+  deadlines:  (Deadline & { done?: boolean })[];
+  todos:      ({ text: string } & { done?: boolean })[];
+  followUps:  (Deadline & { done?: boolean })[];
   flashCards: FlashCard[];
 }
 

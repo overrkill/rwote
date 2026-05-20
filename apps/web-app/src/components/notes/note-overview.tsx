@@ -1,15 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { loadAllNoteAnalyses } from '@/lib/supabase'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { loadAllNoteAnalyses, saveNoteAnalysis, getAuthToken } from '@/lib/supabase'
 import type { NoteAnalysis } from '@/lib/types'
 import { Calendar, CheckSquare, RefreshCw, BookOpen, ChevronUp, ChevronDown } from 'lucide-react'
 
-interface AggregatedData {
-  todos: { text: string }[]
-  followUps: { text: string; date?: string }[]
-  deadlines: { text: string; date?: string }[]
-  flashCards: { front: string; back: string }[]
+type SectionKey = 'todos' | 'followUps' | 'deadlines' | 'flashCards'
+
+const SECTION_CONFIG: Record<SectionKey, { icon: typeof Calendar; label: string; color: string }> = {
+  deadlines:  { icon: Calendar,   label: 'Deadlines',   color: '#ef4444' },
+  todos:      { icon: CheckSquare, label: 'To-Dos',      color: '#3b82f6' },
+  followUps:  { icon: RefreshCw,  label: 'Follow-ups',  color: '#a855f7' },
+  flashCards: { icon: BookOpen,   label: 'Flash Cards', color: '#22c55e' },
+}
+
+interface AggregatedItem {
+  text: string
+  date?: string
+  done?: boolean
+  srcNoteId: string
+  srcIdx: number
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -21,17 +31,8 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-type SectionKey = 'todos' | 'followUps' | 'deadlines' | 'flashCards'
-
-const SECTION_CONFIG: Record<SectionKey, { icon: typeof Calendar; label: string; color: string }> = {
-  deadlines:  { icon: Calendar,   label: 'Deadlines',   color: '#ef4444' },
-  todos:      { icon: CheckSquare, label: 'To-Dos',      color: '#3b82f6' },
-  followUps:  { icon: RefreshCw,  label: 'Follow-ups',  color: '#a855f7' },
-  flashCards: { icon: BookOpen,   label: 'Flash Cards', color: '#22c55e' },
-}
-
 export default function NoteOverview() {
-  const [data, setData] = useState<AggregatedData | null>(null)
+  const [records, setRecords] = useState<Record<string, { analysis: NoteAnalysis; contentHash: string }>>({})
   const [loading, setLoading] = useState(true)
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(['todos', 'followUps', 'deadlines', 'flashCards']))
 
@@ -45,34 +46,67 @@ export default function NoteOverview() {
   }
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const analyses = await loadAllNoteAnalyses()
-        const aggregated: AggregatedData = {
-          todos: [],
-          followUps: [],
-          deadlines: [],
-          flashCards: [],
-        }
-
-        for (const analysis of Object.values(analyses)) {
-          aggregated.todos.push(...(analysis.todos || []))
-          aggregated.followUps.push(...(analysis.followUps || []))
-          aggregated.deadlines.push(...(analysis.deadlines || []))
-          aggregated.flashCards.push(...(analysis.flashCards || []))
-        }
-
-        aggregated.flashCards = shuffle(aggregated.flashCards).slice(0, 4)
-
-        setData(aggregated)
-      } catch (e) {
-        console.error('Failed to load analyses:', e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
+    loadAllNoteAnalyses()
+      .then(setRecords)
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
+
+  const allTodos = useMemo<AggregatedItem[]>(() => {
+    const r: AggregatedItem[] = []
+    for (const [noteId, rec] of Object.entries(records)) {
+      (rec.analysis.todos || []).forEach((t, i) => r.push({ text: t.text, done: t.done, srcNoteId: noteId, srcIdx: i }))
+    }
+    return r
+  }, [records])
+
+  const allFollowUps = useMemo<AggregatedItem[]>(() => {
+    const r: AggregatedItem[] = []
+    for (const [noteId, rec] of Object.entries(records)) {
+      (rec.analysis.followUps || []).forEach((f, i) => r.push({ text: f.text, date: f.date, done: f.done, srcNoteId: noteId, srcIdx: i }))
+    }
+    return r
+  }, [records])
+
+  const allDeadlines = useMemo<AggregatedItem[]>(() => {
+    const r: AggregatedItem[] = []
+    for (const [noteId, rec] of Object.entries(records)) {
+      (rec.analysis.deadlines || []).forEach((d, i) => r.push({ text: d.text, date: d.date, done: d.done, srcNoteId: noteId, srcIdx: i }))
+    }
+    return r
+  }, [records])
+
+  const randomCards = useMemo(() => {
+    const all: { front: string; back: string }[] = []
+    for (const rec of Object.values(records)) {
+      all.push(...(rec.analysis.flashCards || []))
+    }
+    return shuffle(all).slice(0, 4)
+  }, [records])
+
+  const toggleDone = useCallback(async (noteId: string, section: 'todos' | 'followUps' | 'deadlines', idx: number) => {
+    const rec = records[noteId]
+    if (!rec) return
+
+    const items = [...rec.analysis[section]] as any[]
+    const item = { ...items[idx] }
+    item.done = !item.done
+    items[idx] = item
+
+    const updated = {
+      ...records,
+      [noteId]: {
+        ...rec,
+        analysis: { ...rec.analysis, [section]: items },
+      },
+    }
+    setRecords(updated)
+
+    const token = await getAuthToken()
+    if (token) {
+      saveNoteAnalysis(noteId, updated[noteId].analysis, rec.contentHash, token).catch(console.error)
+    }
+  }, [records])
 
   if (loading) {
     return (
@@ -82,7 +116,9 @@ export default function NoteOverview() {
     )
   }
 
-  if (!data || (!data.todos.length && !data.followUps.length && !data.deadlines.length && !data.flashCards.length)) {
+  const totalItems = allTodos.length + allFollowUps.length + allDeadlines.length + randomCards.length
+
+  if (totalItems === 0) {
     return (
       <div className="h-full flex items-center justify-center" style={{ color: 'var(--text-tertiary)' }}>
         <div className="text-center max-w-sm px-6">
@@ -112,27 +148,33 @@ export default function NoteOverview() {
     )
   }
 
-  const sections: SectionKey[] = ['deadlines', 'todos', 'followUps', 'flashCards']
+  const sections: { key: SectionKey; items: AggregatedItem[] }[] = [
+    { key: 'deadlines', items: allDeadlines },
+    { key: 'todos', items: allTodos },
+    { key: 'followUps', items: allFollowUps },
+  ]
 
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="max-w-2xl mx-auto space-y-2">
-        {sections.map(sectionKey => {
-          const config = SECTION_CONFIG[sectionKey]
+        {sections.map(({ key, items }) => {
+          const config = SECTION_CONFIG[key]
           const Icon = config.icon
-          const open = openSections.has(sectionKey)
-          const items = data[sectionKey]
+          const open = openSections.has(key)
+          const doneCount = items.filter(i => i.done).length
           return (
-            <div key={sectionKey} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+            <div key={key} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
               <button
-                onClick={() => toggleSection(sectionKey)}
+                onClick={() => toggleSection(key)}
                 className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium transition-colors"
                 style={{ color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}
               >
                 <span className="flex items-center gap-2">
                   <Icon size={14} style={{ color: config.color }} />
                   {config.label}
-                  <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>{items.length}</span>
+                  <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>
+                    {doneCount > 0 ? `${doneCount}/${items.length}` : items.length}
+                  </span>
                 </span>
                 {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
@@ -143,21 +185,20 @@ export default function NoteOverview() {
                     <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
                       No {config.label.toLowerCase()} found
                     </p>
-                  ) : sectionKey === 'flashCards' ? (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      {items.map((fc: any, idx: number) => (
-                        <FlashCard key={idx} front={fc.front} back={fc.back} />
-                      ))}
-                    </div>
                   ) : (
-                    items.map((item: any, idx: number) => (
+                    items.map((item, idx) => (
                       <div key={idx} className="text-sm flex items-start gap-2 py-0.5" style={{ color: 'var(--text-secondary)' }}>
-                        <span className="shrink-0 mt-0.5">
-                          {sectionKey === 'deadlines' && '📅'}
-                          {sectionKey === 'todos' && '☐'}
-                          {sectionKey === 'followUps' && '↻'}
-                        </span>
-                        <span className="flex-1">{item.text}</span>
+                        <button
+                          onClick={() => toggleDone(item.srcNoteId, key as 'todos' | 'followUps' | 'deadlines', item.srcIdx)}
+                          className="shrink-0 mt-0.5 cursor-pointer hover:opacity-70 transition-opacity"
+                          style={{ background: 'none', border: 'none', padding: 0, fontSize: 'inherit', lineHeight: 'inherit' }}
+                        >
+                          {item.done ? '☑' : '☐'}
+                        </button>
+                        <span className="flex-1" style={{
+                          textDecoration: item.done ? 'line-through' : 'none',
+                          opacity: item.done ? 0.4 : 1,
+                        }}>{item.text}</span>
                         {item.date && (
                           <span className="text-xs shrink-0" style={{ color: config.color }}>
                             {item.date}
@@ -171,6 +212,28 @@ export default function NoteOverview() {
             </div>
           )
         })}
+
+        {randomCards.length > 0 && (
+          <div key="flashCards" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+            <div
+              className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium"
+              style={{ color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}
+            >
+              <span className="flex items-center gap-2">
+                <BookOpen size={14} style={{ color: '#22c55e' }} />
+                Flash Cards
+                <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>{randomCards.length}</span>
+              </span>
+            </div>
+            <div className="px-3 pb-3 space-y-1.5" style={{ backgroundColor: 'var(--surface)' }}>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {randomCards.map((fc, i) => (
+                  <FlashCard key={i} front={fc.front} back={fc.back} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

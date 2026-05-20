@@ -608,10 +608,10 @@ export function contentHash(note: { title: string; content: string }): string {
   return simpleHash(note.content || '')
 }
 
-export async function loadAllNoteAnalyses(): Promise<Record<string, NoteAnalysis>> {
+export async function loadAllNoteAnalyses(): Promise<Record<string, { analysis: NoteAnalysis; contentHash: string }>> {
   const { data, error } = await supabase
     .from('note_analyses')
-    .select('note_id, analysis')
+    .select('note_id, analysis, content_hash')
     .order('updated_at', { ascending: false })
 
   if (error) {
@@ -619,9 +619,12 @@ export async function loadAllNoteAnalyses(): Promise<Record<string, NoteAnalysis
     return {}
   }
 
-  const result: Record<string, NoteAnalysis> = {}
+  const result: Record<string, { analysis: NoteAnalysis; contentHash: string }> = {}
   for (const row of data) {
-    result[row.note_id] = row.analysis as NoteAnalysis
+    result[row.note_id] = {
+      analysis: row.analysis as NoteAnalysis,
+      contentHash: row.content_hash,
+    }
   }
   return result
 }
