@@ -188,7 +188,7 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 note-detail-scroll">
           <div className="max-w-2xl mx-auto">
             <input
               type="text"
@@ -257,6 +257,22 @@ export default function NoteDetail({ note, onUpdate, onDelete, onTogglePin }: No
         <AlertDialogCancel>Cancel</AlertDialogCancel>
         <AlertDialogAction onClick={() => onDelete(note.id)} variant="destructive">Delete</AlertDialogAction>
       </AlertDialog>
+
+      <style jsx>{`
+        .note-detail-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .note-detail-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .note-detail-scroll::-webkit-scrollbar-thumb {
+          background: var(--border);
+          border-radius: 2px;
+        }
+        .note-detail-scroll::-webkit-scrollbar-thumb:hover {
+          background: var(--text-tertiary);
+        }
+      `}</style>
     </div>
   )
 }
