@@ -39,7 +39,7 @@ export default function Dialog({ open, onOpenChange, title, description, childre
                 transition={{ duration: 0.15, ease: 'easeOut' }}
               >
                 <div
-                  className="relative w-full max-w-md rounded-xl shadow-lg overflow-hidden"
+                  className="relative w-full max-w-md rounded shadow-lg overflow-hidden"
                   style={{ backgroundColor: 'var(--surface)' }}
                 >
                   {(title || description) && (

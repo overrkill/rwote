@@ -193,7 +193,7 @@ export default function SettingsPage() {
 
       <div className="max-w-lg mx-auto p-4 space-y-6">
         {/* Profile */}
-        <section className="flex items-center gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <section className="flex items-center gap-4 p-4 rounded" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <Avatar user={user} size={44} />
           <div className="flex-1 min-w-0">
             <div className="text-base font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user?.name || 'User'}</div>
@@ -202,7 +202,7 @@ export default function SettingsPage() {
         </section>
 
         {/* AI Summarization */}
-        <section className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <section className="p-4 rounded space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <h2 className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>AI Summarization</h2>
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
             Auto-summarize notes when you save a title without content.
@@ -261,7 +261,7 @@ export default function SettingsPage() {
         </section>
 
         {/* AI Note Analysis */}
-        <section className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <section className="p-4 rounded space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <h2 className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>AI Note Analysis</h2>
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
             Extract deadlines, todos, follow-ups, and flash cards from notes.
@@ -348,7 +348,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Appearance */}
-        <section className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <section className="p-4 rounded space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <h2 className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>Appearance</h2>
 
           <div>
@@ -440,7 +440,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Data */}
-        <section className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <section className="p-4 rounded space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <h2 className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Data</h2>
           <button
             onClick={handleExport}
@@ -454,7 +454,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Support */}
-        <section className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <section className="p-4 rounded space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <h2 className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>Support</h2>
           <a
             href="https://ko-fi.com/abhishekdk"

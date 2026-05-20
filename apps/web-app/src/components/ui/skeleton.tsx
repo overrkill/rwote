@@ -64,7 +64,7 @@ export function SettingsSkeleton() {
         <S width={80} height={20} />
       </header>
       <div className="max-w-lg mx-auto p-4 space-y-6">
-        <div className="flex items-center gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-4 p-4 rounded" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
           <S width={44} height={44} rounded="50%" />
           <div className="flex-1 space-y-2">
             <S width="40%" height={16} rounded="4px" />
@@ -72,7 +72,7 @@ export function SettingsSkeleton() {
           </div>
         </div>
         {[1, 2, 3, 4].map((s) => (
-          <div key={s} className="p-4 rounded-lg space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div key={s} className="p-4 rounded space-y-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
             <S width={120} height={12} rounded="4px" />
             <S width="100%" height={12} rounded="4px" />
             <S width="100%" height={40} />

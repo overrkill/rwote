@@ -50,6 +50,7 @@ export default function DashboardPage() {
   const [searchModalOpen, setSearchModalOpen] = useState(false)
   const [searchFocusedIndex, setSearchFocusedIndex] = useState(0)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchResultsRef = useRef<HTMLDivElement>(null)
 
   const themeList = [
     { id: 'paper_dark', name: 'Paper Dark' },
@@ -309,6 +310,23 @@ export default function DashboardPage() {
 
   const selectedNote = notes.find(n => n.id === selectedNoteId) || null
 
+  useEffect(() => {
+    if (!searchResultsRef.current || !searchModalOpen || searchResults.length === 0) return
+    const container = searchResultsRef.current
+    const children = container.children
+    if (searchFocusedIndex >= children.length) return
+    const selected = children[searchFocusedIndex] as HTMLElement
+    if (selected) {
+      selected.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [searchFocusedIndex, searchModalOpen, searchResults.length])
+
+  useEffect(() => {
+    if (searchModalOpen && searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [searchModalOpen])
+
   if (loading) {
     return <DashboardSkeleton />
   }
@@ -491,6 +509,7 @@ export default function DashboardPage() {
         <div
           className="p-4"
           onKeyDown={(e) => {
+            e.stopPropagation()
             if (e.key === 'ArrowDown') {
               e.preventDefault()
               setSearchFocusedIndex(i => Math.min(i + 1, searchResults.length - 1))
@@ -514,7 +533,7 @@ export default function DashboardPage() {
               onChange={(e) => { setSearchQuery(e.target.value); setSearchFocusedIndex(0) }}
               placeholder="Search notes..."
               autoFocus
-              className="w-full h-10 pl-9 pr-4 text-sm rounded-lg outline-none transition-all"
+              className="w-full h-10 pl-9 pr-4 text-sm rounded outline-none transition-all"
               style={{ backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
             />
             {searchQuery && (
@@ -528,7 +547,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div ref={searchResultsRef} className="max-h-80 overflow-y-auto space-y-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {searchResults.length === 0 ? (
               <p className="text-sm text-center py-8" style={{ color: 'var(--text-tertiary)' }}>
                 {searchQuery ? 'No notes match' : 'Type to search'}
@@ -538,9 +557,10 @@ export default function DashboardPage() {
                 <div
                   key={note.id}
                   onClick={() => { handleSelectNote(note); setSearchModalOpen(false); setSearchQuery(''); setSearchFocusedIndex(0) }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded cursor-pointer transition-all"
                   style={{
                     backgroundColor: i === searchFocusedIndex ? 'var(--surface-alt)' : 'transparent',
+                    border: i === searchFocusedIndex ? '1px solid var(--border-focus)' : '1px solid transparent',
                   }}
                   onMouseEnter={() => setSearchFocusedIndex(i)}
                 >
